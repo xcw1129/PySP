@@ -1,16 +1,87 @@
 import numpy as np
 
-
 from scipy.signal import hilbert
 from scipy.signal import check_NOLA
-
 from scipy.fftpack import fft, ifft
-
 from scipy.stats import gaussian_kde
 
 
-from .Signal import plot_spectrum
-from .Signal import plot_spectrogram
+from typing import Optional, Callable
+
+from .Plot import plot_spectrum, plot_spectrogram
+
+# -----------------------------------------------------------------------------#
+# -------------------------------------------------------------------------#
+# ---------------------------------------------------------------------#
+# -----------------------------------------------------------------#
+"""
+Basic.py: 基础信号分析及处理模块
+    - function:
+        1. window: 生成窗函数序列
+        2. ft: 计算信号的归一化傅里叶变换频谱
+        3. pdf: 计算概率密度函数 (PDF)
+        4. Stft: 短时傅里叶变换 (STFT)
+        5. iStft: 逆短时傅里叶变换 (ISTFT)
+        6. HTenvelope: 计算信号包络
+        7. autocorr: 计算自相关函数
+        8. PSD: 计算功率谱密度
+"""
+
+
+def window(
+    type: str,
+    length: int,
+    func: Optional[Callable] = None,
+    padding: Optional[int] = None,
+    check: bool = False,
+) -> np.ndarray:
+    # 定义窗函数
+    N = length
+    window_func = {}
+    window_func["矩形窗"] = lambda n: np.ones(len(n))
+    window_func["汉宁窗"] = lambda n: 0.5 * (1 - np.cos(2 * np.pi * n / (N - 1)))
+    window_func["海明窗"] = lambda n: 0.54 - 0.46 * np.cos(2 * np.pi * n / (N - 1))
+    window_func["巴特利特窗"] = lambda n: np.where(
+        np.less_equal(n, (N - 1) / 2), 2 * n / (N - 1), 2 - 2 * n / (N - 1)
+    )
+    window_func["布莱克曼窗"] = (
+        lambda n: 0.42
+        - 0.5 * np.cos(2 * np.pi * n / (N - 1))
+        + 0.08 * np.cos(4 * np.pi * n / (N - 1))
+    )
+    window_func["自定义窗"] = func
+    # -----------------------------------------------------------------------------#
+    # 生成采样点
+    if N < 1:
+        return np.array([])
+    elif N == 1:
+        return np.ones(1, float)
+    n = np.arange(N)  # n=0,1,2,3,...,N-1
+    if N % 2 == 0:
+        t = np.linspace(0, 1, N, endpoint=False)
+        N += 1  # 保证window[N//2]采样点幅值为1
+    else:
+        t = np.linspace(0, 1, N, endpoint=True)
+    # -----------------------------------------------------------------------------#
+    # 检查窗函数,如需要
+    if check:
+        for key in window_func.keys():
+            window = window_func[key](n)
+            plot_spectrum(
+                t, window, title=key, ylim=(-1, 2), type="Type2", figsize=(10, 6)
+            )
+    # -----------------------------------------------------------------------------#
+    # 生成窗采样序列
+    if type not in window_func.keys():
+        raise ValueError("不支持的窗函数类型")
+    win_data = window_func[type](n)
+    # 进行零填充（如果指定了填充长度）
+    if padding is not None:
+        win_data = np.pad(
+            win_data, int(padding * length), mode="constant"
+        )  # 双边填充2*padding倍原始窗长
+
+    return win_data
 
 
 def ft(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
@@ -37,14 +108,10 @@ def ft(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
 
     # 绘制频谱
     if plot:
-        Amp= np.abs(fft_data)
-        Deg= np.rad2deg(np.angle(fft_data))
-        plot_spectrum(
-            f[: N // 2],Amp[: N // 2], xlabel="频率f/Hz", **kwargs
-        )
-        plot_spectrum(
-            f[: N // 2],Deg[: N // 2], xlabel="频率f/Hz", **kwargs
-        )
+        Amp = np.abs(fft_data)
+        Deg = np.rad2deg(np.angle(fft_data))
+        plot_spectrum(f[: N // 2], Amp[: N // 2], xlabel="频率f/Hz", **kwargs)
+        plot_spectrum(f[: N // 2], Deg[: N // 2], xlabel="频率f/Hz", **kwargs)
     return f, fft_data
 
 
