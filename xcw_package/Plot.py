@@ -1,11 +1,13 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
+
 plt.rcParams["font.sans-serif"] = ["SimHei"]  # 指定默认字体
 plt.rcParams["axes.unicode_minus"] = False  # 解决保存图像是负号'-'显示为方块的问题
 from matplotlib import font_manager
 
 from scipy.signal import argrelextrema
+
 # -----------------------------------------------------------------------------#
 # -------------------------------------------------------------------------#
 # ---------------------------------------------------------------------#
@@ -16,6 +18,8 @@ Plot.py: 绘图模块
         1. plot_spectrum: 绘制单自变量谱。
         2. plot_spectrogram: 绘制双自变量, 二维热力图。
 """
+
+
 def plot_spectrum(
     Axis: np.ndarray,
     data: np.ndarray,
@@ -133,6 +137,7 @@ def plot_spectrum(
     else:
         raise ValueError("不支持的绘图类型")
 
+
 def plot_spectrogram(
     Axis1: np.ndarray,
     Axis2: np.ndarray,
@@ -218,6 +223,7 @@ def plot_spectrogram(
         plt.savefig(title, "svg")
 
     plt.show()
+
 
 def plot_findpeak(
     Axis: np.ndarray,
