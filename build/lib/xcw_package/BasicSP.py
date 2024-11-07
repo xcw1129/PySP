@@ -8,6 +8,7 @@ from scipy.stats import gaussian_kde
 
 from typing import Optional, Callable
 
+from . import Plot
 from .Plot import plot_spectrum, plot_spectrogram
 
 # -----------------------------------------------------------------------------#

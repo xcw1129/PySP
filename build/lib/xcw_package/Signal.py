@@ -1,7 +1,8 @@
 import numpy as np
 
-from typing import Optional, Callable
+from typing import Optional
 
+from . import Plot
 from .Plot import plot_spectrum
 
 # -----------------------------------------------------------------------------#
@@ -13,6 +14,8 @@ Signal.py: 采样信号类
     - class: 
         1. Signal, 自带采样参数和基本信号预处理操作的信号类。
 """
+
+
 class Signal:
     """
     自带时间、频率采样信息的信号类
