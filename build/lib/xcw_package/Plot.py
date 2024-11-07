@@ -1,5 +1,6 @@
 import numpy as np
 
+Eps = np.finfo(float).eps
 import matplotlib.pyplot as plt
 
 plt.rcParams["font.sans-serif"] = ["SimHei"]  # 指定默认字体
@@ -60,12 +61,19 @@ def plot_spectrum(
         # 设置图像界面
         figsize = kwargs.get("figsize", (12, 5))
         plt.figure(figsize=figsize)
+        # 设置坐标轴尺度
         xscale = kwargs.get("xscale", "linear")
         yscale = kwargs.get("yscale", "linear")
         if xscale == "log":
-            Axis = np.log10(Axis)
+            if np.min(Axis) < 0:
+                raise ValueError("对数坐标轴下数据不能小于等于0")
+            else:
+                Axis = np.log10(Axis + Eps)
         if yscale == "log":
-            data = 20 * np.log10(data)
+            if np.min(data) <= 0:
+                raise ValueError("对数坐标轴下数据不能小于等于0")
+            else:
+                data = 20 * np.log10(data + Eps)
         plt.plot(Axis, data)
         # -------------------------------------------------------------------------#
         # 设置标题

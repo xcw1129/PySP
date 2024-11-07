@@ -109,9 +109,7 @@ def ft(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
     # 绘制频谱
     if plot:
         Amp = np.abs(fft_data)
-        Deg = np.rad2deg(np.angle(fft_data))
         plot_spectrum(f[: N // 2], Amp[: N // 2], xlabel="频率f/Hz", **kwargs)
-        plot_spectrum(f[: N // 2], Deg[: N // 2], xlabel="频率f/Hz", **kwargs)
     return f, fft_data
 
 
