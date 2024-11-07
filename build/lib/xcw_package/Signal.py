@@ -2,7 +2,6 @@ import numpy as np
 
 from typing import Optional
 
-from . import Plot
 from .Plot import plot_spectrum
 
 # -----------------------------------------------------------------------------#

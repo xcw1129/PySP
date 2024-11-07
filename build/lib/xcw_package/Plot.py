@@ -60,6 +60,12 @@ def plot_spectrum(
         # 设置图像界面
         figsize = kwargs.get("figsize", (12, 5))
         plt.figure(figsize=figsize)
+        xscale = kwargs.get("xscale", "linear")
+        yscale = kwargs.get("yscale", "linear")
+        if xscale == "log":
+            Axis = np.log10(Axis)
+        if yscale == "log":
+            data = 20 * np.log10(data)
         plt.plot(Axis, data)
         # -------------------------------------------------------------------------#
         # 设置标题
@@ -73,15 +79,11 @@ def plot_spectrum(
         plt.xlabel(xlabel)  # 标签
         xlim = kwargs.get("xlim", (None, None))
         plt.xlim(xlim[0], xlim[1])  # 刻度范围
-        xscale = kwargs.get("xscale", "linear")
-        plt.xscale(xscale)  # 刻度显示方式
         # 设置y轴参数
         ylabel = kwargs.get("ylabel", None)
         plt.ylabel(ylabel)  # 标签
         ylim = kwargs.get("ylim", (None, None))
         plt.ylim(ylim[0], ylim[1])  # 刻度范围
-        yscale = kwargs.get("yscale", "linear")
-        plt.yscale(yscale)  # 刻度显示方式
         # -------------------------------------------------------------------------#
         # 按指定格式保存图片并显示
         if savefig:
@@ -113,16 +115,12 @@ def plot_spectrum(
         plt.xlabel(xlabel, fontproperties=font1, fontsize=fontsize)  # 标签
         xlim = kwargs.get("xlim", (None, None))
         plt.xlim(xlim[0], xlim[1])  # 刻度范围
-        xscale = kwargs.get("xscale", "linear")
-        plt.xscale(xscale)  # 刻度显示方式
         plt.xticks(fontname=font2)  # 设置x轴刻度字体类型
         # 设置y轴参数
         ylabel = kwargs.get("ylabel", None)
         plt.ylabel(ylabel, fontproperties=font1, fontsize=fontsize)  # 标签
         ylim = kwargs.get("ylim", (None, None))
         plt.ylim(ylim[0], ylim[1])  # 刻度范围
-        yscale = kwargs.get("yscale", "linear")
-        plt.yscale(yscale)  # 刻度显示方式
         plt.yticks(fontname=font2)  # 设置y轴刻度字体类型
         # 设置图像刻度字体大小和方向
         plt.tick_params(labelsize=15)
@@ -203,16 +201,12 @@ def plot_spectrogram(
     plt.xlabel(xlabel)  # 标签
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
-    xscale = kwargs.get("xscale", "linear")
-    plt.xscale(xscale)  # 刻度显示方式
 
     # 设置y轴参数
     ylabel = kwargs.get("ylabel", None)
     plt.ylabel(ylabel)  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
-    yscale = kwargs.get("yscale", "linear")
-    plt.yscale(yscale)  # 刻度显示方式
 
     # 设置谱图强度标签
     colorbar = kwargs.get("colorbar", None)
@@ -295,16 +289,12 @@ def plot_findpeak(
     plt.xlabel(xlabel)  # 标签
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
-    xscale = kwargs.get("xscale", "linear")
-    plt.xscale(xscale)  # 刻度显示方式
 
     # 设置 y 轴参数
     ylabel = kwargs.get("ylabel", None)
     plt.ylabel(ylabel)  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
-    yscale = kwargs.get("yscale", "linear")
-    plt.yscale(yscale)  # 刻度显示方式
 
     # 保存 SVG 图片
     if savefig:
