@@ -1,19 +1,17 @@
+# PYTHON基础库
+from typing import Optional, Callable  # 类型提示
+
+# 数值计算库
 import numpy as np
 
-from scipy.signal import hilbert
-from scipy.signal import check_NOLA
-from scipy.fftpack import fft, ifft
-from scipy.stats import gaussian_kde
+# 信号处理库
+from scipy import signal  # 信号计算
+from scipy import fft  # 傅里叶变换
+from scipy import stats  # 统计分析
 
+# 自定义库
+from .Plot import plot_spectrum, plot_spectrogram  # 一维、二维绘图
 
-from typing import Optional, Callable
-
-from .Plot import plot_spectrum, plot_spectrogram
-
-# -----------------------------------------------------------------------------#
-# -------------------------------------------------------------------------#
-# ---------------------------------------------------------------------#
-# -----------------------------------------------------------------#
 """
 Basic.py: 基础信号分析及处理模块
     - function:
@@ -28,6 +26,10 @@ Basic.py: 基础信号分析及处理模块
 """
 
 
+# --------------------------------------------------------------------------------------------#
+# --## ---------------------------------------------------------------------------------------#
+# ------## -----------------------------------------------------------------------------------#
+# ----------## -------------------------------------------------------------------------------#
 def window(
     type: str,
     length: int,
@@ -137,7 +139,7 @@ def pdf(data: np.ndarray, samples: int, plot: bool = False, **Kwargs) -> np.ndar
     """
 
     # 进行核密度估计
-    density = gaussian_kde(data)  # 核密度估计
+    density = stats.gaussian_kde(data)  # 核密度估计
 
     # 生成幅值域采样点
     amplitude = np.linspace(min(data), max(data), samples)  # 幅值域采样密度
@@ -292,7 +294,7 @@ def iStft(
         raise ValueError(f"窗口长度 {len(window)} 与 FFT 矩阵的帧长度 {nperseg} 不匹配")
 
     # 检查窗口是否满足 NOLA 条件。因为默认ISTFT后归一化，所以不检查COLA条件
-    if not check_NOLA(window, nperseg, nperseg - nhop):
+    if not signal.check_NOLA(window, nperseg, nperseg - nhop):
         raise ValueError("窗口函数不满足非零重叠加 (NOLA) 条件，无法完整重构")
 
     # 初始化重构信号的长度
@@ -303,7 +305,7 @@ def iStft(
     # 按帧顺序进行IDFT并叠加
     for i in range(num_frames):
         # 对单帧数据进行重构
-        time_segment = np.real(ifft(matrix[i])) * nperseg  # 乘以 nperseg 以还原缩放
+        time_segment = np.real(fft.ifft(matrix[i])) * nperseg  # 乘以 nperseg 以还原缩放
         # # ISTFT过程与STFT过程进行相同加窗操作
         time_segment *= window
         # 计算当前帧时间，保证正确叠加
@@ -328,7 +330,7 @@ def iStft(
 
 def HTenvelope(data: np.ndarray, fs: float, plot=False, **kwargs) -> np.ndarray:
     N = len(data)
-    analyze = hilbert(data)
+    analyze = signal.hilbert(data)
     magnitude = np.abs(analyze)  # 解析信号幅值，即原信号包络
     magnitude -= np.mean(magnitude)  # 去除直流分量
     FT = np.abs(fft(magnitude)) / N
