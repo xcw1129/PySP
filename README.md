@@ -27,12 +27,27 @@
 
 - `window`：生成窗函数序列。
 - `ft`：计算信号的归一化傅里叶变换频谱。
-- `pdf`：计算概率率密度函数 (PDF)，并按照指定样本数生成幅值域采样点。
+- `pdf`：计算概率密度函数 (PDF)，并按照指定样本数生成幅值域采样点。
 - `Stft`：短时傅里叶变换 (STFT)，用于考察信号在固定分辨率的时频面上分布。
 - `iStft`：逆短时傅里叶变换 (ISTFT)，用于从频域信号重构时域信号。
 - `HTenvelope`：计算信号的希尔伯特变换包络。
 - `autocorr`：计算信号的自相关函数。
 - `PSD`：计算信号的功率谱密度。
+
+## Cep_Analysis.py
+
+该文件实现了倒谱分析算法。
+
+- `Cep_Analysis` 类：
+  - `Cep_Real`：计算实数倒谱。
+  - `Cep_Power`：计算功率倒谱。
+  - `Cep_Complex`：计算复数倒谱。
+  - `Cep_Reconstruct`：根据输入的复倒谱重构频谱。
+  - `Cep_Analytic`：计算解析倒谱。
+  - `Cep_Zoom`：计算Zoom-FFT, 并据此计算解析倒谱。
+  - `Enco_detect`：通过倒谱检测回声信号。
+  - `Liftering`：对复数倒谱进行梳状滤波。
+  - `plot_Cep_withline`：带有等间隔谱线的倒谱绘制。
 
 ## EMD_Analysis.py
 
@@ -60,12 +75,3 @@
 该文件实现了谱峭度分析算法。
 
 - `stft_SKs`：计算短时傅里叶变换 (STFT) 的谱峭度。
-
-## Cep_Analysis.py
-
-该文件实现了倒谱分析算法。
-
-- `Cepstrum`：计算信号的倒谱。
-- `notch_filter`：对信号进行陷波滤波。
-- `lifter`：对信号进行升倒谱处理。
-- `Pre_Whitening`：对信号进行预白化处理。
