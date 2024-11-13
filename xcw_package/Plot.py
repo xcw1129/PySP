@@ -63,10 +63,10 @@ def plot_spectrum(
             f"Axis={len(Axis)}和data={len(data)}的长度不一致"
         )  # 数据长度检查
     # 指定绘图风格
-    type = kwargs.get("type", "Type1")
+    plot_type = kwargs.get("plot_type", "Type1")
     # ---------------------------------------------------------------------------------------#
     # 绘图风格1
-    if type == "Type1":
+    if plot_type == "Type1":
         # 设置图像界面
         figsize = kwargs.get("figsize", (12, 5))
         plt.figure(figsize=figsize)
@@ -108,7 +108,7 @@ def plot_spectrum(
         plt.show()
     # ---------------------------------------------------------------------------------------#
     # 绘图风格2
-    elif type == "Type2":
+    elif plot_type == "Type2":
         # 设置图像界面
         figsize = kwargs.get("figsize", (12, 8))  # 大小
         color = kwargs.get("color", "blue")  # 线条颜色

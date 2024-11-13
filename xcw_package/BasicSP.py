@@ -106,7 +106,7 @@ def ft(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
     """
     N = len(data)
     f = np.arange(0, N) * fs / N
-    fft_data = np.array(fft(data)) / N  # 假设信号为周期或随机等非能量信号
+    fft_data = np.array(fft.fft(data)) / N  # 假设信号为周期或随机等非能量信号
 
     # 绘制频谱
     if plot:

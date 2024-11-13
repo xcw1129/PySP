@@ -142,7 +142,7 @@ class Signal:
         """
         绘制信号的时域图。
         """
-        plot_spectrum(self.t_values, self.data, xlabel="时间t/s", **kwargs)
+        plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s", **kwargs)
 
     # ---------------------------------------------------------------------------------------#
     def resample(
