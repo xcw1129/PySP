@@ -228,7 +228,7 @@ def Stft(
         data_seg = data_seg * window
 
         # 计算S(t=i*dt,f)
-        fft_data = (fft(data_seg)) / nperseg
+        fft_data = (fft.fft(data_seg)) / nperseg
         fft_matrix[i // nhop, :] = fft_data
 
     # 生成时间轴和频率轴
