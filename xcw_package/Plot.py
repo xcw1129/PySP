@@ -16,8 +16,9 @@ from matplotlib import font_manager  # 字体管理器
 """
 Plot.py: 绘图模块
     - function:
-        1. plot_spectrum: 绘制单自变量谱。
+        1. plot_spectrum: 绘制单自变量，一维连线谱。
         2. plot_spectrogram: 绘制双自变量, 二维热力图。
+        3. plot_findpeak: 绘制带峰值指示的，一维连线谱。
 """
 
 
@@ -150,6 +151,8 @@ def plot_spectrum(
 
     else:
         raise ValueError("不支持的绘图类型")
+
+
 # --------------------------------------------------------------------------------------------#
 def plot_spectrogram(
     Axis1: np.ndarray,
@@ -232,7 +235,10 @@ def plot_spectrogram(
     if savefig:
         plt.savefig(title + "svg", format="svg")
     plt.show()
+
+
 # --------------------------------------------------------------------------------------------#
+
 
 def plot_findpeak(
     Axis: np.ndarray,
@@ -275,16 +281,16 @@ def plot_findpeak(
         )  # 数据长度检查
     # ---------------------------------------------------------------------------------------#
     # 寻找峰值
-    peak_idx,peak_params = signal.find_peaks(data,height=threshold)
+    peak_idx, peak_params = signal.find_peaks(data, height=threshold)
     peak_height = peak_params["peak_heights"]
     peak_axis = Axis[peak_idx]
-    peaks=zip(peak_axis,peak_height)# 组成峰值坐标
+    peaks = zip(peak_axis, peak_height)  # 组成峰值坐标
     # ---------------------------------------------------------------------------------------#
     # 绘图指示峰值
     # 设置图像大小
     figsize = kwargs.get("figsize", (12, 5))
     plt.figure(figsize=figsize)
-    plt.plot(Axis, data)# 绘制原始数据
+    plt.plot(Axis, data)  # 绘制原始数据
     # 标注峰值
     for val, amp in peaks:
         plt.annotate(
@@ -314,4 +320,6 @@ def plot_findpeak(
     if savefig:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.show()
+
+
 # --------------------------------------------------------------------------------------------#
