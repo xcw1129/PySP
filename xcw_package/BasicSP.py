@@ -80,8 +80,8 @@ def window(
     # 进行零填充（如果指定了填充长度）
     if padding is not None:
         win_data = np.pad(
-            win_data, int(padding * length), mode="constant"
-        )  # 双边填充2*padding倍原始窗长
+            win_data, padding, mode="constant"
+        )  # 双边各填充padding零数据点
 
     return win_data
 
@@ -199,8 +199,6 @@ def Stft(
     nperseg = len(window)
     if nperseg > N:
         raise ValueError("窗长大于信号长度,无法绘制STFT图")
-    elif nperseg % 2 == 0:
-        raise ValueError(f"窗长采样点数{nperseg},为偶数,以奇数为宜")
 
     seg_index = np.arange(0, N, nhop)  # 时间轴离散索引
 
