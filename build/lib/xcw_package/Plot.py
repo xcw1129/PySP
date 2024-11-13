@@ -49,10 +49,10 @@ def plot_spectrum(
         Axis和data的长度不一致。
     """
     # 检查数据维度
-    if data.ndim != 1:
-        raise ValueError("data数据维度不为1,无法绘制峰值图")
+    if (data.ndim != 1) or (Axis.ndim != 1):
+        raise ValueError("输入数据维度不为1,无法绘制峰值图")
     elif len(Axis) != len(data):
-        raise ValueError("Axis和data的长度不一致")
+        raise ValueError(f"Axis={len(Axis)}和data={len(data)}的长度不一致")
     # 指定绘图风格
     type = kwargs.get("type", "Type1")
     # -----------------------------------------------------------------------------#
@@ -79,7 +79,7 @@ def plot_spectrum(
         # 设置标题
         title = kwargs.get("title", None)
         plt.title(title)
-        plt.grid(axis="x", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
+        plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
         # -------------------------------------------------------------------------#
         # 设置坐标轴参数
         # 设置x轴参数
