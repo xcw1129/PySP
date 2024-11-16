@@ -88,10 +88,16 @@ def window(
     # ---------------------------------------------------------------------------------------#
     # 检查窗函数,如需要
     if check:
-        num_window = len(window_func)
-        fig, ax = plt.subplots(num_window, 1, figsize=(10, 6 * num_window))
+        window_num = len(window_func) - 1
+        rows = window_num // 2 if len(window_func) % 2 == 0 else window_num // 2 + 1
+        cols = 2
+        fig, ax = plt.subplots(rows, cols, figsize=(10, 5 * rows))
+        ax = ax.flatten() if isinstance(ax, np.ndarray) else [ax]
         for ax, (key, func) in zip(ax, window_func.items()):
+            if key == "自定义窗":
+                continue
             ax.plot(n, func(n))
+            ax.set_ylim(0, 1.1)
             ax.set_title(key)
         plt.tight_layout()
         plt.show()

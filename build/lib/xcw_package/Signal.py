@@ -62,8 +62,11 @@ class Signal:
     resample()
         对信号进行重采样
     """
+
     @Check_Params(("data", 1))
-    def __init__(self, data: np.ndarray, label: str, dt: float = -1, fs: int = -1, T: float = -1):
+    def __init__(
+        self, data: np.ndarray, label: str, dt: float = -1, fs: int = -1, T: float = -1
+    ):
         self.data = data
         self.N = len(data)
         if dt * fs * T <= 0:  # 同时指定零个、两个参数，或指定非正参数
@@ -103,14 +106,14 @@ class Signal:
         self.label = label
 
     # ---------------------------------------------------------------------------------------#
-    def __array__(self)->np.ndarray:
+    def __array__(self) -> np.ndarray:
         """
         返回信号数据数组, 用于在传递给NumPy函数时自动调用
         """
         return self.data
 
     # ---------------------------------------------------------------------------------------#
-    def info(self)->dict:
+    def info(self) -> dict:
         """
         输出信号的采样信息
 
@@ -134,11 +137,13 @@ class Signal:
         return info
 
     # ---------------------------------------------------------------------------------------#
-    def plot(self, **kwargs)->None:
+    def plot(self, **kwargs) -> None:
         """
         绘制信号的时域图。
         """
-        plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s",title=f"{self.label}时域波形图", **kwargs)
+        Title = kwargs.get("title", f"{self.label}时域波形图")
+        kwargs.pop("title", None)
+        plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s", title=Title, **kwargs)
 
     # ---------------------------------------------------------------------------------------#
     def resample(
@@ -182,6 +187,6 @@ class Signal:
         # 对信号进行重采样
         resampled_data = self.data[start_n::ration][:resample_N]  # 重采样
         resampled_Sig = Signal(
-            resampled_data,label="下采样"+self.label, dt=ration * self.dt
+            resampled_data, label="下采样" + self.label, dt=ration * self.dt
         )  # 由于离散信号，实际采样率为fs/ration
         return resampled_Sig

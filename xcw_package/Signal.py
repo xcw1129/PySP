@@ -141,8 +141,9 @@ class Signal:
         """
         绘制信号的时域图。
         """
-        title = kwargs.get("title", f"{self.label}时域波形图")
-        plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s", title=title, **kwargs)
+        Title = kwargs.get("title", f"{self.label}时域波形图")
+        kwargs.pop("title", None)
+        plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s", title=Title, **kwargs)
 
     # ---------------------------------------------------------------------------------------#
     def resample(

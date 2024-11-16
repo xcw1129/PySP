@@ -36,7 +36,7 @@ print("测试Plot.py")
 n=np.arange(0,100)
 Plot.plot_spectrum(n, random.randn(len(n)), title="Plot.plot_spectrum()")
 print("\tPlot.plot_spectrum()测试通过")
-Plot.plot_spectrogram(n,n, random.randn(len(n),len(n)), title="Plot.plot_spectrogram()")
+Plot.plot_spectrogram(n,n, random.randn(len(n),len(n)),figsize=(10,8), title="Plot.plot_spectrogram()")
 print("\tPlot.plot_spectrogram()测试通过")
 Plot.plot_findpeak(n, random.randn(len(n)),thre=1, title="Plot.plot_findpeak()")
 print("\tPlot.plot_findpeak()测试通过")
@@ -46,9 +46,9 @@ print("Plot.py测试通过\n\n")
 print("测试Signal.py")
 Sig_test = Signal.Signal(data=Data, label="Test信号", fs=12000)
 print("\tSignal()测试通过")
-Sig_test.plot()
+Sig_test.plot(title="Signal.plot()")
 print("\tSignal.plot()测试通过")
-res=Sig_test.resample(new_fs=1000, t0=0.1, t1=0.5).plot(title="Signal.resample()")
+res=Sig_test.resample(down_fs=1000, t0=0.1, t1=0.5).plot(title="Signal.resample()")
 print("\tSignal.resample()测试通过")
 print("Signal.py测试通过\n\n")
 
@@ -61,7 +61,7 @@ print("\tBasicSP.ft()测试通过")
 res = BasicSP.Stft(
     data=Sig_test.data,
     fs=Sig_test.fs,
-    window=BasicSP.window("汉宁窗", num=512, padding=128),
+    window=BasicSP.window("汉宁窗", num=512, padding=128)[-1],
     nhop=256,
     plot=True,
     title="BasicSP.Stft()",
@@ -70,7 +70,7 @@ print("\tBasicSP.Stft()测试通过")
 res=BasicSP.iStft(
     matrix=res[2],
     fs=Sig_test.fs,
-    window=BasicSP.window("汉宁窗", num=512, padding=128),
+    window=BasicSP.window("汉宁窗", num=512, padding=128)[-1],
     nhop=256,
     plot=True,
     title="BasicSP.iStft()",

@@ -177,7 +177,7 @@ def plot_spectrogram(
         raise ValueError("Axis1、Axis2与data的对应轴长度不一致")  # 数据长度检查
     # ---------------------------------------------------------------------------------------#
     # 设置图像界面
-    figsize = kwargs.get("figsize", (8, 8))
+    figsize = kwargs.get("figsize", (10, 8))
     plt.figure(figsize=figsize)
     # 设置热力图绘图参数
     aspect = kwargs.get("aspect", "auto")
