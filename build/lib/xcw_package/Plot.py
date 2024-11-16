@@ -1,31 +1,51 @@
-# 数值计算库
-import numpy as np
-
-Eps = np.finfo(float).eps  # 机器精度
-
-# 信号处理库
-from scipy import signal
-
-# 绘图库
-import matplotlib.pyplot as plt
-
-plt.rcParams["font.sans-serif"] = ["SimHei"]  # 指定默认字体
-plt.rcParams["axes.unicode_minus"] = False  # 解决保存图像是负号'-'显示为方块的问题
-from matplotlib import font_manager  # 字体管理器
-
 """
-Plot.py: 绘图模块
+# Plot 
+信号处理常用可视化绘图方法模块
+
+## 内容
     - function:
-        1. plot_spectrum: 绘制单自变量，一维连线谱。
-        2. plot_spectrogram: 绘制双自变量, 二维热力图。
-        3. plot_findpeak: 绘制带峰值指示的，一维连线谱。
+        1. plot_spectrum: 根据输入的两个一维数据绘制Plot型谱
+        2. plot_spectrogram: 根据输入的两个一维数据和一个二维数据绘制imshow型热力谱图
+        3. plot_findpeak: 寻找输入的一维数据中的峰值, 并绘制plot型峰值谱
 """
+
+from .dependencies import np
+from .dependencies import plt
+from .dependencies import font_manager
+from .dependencies import signal
+
+from .decorators import Check_Params
+
+from .dependencies import Eps
 
 
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
+def __T2_log(data:np.ndarray,eps:float)->np.ndarray:
+    """
+    对输入的数据进行对数变换
+    
+    参数:
+    --------
+    data : np.ndarray
+        输入数据数组
+    eps : float
+        避免对数计算错误的微小值
+    
+    返回:
+    --------
+    np.ndarray
+        对数变换后的数据
+    """
+    if np.min(data)<=0:
+        raise ValueError("对数坐标轴下数据不能小于等于0")
+    return np.log10(data+eps)
+
+
+# --------------------------------------------------------------------------------------------#
+@Check_Params(("Axis", 1), ("data", 1))
 def plot_spectrum(
     Axis: np.ndarray,
     data: np.ndarray,
@@ -33,32 +53,21 @@ def plot_spectrum(
     **kwargs,
 ) -> None:
     """
-    根据轴和输入数据绘制单变量谱, 默认为时序谱。
+    根据输入的两个一维数据绘制Plot型谱
 
-    参数
+    参数: 
     ----------
     Axis : np.ndarray
-        横轴数据。
+        横轴数据
     data : np.ndarray
-        纵轴数据。
+        纵轴数据
     savefig : bool, 可选
-        是否保存svg图片, 默认不保存。
+        是否将绘图结果保存为图片, 默认不保存
     type : str, 可选
-        绘图风格, 默认为 Type1。
-
-    异常
-    ------
-    ValueError
-        data数据维度不为1, 无法绘制谱图。
-    ValueError
-        Axis和data的长度不一致。
+        绘图风格, 默认为 Type1
     """
     # 检查数据
-    if (type(data) != np.ndarray) or (type(Axis) != np.ndarray):
-        raise ValueError("输入数据类型不为array数组")  # 数据类型检查
-    elif (data.ndim != 1) or (Axis.ndim != 1):
-        raise ValueError("输入数据维度不为1")  # 数据维度检查
-    elif len(Axis) != len(data):
+    if len(Axis) != len(data):
         raise ValueError(
             f"Axis={len(Axis)}和data={len(data)}的长度不一致"
         )  # 数据长度检查
@@ -74,20 +83,14 @@ def plot_spectrum(
         xscale = kwargs.get("xscale", "linear")
         yscale = kwargs.get("yscale", "linear")
         if xscale == "log":
-            if np.min(Axis) < 0:
-                raise ValueError("对数坐标轴下数据不能小于等于0")
-            else:
-                Axis = np.log10(Axis + Eps)
+            Axis = __T2_log(Axis,Eps)
         if yscale == "log":
-            if np.min(data) <= 0:
-                raise ValueError("对数坐标轴下数据不能小于等于0")
-            else:
-                data = 20 * np.log10(data + Eps)
+            data = 20*__T2_log(data,Eps)
         plt.plot(Axis, data)
-        # -----------------------------------------------------------------------------------#
         # 设置标题
         title = kwargs.get("title", None)
         plt.title(title)
+        # 设置图像栅格
         plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
         # -----------------------------------------------------------------------------------#
         # 设置坐标轴参数
@@ -115,30 +118,23 @@ def plot_spectrum(
         linewidth = kwargs.get("linewidth", 1)  # 线宽
         plt.figure(figsize=figsize)
         plt.plot(Axis, data, color=color, linewidth=linewidth)
-        # -----------------------------------------------------------------------------------#
-        # 设置图像参数
-        font1 = font_manager.FontProperties(family="SimSun")  # 预设中文字体
-        font2 = font_manager.FontProperties(family="Times New Roman")  # 预设英文字体
         # 设置标题
         title = kwargs.get("title", None)
-        plt.title(title + "\n", fontproperties=font1, fontsize=23)  # 设置图像标题
+        plt.title(title + "\n", fontsize=23)  # 设置图像标题
         # 设置图像栅格
         plt.grid(linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
         # -----------------------------------------------------------------------------------#
         # 设置坐标轴参数
-        fontsize = kwargs.get("fontsize", 18)
         # 设置x轴参数
         xlabel = kwargs.get("xlabel", None)
-        plt.xlabel(xlabel, fontproperties=font1, fontsize=fontsize)  # 标签
+        plt.xlabel(xlabel, fontsize=18)  # 标签
         xlim = kwargs.get("xlim", (None, None))
         plt.xlim(xlim[0], xlim[1])  # 刻度范围
-        plt.xticks(fontname=font2)  # 设置x轴刻度字体类型
         # 设置y轴参数
         ylabel = kwargs.get("ylabel", None)
-        plt.ylabel(ylabel, fontproperties=font1, fontsize=fontsize)  # 标签
+        plt.ylabel(ylabel, fontsize=18)  # 标签
         ylim = kwargs.get("ylim", (None, None))
         plt.ylim(ylim[0], ylim[1])  # 刻度范围
-        plt.yticks(fontname=font2)  # 设置y轴刻度字体类型
         # 设置图像刻度字体大小和方向
         plt.tick_params(labelsize=15)
         # -----------------------------------------------------------------------------------#
@@ -154,47 +150,33 @@ def plot_spectrum(
 
 
 # --------------------------------------------------------------------------------------------#
+@Check_Params(("Axis1", 1), ("Axis2", 1), ("data2D", 2))
 def plot_spectrogram(
     Axis1: np.ndarray,
     Axis2: np.ndarray,
-    data: np.ndarray,
+    data2D: np.ndarray,
     savefig: bool = False,
     **kwargs,
 ) -> None:
     """
-    根据输入的二维数据绘制热力谱图。
+    根据输入的两个一维数据和一个二维数据绘制imshow型热力谱图
 
-    参数：
+    参数: 
     --------
     Axis1 : np.ndarray
-        横轴坐标数组。
+        横轴数据
     Axis2 : np.ndarray
-        纵轴坐标数组。
-    data : np.ndarray
-        二维数据。
+        纵轴数据
+    data2D : np.ndarray
+        横纵轴对应的二维数据
     savefig : bool, 可选
-        是否保存svg图片, 默认不保存。
-
-    异常：
-    --------
-    ValueError
-        如果data数据维度不为2, 或者Axis1和Axis2与data的长度不一致, 将抛出此异常。
+        是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
-    if (
-        (type(data) != np.ndarray)
-        or (type(Axis1) != np.ndarray)
-        or (type(Axis2) != np.ndarray)
-    ):
-        raise TypeError("输入数据类型不为array数组")  # 数据类型检查
-    data_shape = data.shape
-    if (data.ndim != 2) or (Axis1.ndim != 1) or (Axis2.ndim != 1):
-        raise TypeError("输入数据维度不符合绘图要求")  # 数据维度检查
-    elif (len(Axis1) != data_shape[0]) or (len(Axis2) != data_shape[1]):
-        raise ValueError("Axis1和Axis2与data的对应轴长度不一致")  # 数据长度检查
+    if (len(Axis1) != data2D.shape[0]) or (len(Axis2) != data2D.shape[1]):
+        raise ValueError("Axis1、Axis2与data的对应轴长度不一致")  # 数据长度检查
     # ---------------------------------------------------------------------------------------#
-    # 设置绘图区域
-    # 设置图形大小
+    # 设置图像界面
     figsize = kwargs.get("figsize", (8, 8))
     plt.figure(figsize=figsize)
     # 设置热力图绘图参数
@@ -204,7 +186,7 @@ def plot_spectrogram(
     vmin = kwargs.get("vmin", None)
     vmax = kwargs.get("vmax", None)
     plt.imshow(
-        data.T,
+        data2D.T,
         aspect=aspect,
         origin=origin,
         cmap=cmap,
@@ -238,37 +220,27 @@ def plot_spectrogram(
 
 
 # --------------------------------------------------------------------------------------------#
-
-
+@Check_Params(("Axis", 1), ("data", 1))
 def plot_findpeak(
     Axis: np.ndarray,
     data: np.ndarray,
-    threshold: float,
+    thre: float,
     savefig: bool = False,
     **kwargs,
 ) -> None:
     """
-    寻找输入的一维数据中的峰值并绘制峰值图。
+    寻找输入的一维数据中的峰值, 并绘制plot型峰值谱
 
     参数：
     --------
     Axis : np.ndarray
-        横轴坐标数组。
+        横轴数据
     data : np.ndarray
-        一维数据。
-    threshold : float
-        峰值阈值。
+        纵轴数据
+    thre : float
+        峰值阈值
     savefig : bool, 可选
-        是否保存为 SVG 图片, 默认不保存。
-    **kwargs
-        其他关键字参数, 用于绘图设置。
-
-    异常：
-    -------
-    ValueError
-        data 数据维度不为 1, 无法绘制峰值图。
-    ValueError
-        Axis 和 data 的长度不一致。
+        是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
     if (type(data) != np.ndarray) or (type(Axis) != np.ndarray):
@@ -281,17 +253,25 @@ def plot_findpeak(
         )  # 数据长度检查
     # ---------------------------------------------------------------------------------------#
     # 寻找峰值
-    peak_idx, peak_params = signal.find_peaks(data, height=threshold)
+    peak_idx, peak_params = signal.find_peaks(data, height=thre)
     peak_height = peak_params["peak_heights"]
     peak_axis = Axis[peak_idx]
-    peaks = zip(peak_axis, peak_height)  # 组成峰值坐标
     # ---------------------------------------------------------------------------------------#
-    # 绘图指示峰值
-    # 设置图像大小
+    # 设置图像界面
     figsize = kwargs.get("figsize", (12, 5))
     plt.figure(figsize=figsize)
+    # 设置坐标轴尺度
+    xscale = kwargs.get("xscale", "linear")
+    yscale = kwargs.get("yscale", "linear")
+    if xscale == "log":
+        Axis = __T2_log(Axis,Eps)
+        peak_axis = __T2_log(peak_axis,Eps)
+    if yscale == "log":
+        data = 20*__T2_log(data,Eps)
+        peak_height = 20*__T2_log(peak_height,Eps)
     plt.plot(Axis, data)  # 绘制原始数据
     # 标注峰值
+    peaks=zip(peak_axis,peak_height)
     for val, amp in peaks:
         plt.annotate(
             f"{val:.1f}",
@@ -320,6 +300,3 @@ def plot_findpeak(
     if savefig:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.show()
-
-
-# --------------------------------------------------------------------------------------------#

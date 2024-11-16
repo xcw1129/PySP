@@ -1,29 +1,25 @@
-# PYTHON基础库
-from typing import Optional, Callable  # 类型提示
-
-# 数值计算库
-import numpy as np
-
-# 信号处理库
-from scipy import signal  # 信号计算
-from scipy import fft  # 傅里叶变换
-from scipy import stats  # 统计分析
-
-# 自定义库
-from .Plot import plot_spectrum, plot_spectrogram  # 一维、二维绘图
-
 """
-Basic.py: 基础信号分析及处理模块
-    - function:
+# Basic
+基础信号分析及处理模块
+
+## 内容
+    - function: 
         1. window: 生成窗函数序列
         2. ft: 计算信号的归一化傅里叶变换频谱
-        3. pdf: 计算概率密度函数 (PDF)
-        4. Stft: 短时傅里叶变换 (STFT)
-        5. iStft: 逆短时傅里叶变换 (ISTFT)
-        6. HTenvelope: 计算信号包络
-        7. autocorr: 计算自相关函数
-        8. PSD: 计算功率谱密度
+        3. Stft: 短时傅里叶变换 (STFT)
+        4. iStft: 逆短时傅里叶变换 (ISTFT)
 """
+
+from .dependencies import Optional, Callable
+from .dependencies import np
+from .dependencies import plt
+from .dependencies import signal
+from .dependencies import fft
+from .dependencies import stats
+
+from .decorators import Check_Params
+
+from .Plot import plot_spectrum, plot_spectrogram
 
 
 # --------------------------------------------------------------------------------------------#
@@ -32,14 +28,39 @@ Basic.py: 基础信号分析及处理模块
 # ----------## -------------------------------------------------------------------------------#
 def window(
     type: str,
-    length: int,
+    num: int,
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
     check: bool = False,
 ) -> np.ndarray:
+    """
+    生成各类窗函数整周期采样序列
+
+    参数:
+    --------
+    type : str
+        窗函数类型, 可选: "矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗" 和 "自定义窗"
+    num : int
+        采样点数
+    func : Callable, 可选
+        自定义窗函数, 默认不使用
+    padding : int, 可选
+        窗序列双边各零填充点数, 默认不填充
+    check : bool, 可选
+        绘制所有自带窗函数图形, 以检查窗函数形状, 默认不检查
+
+    返回:
+    --------
+    Amp_scale : float
+        窗函数幅值归一化系数
+    Engy_scale : float
+        窗函数能量归一化系数
+    win_data : np.ndarray
+        窗函数采样序列
+    """
     # 定义窗函数
-    N = length
-    window_func = {}
+    N = num
+    window_func = {}  # 标准窗函数表达式字典
     window_func["矩形窗"] = lambda n: np.ones(len(n))
     window_func["汉宁窗"] = lambda n: 0.5 * (1 - np.cos(2 * np.pi * n / (N - 1)))
     window_func["海明窗"] = lambda n: 0.54 - 0.46 * np.cos(2 * np.pi * n / (N - 1))
@@ -52,7 +73,7 @@ def window(
         + 0.08 * np.cos(4 * np.pi * n / (N - 1))
     )
     window_func["自定义窗"] = func
-    # -----------------------------------------------------------------------------#
+    # ---------------------------------------------------------------------------------------#
     # 生成采样点
     if N < 1:
         return np.array([])
@@ -64,94 +85,104 @@ def window(
         N += 1  # 保证window[N//2]采样点幅值为1
     else:
         t = np.linspace(0, 1, N, endpoint=True)
-    # -----------------------------------------------------------------------------#
+    # ---------------------------------------------------------------------------------------#
     # 检查窗函数,如需要
     if check:
-        for key in window_func.keys():
-            window = window_func[key](n)
-            plot_spectrum(
-                t, window, title=key, ylim=(-1, 2), type="Type2", figsize=(10, 6)
-            )
-    # -----------------------------------------------------------------------------#
+        num_window = len(window_func)
+        fig, ax = plt.subplots(num_window, 1, figsize=(10, 6 * num_window))
+        for ax, (key, func) in zip(ax, window_func.items()):
+            ax.plot(n, func(n))
+            ax.set_title(key)
+        plt.tight_layout()
+        plt.show()
+    # ---------------------------------------------------------------------------------------#
     # 生成窗采样序列
     if type not in window_func.keys():
         raise ValueError("不支持的窗函数类型")
     win_data = window_func[type](n)
+    Amp_scale = 1 / np.mean(win_data)  # 窗函数幅值归一化
+    Engy_scale = 1 / np.mean(np.square(win_data))  # 窗函数能量归一化
     # 进行零填充（如果指定了填充长度）
     if padding is not None:
         win_data = np.pad(
             win_data, padding, mode="constant"
         )  # 双边各填充padding零数据点
+    return Amp_scale, Engy_scale, win_data
 
-    return win_data
 
-
-def ft(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
+# --------------------------------------------------------------------------------------------#
+@Check_Params(("data", 1))
+def ft(
+    data: np.ndarray, fs: float, win: str = "矩形窗", plot: bool = False, **kwargs
+) -> np.ndarray:
     """
-    计算信号的归一化傅里叶变换频谱
+    计算信号的傅里叶级数谱
 
-    Parameters
+    参数:
     ----------
     data : np.ndarray
         输入信号
     fs : float
-        采样率
+        信号采样率
+    window : str
+        加窗类型, 默认为矩形窗
     plot : bool, optional
-        是否绘制0~fN的频谱, by default False
+        是否绘制0~fN的频谱, 默认不绘制
 
-    Returns
+    返回:
     -------
-    (np.ndarray,np.ndarray)
-        频率轴,频谱数据
+    fft_data : np.ndarray
+        输入信号的傅里叶级数频谱
     """
     N = len(data)
-    f = np.arange(0, N) * fs / N
-    fft_data = np.array(fft.fft(data)) / N  # 假设信号为周期或随机等非能量信号
-
+    scale, _, win_data = window(type=win, num=N)
+    windowed_data = data * win_data  # 加窗
+    fft_data = fft.fft(windowed_data) / N * scale  # 假设信号为功率信号
     # 绘制频谱
     if plot:
         Amp = np.abs(fft_data)
-        plot_spectrum(f[: N // 2], Amp[: N // 2], xlabel="频率f/Hz", **kwargs)
-    return f, fft_data
+        f_Axis = (np.linspace(0, 1, N, endpoint=False) * fs)[: N // 2]
+        plot_spectrum(f_Axis, Amp[: len(f_Axis)], xlabel="频率f/Hz", **kwargs)
+    return fft_data
 
 
-def pdf(data: np.ndarray, samples: int, plot: bool = False, **Kwargs) -> np.ndarray:
-    """
-    计算概率密度函数 (PDF),并按照指定样本数生成幅值域采样点。
+# def pdf(data: np.ndarray, samples: int, plot: bool = False, **Kwargs) -> np.ndarray:
+#     """
+#     计算概率密度函数 (PDF),并按照指定样本数生成幅值域采样点。
 
-    参数：
-    --------
-    data : np.ndarray
-        输入数据数组，用于计算概率密度。
-    samples : int
-        pdf幅值域采样点数。
-    plot : bool, 可选
-        是否绘制概率密度函数图形，默认为 False。
-    **Kwargs
-        其他关键字参数，将传递给绘图函数。
+#     参数：
+#     --------
+#     data : np.ndarray
+#         输入数据数组，用于计算概率密度。
+#     samples : int
+#         pdf幅值域采样点数。
+#     plot : bool, 可选
+#         是否绘制概率密度函数图形，默认为 False。
+#     **Kwargs
+#         其他关键字参数，将传递给绘图函数。
 
-    返回：
-    -------
-    amplitude : np.ndarray
-        幅值域的采样点。
-    pdf : np.ndarray
-        对应于幅值域的概率密度值。
-    """
+#     返回：
+#     -------
+#     amplitude : np.ndarray
+#         幅值域的采样点。
+#     pdf : np.ndarray
+#         对应于幅值域的概率密度值。
+#     """
 
-    # 进行核密度估计
-    density = stats.gaussian_kde(data)  # 核密度估计
+#     # 进行核密度估计
+#     density = stats.gaussian_kde(data)  # 核密度估计
 
-    # 生成幅值域采样点
-    amplitude = np.linspace(min(data), max(data), samples)  # 幅值域采样密度
+#     # 生成幅值域采样点
+#     amplitude = np.linspace(min(data), max(data), samples)  # 幅值域采样密度
 
-    # 计算概率密度函数
-    pdf = density(amplitude)  # 概率密度函数采样
+#     # 计算概率密度函数
+#     pdf = density(amplitude)  # 概率密度函数采样
 
-    # 绘制概率密度函数
-    if plot:
-        plot_spectrum(amplitude, pdf, **Kwargs)
+#     # 绘制概率密度函数
+#     if plot:
+#         plot_spectrum(amplitude, pdf, **Kwargs)
 
-    return amplitude, pdf
+#     return amplitude, pdf
 
 
 def Stft(
@@ -164,7 +195,7 @@ def Stft(
     **Kwargs,
 ) -> np.ndarray:
     """
-    短时傅里叶变换 (STFT) ,用于考察信号在固定分辨率的时频面上分布。
+    短时傅里叶变换 (STFT) ,用于考���信号在固定分辨率的时频面上分布。
 
     参数：
     --------
@@ -175,7 +206,7 @@ def Stft(
     window : np.ndarray
         窗函数采样序列。
     nhop : int
-        帧移(hop size)，即窗函数移动的步幅。
+        ��移(hop size)，即窗函数移动的步幅。
     plot : bool, 可选
         是否绘制STFT图,默认为 False。
     plot_type : str, 可选
@@ -326,46 +357,46 @@ def iStft(
     return reconstructed_signal
 
 
-def HTenvelope(data: np.ndarray, fs: float, plot=False, **kwargs) -> np.ndarray:
-    N = len(data)
-    analyze = signal.hilbert(data)
-    magnitude = np.abs(analyze)  # 解析信号幅值，即原信号包络
-    magnitude -= np.mean(magnitude)  # 去除直流分量
-    FT = np.abs(fft(magnitude)) / N
-    f = np.arange(0, N) * (fs / N)
+# def HTenvelope(data: np.ndarray, fs: float, plot=False, **kwargs) -> np.ndarray:
+#     N = len(data)
+#     analyze = signal.hilbert(data)
+#     magnitude = np.abs(analyze)  # 解析信号幅值，即原信号包络
+#     magnitude -= np.mean(magnitude)  # 去除直流分量
+#     FT = np.abs(fft(magnitude)) / N
+#     f = np.arange(0, N) * (fs / N)
 
-    # 绘制包络谱
-    if plot:
-        plot_spectrum(f[: N // 2], FT[: N // 2], **kwargs)
+#     # 绘制包络谱
+#     if plot:
+#         plot_spectrum(f[: N // 2], FT[: N // 2], **kwargs)
 
-    return FT
-
-
-def autocorr(
-    data: np.ndarray, fs: float, plot: bool = False, **kwargs
-) -> np.ndarray:  # 绘制自相关图
-    N = len(data)
-    mean = np.mean(data)
-    autocorr = np.correlate(
-        data - mean, data - mean, mode="full"
-    )  # 计算自相关，减去均值以忽略直流分量
-    autocorr = autocorr[N - 1 :] / autocorr[N - 1]  # 除以信号总能量归一化，并只取右半部
-
-    if plot:
-        t = np.arange(len(autocorr)) / fs
-        plot_spectrum(t, autocorr, xlabel="时间t/s", **kwargs)
-
-    return autocorr
+#     return FT
 
 
-def PSD(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
-    fft_data = fft(data)
-    # 根据功率的能量时间平均定义式计算
-    energy = np.square(np.abs(fft_data))
-    power = energy / len(data)
+# def autocorr(
+#     data: np.ndarray, fs: float, plot: bool = False, **kwargs
+# ) -> np.ndarray:  # 绘制自相关图
+#     N = len(data)
+#     mean = np.mean(data)
+#     autocorr = np.correlate(
+#         data - mean, data - mean, mode="full"
+#     )  # 计算自相关，减去均值以忽略直流分量
+#     autocorr = autocorr[N - 1 :] / autocorr[N - 1]  # 除以信号总能量归一化，并只取右半部
 
-    if plot:
-        f = np.linspace(0, fs, len(data), endpoint=False)[: len(data) // 2]
-        plot_spectrum(f, power[: len(f)], **kwargs)
+#     if plot:
+#         t = np.arange(len(autocorr)) / fs
+#         plot_spectrum(t, autocorr, xlabel="时间t/s", **kwargs)
 
-    return power
+#     return autocorr
+
+
+# def PSD(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
+#     fft_data = fft(data)
+#     # 根据功率的能量时间平均定义式计算
+#     energy = np.square(np.abs(fft_data))
+#     power = energy / len(data)
+
+#     if plot:
+#         f = np.linspace(0, fs, len(data), endpoint=False)[: len(data) // 2]
+#         plot_spectrum(f, power[: len(f)], **kwargs)
+
+#     return power
