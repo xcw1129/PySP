@@ -1,5 +1,5 @@
 测试Plot.py
-	Plot.plot_spectrum()测试通过
+	Plot.plot_spectrum()测试失败: 输入变量 'Axis' 类型不为 ndarray, 实际为 int
 	Plot.plot_spectrogram()测试通过
 	Plot.plot_findpeak()测试通过
 Plot.py测试完成

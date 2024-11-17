@@ -17,7 +17,7 @@ from .dependencies import signal
 from .dependencies import fft
 from .dependencies import stats
 
-from .decorators import Check_Params
+from .decorators import Check_Vars
 
 from .Plot import plot_spectrum, plot_spectrogram
 
@@ -26,12 +26,14 @@ from .Plot import plot_spectrum, plot_spectrogram
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
+@Check_Vars({"type": {}, "num": {}})
 def window(
     type: str,
     num: int,
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
-    check: bool = False,
+    plot: bool = False,
+    **Kwargs,
 ) -> np.ndarray:
     """
     生成各类窗函数整周期采样序列
@@ -46,7 +48,7 @@ def window(
         自定义窗函数, 默认不使用
     padding : int, 可选
         窗序列双边各零填充点数, 默认不填充
-    check : bool, 可选
+    plot : bool, 可选
         绘制所有自带窗函数图形, 以检查窗函数形状, 默认不检查
 
     返回:
@@ -87,7 +89,7 @@ def window(
         t = np.linspace(0, 1, N, endpoint=True)
     # ---------------------------------------------------------------------------------------#
     # 检查窗函数,如需要
-    if check:
+    if plot:
         window_num = len(window_func) - 1
         rows = window_num // 2 if len(window_func) % 2 == 0 else window_num // 2 + 1
         cols = 2
@@ -100,6 +102,10 @@ def window(
             ax.set_ylim(0, 1.1)
             ax.set_title(key)
         plt.tight_layout()
+        savefig = Kwargs.get("savefig", False)
+        title = Kwargs.get("title", "窗函数测试图")
+        if savefig:
+            plt.savefig(title + ".svg", format="svg")
         plt.show()
     # ---------------------------------------------------------------------------------------#
     # 生成窗采样序列
@@ -117,9 +123,9 @@ def window(
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Params(("data", 1))
+@Check_Vars({"data": {"ndim": 1}, "WinType": {}})
 def ft(
-    data: np.ndarray, fs: float, win: str = "矩形窗", plot: bool = False, **kwargs
+    data: np.ndarray, fs: int, WinType: str = "矩形窗", plot: bool = False, **kwargs
 ) -> np.ndarray:
     """
     计算信号的傅里叶级数谱
@@ -128,7 +134,7 @@ def ft(
     ----------
     data : np.ndarray
         输入信号
-    fs : float
+    fs : int
         信号采样率
     window : str
         加窗类型, 默认为矩形窗
@@ -141,7 +147,7 @@ def ft(
         输入信号的傅里叶级数频谱
     """
     N = len(data)
-    scale, _, win_data = window(type=win, num=N)
+    scale, _, win_data = window(type=WinType, num=N)
     windowed_data = data * win_data  # 加窗
     fft_data = fft.fft(windowed_data) / N * scale  # 假设信号为功率信号
     # 绘制频谱

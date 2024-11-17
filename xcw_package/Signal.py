@@ -10,7 +10,7 @@
 from .dependencies import Optional
 from .dependencies import np
 
-from .decorators import Check_Params
+from .decorators import Check_Vars
 
 from .Plot import plot_spectrum
 
@@ -63,7 +63,7 @@ class Signal:
         对信号进行重采样
     """
 
-    @Check_Params(("data", 1))
+    @Check_Vars({"data": {'ndim':1}, "label": {}})
     def __init__(
         self, data: np.ndarray, label: str, dt: float = -1, fs: int = -1, T: float = -1
     ):
