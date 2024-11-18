@@ -45,6 +45,9 @@ IF_TEST_BASICSP_FT = False
 IF_TEST_BASICSP_STFT = False
 IF_TEST_BASICSP_ISTFT = False
 IF_TEST_CEP_CEPREAL = True
+IF_TEST_CEP_CEPPOWER = True
+IF_TEST_CEP_CEPCOMPLEX=True
+IF_TEST_CEP_CEPANALYTIC=True
 # --------------------------------------------------------------------------------------------#
 # 开始测试并记录
 log_file = os.path.join(BASE_DIR + "//test", "test_log.txt")
@@ -219,6 +222,43 @@ with open(log_file, "w", encoding="utf-8") as f:
         except Exception as e:
             print("\tCep_Analysis.Cep_Analysis().Cep_Real()测试失败:", e)
             f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Real(): {e}\n")
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_CEP_CEPPOWER:
+        try:
+            res=Cep_Analysis.Cep_Analysis(
+                Sig_test, plot=True,plot_save=SAVEFIG, title="Cep_Analysis.Cep_Analysis().Cep_Power()"
+            ).Cep_Power()
+            print("\tCep_Analysis.Cep_Analysis().Cep_Power()测试通过")
+            f.write("\tCep_Analysis.Cep_Analysis().Cep_Power()测试通过\n")
+        except Exception as e:
+            print("\tCep_Analysis.Cep_Analysis().Cep_Power()测试失败:", e)
+            f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Power(): {e}\n")
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_CEP_CEPCOMPLEX:
+        try:
+            res=Cep_Analysis.Cep_Analysis(
+                Sig_test, plot=True,plot_save=SAVEFIG, title="Cep_Analysis.Cep_Analysis().Cep_Complex()"
+            ).Cep_Complex()
+            print("\tCep_Analysis.Cep_Analysis().Cep_Complex()测试通过")
+            f.write("\tCep_Analysis.Cep_Analysis().Cep_Complex()测试通过\n")
+        except Exception as e:
+            print("\tCep_Analysis.Cep_Analysis().Cep_Complex()测试失败:", e)
+            f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Complex(): {e}\n")
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_CEP_CEPANALYTIC:
+        try:
+            res=Cep_Analysis.Cep_Analysis(
+                Sig_test, plot=True,plot_save=SAVEFIG, title="Cep_Analysis.Cep_Analysis().Cep_Analytic()"
+            ).Cep_Analytic()
+            print("\tCep_Analysis.Cep_Analysis().Cep_Analytic()测试通过")
+            f.write("\tCep_Analysis.Cep_Analysis().Cep_Analytic()测试通过\n")
+        except Exception as e:
+            print("\tCep_Analysis.Cep_Analysis().Cep_Analytic()测试失败:", e)
+            f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Analytic(): {e}\n")
+    
+    print("Cep_Analysis.py测试完成\n\n")
+    f.write("Cep_Analysis.py测试完成\n\n")
+
 # --------------------------------------------------------------------------------------------#
 # 测试完成
 print("测试日志已保存到.../test/test_log.txt")
