@@ -15,32 +15,32 @@ from .dependencies import signal
 
 from .decorators import Check_Vars
 
-from .dependencies import Eps
+from .dependencies import FLOAT_EPS
 
 
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
-def __T2_log(data:np.ndarray,eps:float)->np.ndarray:
+def __T2_log(data: np.ndarray, eps: float) -> np.ndarray:
     """
     对输入的数据进行对数变换
-    
+
     参数:
     --------
     data : np.ndarray
         输入数据数组
     eps : float
         避免对数计算错误的微小值
-    
+
     返回:
     --------
     np.ndarray
         对数变换后的数据
     """
-    if np.min(data)<=0:
+    if np.min(data) <= 0:
         raise ValueError("对数坐标轴下数据不能小于等于0")
-    return np.log10(data+eps)
+    return np.log10(data + eps)
 
 
 # --------------------------------------------------------------------------------------------#
@@ -53,7 +53,7 @@ def plot_spectrum(
     """
     根据输入的两个一维数据绘制Plot型谱
 
-    参数: 
+    参数:
     ----------
     Axis : np.ndarray
         横轴数据
@@ -77,9 +77,9 @@ def plot_spectrum(
     xscale = kwargs.get("xscale", "linear")
     yscale = kwargs.get("yscale", "linear")
     if xscale == "log":
-        Axis = __T2_log(Axis,Eps)
+        Axis = __T2_log(Axis, FLOAT_EPS)
     if yscale == "log":
-        data = 20*__T2_log(data,Eps)
+        data = 20 * __T2_log(data, FLOAT_EPS)
     plt.plot(Axis, data)
     # 设置标题
     title = kwargs.get("title", None)
@@ -100,7 +100,7 @@ def plot_spectrum(
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
-    savefig=kwargs.get("savefig", False)
+    savefig = kwargs.get("savefig", False)
     if savefig:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.show()
@@ -117,7 +117,7 @@ def plot_spectrogram(
     """
     根据输入的两个一维数据和一个二维数据绘制imshow型热力谱图
 
-    参数: 
+    参数:
     --------
     Axis1 : np.ndarray
         横轴数据
@@ -170,7 +170,7 @@ def plot_spectrogram(
     plt.colorbar(label=colorbar)
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
-    savefig=kwargs.get("savefig", False)
+    savefig = kwargs.get("savefig", False)
     if savefig:
         plt.savefig(title + ".svg", format="svg")
     plt.show()
@@ -220,14 +220,14 @@ def plot_findpeak(
     xscale = kwargs.get("xscale", "linear")
     yscale = kwargs.get("yscale", "linear")
     if xscale == "log":
-        Axis = __T2_log(Axis,Eps)
-        peak_axis = __T2_log(peak_axis,Eps)
+        Axis = __T2_log(Axis, FLOAT_EPS)
+        peak_axis = __T2_log(peak_axis, FLOAT_EPS)
     if yscale == "log":
-        data = 20*__T2_log(data,Eps)
-        peak_height = 20*__T2_log(peak_height,Eps)
+        data = 20 * __T2_log(data, FLOAT_EPS)
+        peak_height = 20 * __T2_log(peak_height, FLOAT_EPS)
     plt.plot(Axis, data)  # 绘制原始数据
     # 标注峰值
-    peaks=zip(peak_axis,peak_height)
+    peaks = zip(peak_axis, peak_height)
     for val, amp in peaks:
         plt.annotate(
             f"{val:.1f}",
@@ -253,7 +253,7 @@ def plot_findpeak(
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
-    savefig=kwargs.get("savefig", False)
+    savefig = kwargs.get("savefig", False)
     if savefig:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.show()

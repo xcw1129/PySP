@@ -1,19 +1,11 @@
 测试Plot.py
-	Plot.plot_spectrum()测试通过
-	Plot.plot_spectrogram()测试通过
-	Plot.plot_findpeak()测试通过
 Plot.py测试完成
 
 测试Signal.py
-	Signal()测试通过
-	Signal.plot()测试通过
-	Signal.resample()测试通过
 Signal.py测试完成
 
 测试BasicSP.py
-	BasicSP.window()测试通过
-	BasicSP.ft()测试通过
-	BasicSP.Stft()测试失败: 第0.0s采样处窗长768与窗口数据长度769不匹配
-	BasicSP.iStft()测试失败: not enough values to unpack (expected 2, got 0)
 BasicSP.py测试完成
 
+测试Cep_Analysis.py
+	Cep_Analysis.Cep_Analysis().Cep_Real()测试通过
