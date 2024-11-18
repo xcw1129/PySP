@@ -4,11 +4,11 @@ import numpy as np
 from numpy import random
 import os
 
-# 待测试的模块
+# 待测试的模块内容
 from xcw_package import Plot
 from xcw_package import Signal
 from xcw_package import BasicSP
-
+from xcw_package import Cep_Analysis
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -34,16 +34,17 @@ Data = TEST_DATA["data1"]
 Fs = 12000
 SAVEFIG = False
 
-IF_TEST_PLOT_SPECTRUM = True
-IF_TEST_PLOT_SPECTROGRAM = True
-IF_TEST_PLOT_FINDPEAK = True
-IF_TEST_SIGNAL = True
-IF_TEST_SIGNAL_PLOT = True
-IF_TEST_SIGNAL_RESAMPLE = True
-IF_TEST_BASICSP_WINDOW = True
-IF_TEST_BASICSP_FT = True
-IF_TEST_BASICSP_STFT = True
-IF_TEST_BASICSP_ISTFT = True
+IF_TEST_PLOT_SPECTRUM = False
+IF_TEST_PLOT_SPECTROGRAM = False
+IF_TEST_PLOT_FINDPEAK = False
+IF_TEST_SIGNAL = False
+IF_TEST_SIGNAL_PLOT = False
+IF_TEST_SIGNAL_RESAMPLE = False
+IF_TEST_BASICSP_WINDOW = False
+IF_TEST_BASICSP_FT = False
+IF_TEST_BASICSP_STFT = False
+IF_TEST_BASICSP_ISTFT = False
+IF_TEST_CEP_CEPREAL = True
 # --------------------------------------------------------------------------------------------#
 # 开始测试并记录
 log_file = os.path.join(BASE_DIR + "//test", "test_log.txt")
@@ -201,6 +202,23 @@ with open(log_file, "w", encoding="utf-8") as f:
 
     print("BasicSP.py测试完成\n\n")
     f.write("BasicSP.py测试完成\n\n")
+
+    # 测试xcw_package.Cep_Analysis.
+    f.write("测试Cep_Analysis.py\n")
+    print("测试Cep_Analysis.py")
+    Sig_test=Signal.Signal(data=Data, label="Test信号", fs=Fs)
+
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_CEP_CEPREAL:
+        try:
+            res=Cep_Analysis.Cep_Analysis(
+                Sig_test, plot=True,plot_save=SAVEFIG,plot_lineinterval=0.1,ylim=(-1,1), title="Cep_Analysis.Cep_Analysis().Cep_Real()"
+            ).Cep_Real()
+            print("\tCep_Analysis.Cep_Analysis().Cep_Real()测试通过")
+            f.write("\tCep_Analysis.Cep_Analysis().Cep_Real()测试通过\n")
+        except Exception as e:
+            print("\tCep_Analysis.Cep_Analysis().Cep_Real()测试失败:", e)
+            f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Real(): {e}\n")
 # --------------------------------------------------------------------------------------------#
 # 测试完成
 print("测试日志已保存到.../test/test_log.txt")
