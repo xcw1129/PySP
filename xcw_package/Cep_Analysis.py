@@ -35,6 +35,28 @@ class Cep_Analysis(Analysis):
         是否保存绘制的图像。默认为False
     plot_lineinterval : float
         倒谱绘图时提示线的间隔。默认不绘制提示线
+
+    属性:
+    --------
+    signal : Signal
+        信号类实例，用于向类方法提供信号数据
+    plot : bool
+        是否绘制图像。默认为False
+    plot_save : bool
+        是否保存绘制的图像。默认为False
+    plot_lineinterval : float
+        倒谱绘图时提示线的间隔。默认不绘制提示线
+
+    方法:
+    --------
+    Cep_Real() : 实数倒谱
+    Cep_Power() : 功率倒谱
+    Cep_Complex() : 复数倒谱
+    Cep_Reconstruct() : 倒谱重构
+    Cep_Analytic() : 解析倒谱
+    Cep_Zoom() : 频带倒谱
+    Enco_detect() : 基于倒谱的回声检测
+    Liftering() : 倒谱滤波
     """
 
     def __init__(
@@ -182,7 +204,7 @@ class Cep_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_withline)
-    @ Check_Vars({"fc": {"LowLimit": 0}, "bw": {"LowLimit": 0}})
+    @Check_Vars({"fc": {"LowLimit": 0}, "bw": {"LowLimit": 0}})
     def Cep_Zoom(self, fc: int, bw: int) -> np.ndarray:
         # 查询信号数据
         data = self.signal.data
@@ -205,7 +227,7 @@ class Cep_Analysis(Analysis):
         return t_Axis, zoom_cep
 
     # ---------------------------------------------------------------------------------------#
-    @ Check_Vars({ "distance": {"LowLimit": 0}})
+    @Check_Vars({"distance": {"LowLimit": 0}})
     def Enco_detect(
         self, height: Optional[float] = None, distance: int = 10
     ) -> np.ndarray:
@@ -231,7 +253,7 @@ class Cep_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_withline)
-    @ Check_Vars({"num": {"LowLimit": 1}})
+    @Check_Vars({"num": {"LowLimit": 1}})
     def Liftering(
         self, Q: float, width: float, num: int, type: str = "Type1"
     ) -> np.ndarray:
