@@ -1,6 +1,6 @@
 """
 # Signal
-采样信号类, 可实现xcw_package库其它模块的桥接
+xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库其它模块的桥接
 
 ## 内容
     - class: 
@@ -21,12 +21,14 @@ from .Plot import plot_spectrum
 # ----------## -------------------------------------------------------------------------------#
 class Signal:
     """
-    自带时间、频率等采样信息的信号类
+    自带采样信息的信号类, 可进行简单预处理操作
 
-    参数：
+    参数:
     --------
     data : np.ndarray
         输入数据数组，用于构建信号
+    label : str
+        信号标签
     dt : float
         采样时间间隔
     fs : int
@@ -63,31 +65,28 @@ class Signal:
         对信号进行重采样
     """
 
-    @Check_Vars({"data": {'ndim':1}, "label": {}})
+    @Check_Vars({"data": {"ndim": 1}, "label": {}, "dt":{"LowLimit":0}, "fs":{"LowLimit":0}, "T":{"LowLimit":0}})
     def __init__(
-        self, data: np.ndarray, label: str, dt: float = -1, fs: int = -1, T: float = -1
+        self, data: np.ndarray, label: str, dt: Optional[float]=None, fs: Optional[int]=None, T: Optional[float]=None
     ):
         self.data = data
         self.N = len(data)
-        if dt * fs * T <= 0:  # 同时指定零个、两个参数，或指定非正参数
-            raise ValueError("采样参数错误: 同时指定le零个、两个参数, 或指定非正参数")
-        elif (dt > 0) and (fs > 0) and (T > 0):  # 同时指定三个采样参数
-            raise ValueError("采样参数错误: 同时指定三个采样参数")
-        else:
-            pass
+        # 只允许给出一个采样参数
+        if not [dt, fs, T].count(None) ==2:
+            raise ValueError("采样参数错误, 请只给出一个采样参数且符合格式要求")
         # -----------------------------------------------------------------------------------#
         # 采样参数初始化
-        if dt > 0:
+        if dt is not None:
             self.dt = dt
             self.fs = 1 / dt
             self.df = self.fs / (self.N)  # 保证Fs=N*df
             self.T = self.N * self.dt  # 保证dt=T/N
-        elif fs > 0:
+        elif fs is not None:
             self.fs = fs
             self.dt = 1 / fs
             self.df = self.fs / (self.N)
             self.T = self.N * self.dt
-        elif T > 0:
+        elif T is not None:
             self.T = T
             self.dt = T / self.N
             self.fs = 1 / self.dt
@@ -139,15 +138,16 @@ class Signal:
     # ---------------------------------------------------------------------------------------#
     def plot(self, **kwargs) -> None:
         """
-        绘制信号的时域图。
+        绘制信号的时域波形图
         """
         Title = kwargs.get("title", f"{self.label}时域波形图")
         kwargs.pop("title", None)
         plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s", title=Title, **kwargs)
 
     # ---------------------------------------------------------------------------------------#
+    @ Check_Vars({"down_fs": {}})
     def resample(
-        self, down_fs: int, t0: float = 0, t1: Optional[int] = None
+        self, down_fs: int, t0: float = 0, t1: Optional[float] = None
     ) -> "Signal":
         """
         对信号进行重采样
@@ -158,7 +158,7 @@ class Signal:
             重采样频率
         t0 : float
             重采样起始时间
-        t1 : int
+        t1 : float
             重采样时间长度
 
         返回:
@@ -172,7 +172,7 @@ class Signal:
         else:
             ration = int(self.fs / down_fs)
         # 获取重采样起始点的索引
-        if t0 < 0 or t0 >= self.T:
+        if not 0 <= t0 < self.T:
             raise ValueError("起始时间不在信号范围内")
         else:
             start_n = int(t0 / self.dt)
@@ -190,3 +190,37 @@ class Signal:
             resampled_data, label="下采样" + self.label, dt=ration * self.dt
         )  # 由于离散信号，实际采样率为fs/ration
         return resampled_Sig
+
+
+# --------------------------------------------------------------------------------------------#
+class Analysis:
+    @ Check_Vars({"signal": {}})
+    def __init__(
+        self, signal: Signal, plot: bool = False, plot_save: bool = False, **kwargs
+    ):
+        self.signal = signal
+        # 绘图参数全局设置
+        self.plot = plot
+        self.plot_save = plot_save
+        self.plot_kwargs = kwargs
+
+    @staticmethod
+    def Plot(plot_type: str, plot_func: callable):
+        def plot_decorator(func):
+            def wrapper(self, *args, **kwargs):
+                res = func(self, *args, **kwargs)
+                if plot_type == "1D":
+                    Axis, data = res[0], res[1]
+                    if self.plot:
+                        plot_func(Axis, data, self.plot_save, **self.plot_kwargs)
+                elif plot_type == "2D":
+                    Axis1, Axis2, data = res[0], res[1], res[2]
+                    if self.plot:
+                        plot_func(
+                            Axis1, Axis2, data, self.plot_save, **self.plot_kwargs
+                        )
+                return res
+
+            return wrapper
+
+        return plot_decorator
