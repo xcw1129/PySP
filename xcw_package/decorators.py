@@ -2,18 +2,16 @@ from .dependencies import np
 from .dependencies import inspect
 from .dependencies import wraps
 
-
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
 def Check_Vars(*var_checks):
-    # 根据指定的变量名和维度进行对应的装饰器检查
-    # ---------------------------------------------------------------------------------------#
+    # 根据json输入生成对应的变量检查装饰器
     def decorator(func):
-        @wraps(func)
-        # -----------------------------------------------------------------------------------#
+        @wraps(func)#保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
         def wrapper(*args, **kwargs):
+            from .Signal import Signal
             # -------------------------------------------------------------------------------#
             # 获取函数输入变量
             Vars = inspect.signature(func)
@@ -29,27 +27,46 @@ def Check_Vars(*var_checks):
                 var_type = annotations.get(var_name)  # 变量预设类型
                 var_cond = var_checks_json[var_name]  # 变量额外检查条件
                 if var_value is not None:
+                    # -----------------------------------------------------------------------#
                     # 检查输入值类型是否为预设类型
                     if var_type and not isinstance(var_value, var_type):
                         raise TypeError(
-                            f"输入变量 '{var_name}' 类型不为 {var_type.__name__}, 实际为 {type(var_value).__name__}"
+                            f"输入变量 '{var_name}' 类型不为要求的 {var_type.__name__}, 实际为 {type(var_value).__name__}"
                         )
                     # 针对某些变量类型进行额外检查
-                    # array类检查维度
+                    # -----------------------------------------------------------------------#
+                    # array类检查
                     if isinstance(var_value, np.ndarray):
-                        # 条件1：数组维度
-                        if var_value.ndim != var_cond["ndim"]:
-                            raise ValueError(
-                                f"输入array数组 '{var_name}' 维度不为 {var_cond['ndim']}, 实际为{var_value.ndim}"
-                            )
-                        # 条件2：...
+                        # 条件1：数组维度检查
+                        if 'ndim' in var_cond:
+                            if var_value.ndim != var_cond["ndim"]:
+                                raise ValueError(
+                                    f"输入array数组 '{var_name}' 维度不为要求的 {var_cond['ndim']}, 实际为{var_value.ndim}"
+                                )
+                    # -----------------------------------------------------------------------#
                     # int类
-                    # float类...
+                    if isinstance(var_value, int):
+                        # 条件1：下界检查
+                        if 'LowLimit' in var_cond:
+                            if not (var_cond['LowLimit'] <= var_value):
+                                raise ValueError(
+                                    f"输入int变量 '{var_name}' 小于要求的下界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                    # -----------------------------------------------------------------------#
+                    # float类
+                    if isinstance(var_value, float):
+                        # 条件1：下界检查
+                        if 'LowLimit' in var_cond:
+                            if not (var_cond['LowLimit'] <= var_value):
+                                raise ValueError(
+                                    f"输入float变量 '{var_name}' 小于要求的下界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                    # Signal类
+                    if isinstance(var_value, Signal):
+                        pass
             # -------------------------------------------------------------------------------#
             return func(*args, **kwargs)  # 检查通过，执行函数
 
         return wrapper
-        # -----------------------------------------------------------------------------------#
 
     return decorator
-    # ---------------------------------------------------------------------------------------#
