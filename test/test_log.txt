@@ -9,3 +9,8 @@ BasicSP.py测试完成
 
 测试Cep_Analysis.py
 	Cep_Analysis.Cep_Analysis().Cep_Real()测试通过
+	Cep_Analysis.Cep_Analysis().Cep_Power()测试通过
+	Cep_Analysis.Cep_Analysis().Cep_Complex()测试通过
+	Cep_Analysis.Cep_Analysis().Cep_Analytic()测试通过
+Cep_Analysis.py测试完成
+
