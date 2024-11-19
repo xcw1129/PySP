@@ -73,7 +73,7 @@ class Signal:
             "data": {"ndim": 1},
             "label": {},
             "dt": {"OpenLow": 0},
-            "fs": {"OpenLow": 0},
+            "fs": {"Low": 1},
             "T": {"OpenLow": 0},
         }
     )
@@ -195,15 +195,15 @@ class Analysis:
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):
                 res = func(self, *args, **kwargs)
-                if plot_type == "1D":
-                    Axis, data = res[0], res[1]
-                    if self.plot:
-                        plot_func(Axis, data, self.plot_save, **self.plot_kwargs)
-                elif plot_type == "2D":
-                    Axis1, Axis2, data = res[0], res[1], res[2]
-                    if self.plot:
+                if self.plot:
+                    self.plot_kwargs["savefig"] = self.plot_save
+                    if plot_type == "1D":
+                        Axis, data = res[0], res[1]
+                        plot_func(Axis, data, **self.plot_kwargs)
+                    elif plot_type == "2D":
+                        Axis1, Axis2, data = res[0], res[1], res[2]
                         plot_func(
-                            Axis1, Axis2, data, self.plot_save, **self.plot_kwargs
+                            Axis1, Axis2, data, **self.plot_kwargs
                         )
                 return res
 
@@ -213,7 +213,7 @@ class Analysis:
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"down_fs": {"OpenLow": 0}, "T": {"OpenLow": 0}})
+@Check_Vars({"down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
 def resample(
     Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
 ) -> Signal:
