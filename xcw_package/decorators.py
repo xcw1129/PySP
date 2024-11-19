@@ -2,6 +2,7 @@ from .dependencies import np
 from .dependencies import inspect
 from .dependencies import wraps
 
+
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
@@ -9,9 +10,10 @@ from .dependencies import wraps
 def Check_Vars(*var_checks):
     # 根据json输入生成对应的变量检查装饰器
     def decorator(func):
-        @wraps(func)#保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
+        @wraps(func)  # 保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
         def wrapper(*args, **kwargs):
             from .Signal import Signal
+
             # -------------------------------------------------------------------------------#
             # 获取函数输入变量
             Vars = inspect.signature(func)
@@ -38,7 +40,7 @@ def Check_Vars(*var_checks):
                     # array类检查
                     if isinstance(var_value, np.ndarray):
                         # 条件1：数组维度检查
-                        if 'ndim' in var_cond:
+                        if "ndim" in var_cond:
                             if var_value.ndim != var_cond["ndim"]:
                                 raise ValueError(
                                     f"输入array数组 '{var_name}' 维度不为要求的 {var_cond['ndim']}, 实际为{var_value.ndim}"
@@ -46,53 +48,41 @@ def Check_Vars(*var_checks):
                     # -----------------------------------------------------------------------#
                     # int类
                     if isinstance(var_value, int):
-                        # 条件1：闭下界检查
-                        if 'CloseLow' in var_cond:
-                            if not (var_cond['CloseLow'] <= var_value):
+                        # 条件1：下界检查
+                        if "Low" in var_cond:
+                            if not (var_cond["Low"] <= var_value):
                                 raise ValueError(
                                     f"输入int变量 '{var_name}' 小于要求的下界 {var_cond['limit']}, 实际为{var_value}"
                                 )
-                        # 条件2：闭上界检查
-                        if 'CloseHigh' in var_cond:
-                            if not (var_value <= var_cond['CloseHigh']):
+                        # 条件2：上界检查
+                        if "High" in var_cond:
+                            if not (var_value <= var_cond["High"]):
                                 raise ValueError(
                                     f"输入int变量 '{var_name}' 大于要求的上界 {var_cond['limit']}, 实际为{var_value}"
-                                )
-                        # 条件3：开下界检查
-                        if 'OpenLow' in var_cond:
-                            if not (var_cond["OpenLow"] < var_value):
-                                raise ValueError(
-                                    f"输入int变量 '{var_name}' 小于或等于要求的下界 {var_cond['limit']}, 实际为{var_value}"
-                                )
-                        # 条件4：开上界检查
-                        if 'OpenHigh' in var_cond:
-                            if not (var_value < var_cond["OpenHigh"]):
-                                raise ValueError(
-                                    f"输入int变量 '{var_name}' 大于或等于要求的上界 {var_cond['limit']}, 实际为{var_value}"
                                 )
                     # -----------------------------------------------------------------------#
                     # float类
                     if isinstance(var_value, float):
                         # 条件1：闭下界检查
-                        if 'CloseLow' in var_cond:
-                            if not (var_cond['CloseLow'] <= var_value):
+                        if "CloseLow" in var_cond:
+                            if not (var_cond["CloseLow"] <= var_value):
                                 raise ValueError(
                                     f"输入float变量 '{var_name}' 小于要求的下界 {var_cond['limit']}, 实际为{var_value}"
                                 )
                         # 条件2：闭上界检查
-                        if 'CloseHigh' in var_cond:
-                            if not (var_value <= var_cond['CloseHigh']):
+                        if "CloseHigh" in var_cond:
+                            if not (var_value <= var_cond["CloseHigh"]):
                                 raise ValueError(
                                     f"输入float变量 '{var_name}' 大于要求的上界 {var_cond['limit']}, 实际为{var_value}"
                                 )
                         # 条件3：开下界检查
-                        if 'OpenLow' in var_cond:
+                        if "OpenLow" in var_cond:
                             if not (var_cond["OpenLow"] < var_value):
                                 raise ValueError(
                                     f"输入float变量 '{var_name}' 小于或等于要求的下界 {var_cond['limit']}, 实际为{var_value}"
                                 )
                         # 条件4：开上界检查
-                        if 'OpenHigh' in var_cond:
+                        if "OpenHigh" in var_cond:
                             if not (var_value < var_cond["OpenHigh"]):
                                 raise ValueError(
                                     f"输入float变量 '{var_name}' 大于或等于要求的上界 {var_cond['limit']}, 实际为{var_value}"
@@ -106,3 +96,22 @@ def Check_Vars(*var_checks):
         return wrapper
 
     return decorator
+
+
+def Plot(plot_type: str, plot_func: callable):
+    def plot_decorator(func):
+        def wrapper(*args, **kwargs):
+            res = func(*args, **kwargs)  # 执行函数取得绘图数据
+            plot = kwargs.get("plot", False)
+            if plot:
+                if plot_type == "1D":
+                    Axis, data = res[0], res[1]
+                    plot_func(Axis, data, **kwargs)
+                elif plot_type == "2D":
+                    Axis1, Axis2, data = res[0], res[1], res[2]
+                    plot_func(Axis1, Axis2, data, **kwargs)
+            return res
+
+        return wrapper
+
+    return plot_decorator
