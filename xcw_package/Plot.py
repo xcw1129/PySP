@@ -56,13 +56,21 @@ def plot_spectrum(
     参数:
     ----------
     Axis : np.ndarray
-        横轴数据
+        x轴数据
     data : np.ndarray
-        纵轴数据
+        y轴数据
+    xlabel : str, 可选
+        x轴标签, 默认为None
+    xlim : tuple, 可选
+        x轴刻度范围, 默认为None
+    ylabel : str, 可选
+        y轴标签, 默认为None
+    ylim : tuple, 可选
+        y轴刻度范围, 默认为None
+    title : str, 可选
+        图像标题, 默认为None
     savefig : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
-    type : str, 可选
-        绘图风格, 默认为 Type1
     """
     # 检查数据
     if len(Axis) != len(data):
@@ -85,17 +93,17 @@ def plot_spectrum(
     title = kwargs.get("title", None)
     plt.title(title, fontproperties=zh_font)
     # 设置图像栅格
-    plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
+    plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
     # ---------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
     xlabel = kwargs.get("xlabel", None)
-    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0, loc="right")  # 标签
+    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0.2, loc="right")  # 标签
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
     # 设置y轴参数
     ylabel = kwargs.get("ylabel", None)
-    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0, loc="top")  # 标签
+    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
@@ -120,11 +128,25 @@ def plot_spectrogram(
     参数:
     --------
     Axis1 : np.ndarray
-        横轴数据
+        x轴数据
     Axis2 : np.ndarray
-        纵轴数据
+        y轴数据
     data : np.ndarray
-        横纵轴对应的二维数据
+        xy轴对应的二维数据
+    xlabel : str, 可选
+        x轴标签, 默认为None
+    xlim : tuple, 可选
+        x轴刻度范围, 默认为None
+    ylabel : str, 可选
+        y轴标签, 默认为None
+    ylim : tuple, 可选
+        y轴刻度范围, 默认为None
+    colorbar : str, 可选
+        谱图强度标签, 默认为None
+    title : str, 可选
+        图像标题, 默认为None
+    savefig : bool, 可选
+        是否将绘图结果保存为图片, 默认不保存
     savefig : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
@@ -195,6 +217,18 @@ def plot_findpeak(
         纵轴数据
     thre : float
         峰值阈值
+    xlabel : str, 可选
+        x轴标签, 默认为None
+    xlim : tuple, 可选
+        x轴刻度范围, 默认为None
+    ylabel : str, 可选
+        y轴标签, 默认为None
+    ylim : tuple, 可选
+        y轴刻度范围, 默认为None
+    title : str, 可选
+        图像标题, 默认为None
+    savefig : bool, 可选
+        是否将绘图结果保存为图片, 默认不保存
     savefig : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
