@@ -33,7 +33,7 @@ TEST_DATA["data1"] = DE
 # 测试设置
 Data = TEST_DATA["data1"]
 Fs = 12000
-SAVEFIG = False
+SAVEFIG = True
 
 IF_TEST_PLOT_SPECTRUM = True
 IF_TEST_PLOT_SPECTROGRAM = True
@@ -41,8 +41,8 @@ IF_TEST_PLOT_FINDPEAK = True
 IF_TEST_SIGNAL_SIG = True
 IF_TEST_SIGNAL_SIGPLOT = True
 IF_TEST_SIGNAL_RESAMPLE = True
-IF_TEST_BASICSP_WINDOW = False
-IF_TEST_BASICSP_FT = False
+IF_TEST_BASICSP_WINDOW = True
+IF_TEST_BASICSP_FT = True
 IF_TEST_BASICSP_STFT = False
 IF_TEST_BASICSP_ISTFT = False
 IF_TEST_CEP_CEPREAL = False
@@ -143,6 +143,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     # 测试xcw_package.BasicSP
     f.write("测试BasicSP.py\n")
     print("测试BasicSP.py")
+    Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_BASICSP_WINDOW:
         try:
@@ -158,9 +159,9 @@ with open(log_file, "w", encoding="utf-8") as f:
     if IF_TEST_BASICSP_FT:
         try:
             res = BasicSP.ft(
-                data=Sig_test.data,
-                fs=Sig_test.fs,
+                Sig=Sig_test,
                 plot=True,
+                xlabel="频率f/Hz",
                 title="BasicSP.ft()",
                 savefig=SAVEFIG,
             )
