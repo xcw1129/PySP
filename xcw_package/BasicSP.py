@@ -198,176 +198,176 @@ def ft(Sig: Signal, WinType: str = "矩形窗", **kwargs) -> np.ndarray:
 #     return amplitude, pdf
 
 
-def Stft(
-    data: np.ndarray,
-    fs: float,
-    window: np.ndarray,
-    nhop: int,
-    plot: bool = False,
-    plot_type: str = "Amplitude",
-    **Kwargs,
-) -> np.ndarray:
-    """
-    短时傅里叶变换 (STFT) ,用于考���信号在固定分辨率的时频面上分布。
+# def Stft(
+#     data: np.ndarray,
+#     fs: float,
+#     window: np.ndarray,
+#     nhop: int,
+#     plot: bool = False,
+#     plot_type: str = "Amplitude",
+#     **Kwargs,
+# ) -> np.ndarray:
+#     """
+#     短时傅里叶变换 (STFT) ,用于考���信号在固定分辨率的时频面上分布。
 
-    参数：
-    --------
-    data : np.ndarray
-        输入的时域信号。
-    fs : float
-        信号时间采样率。
-    window : np.ndarray
-        窗函数采样序列。
-    nhop : int
-        ��移(hop size)，即窗函数移动的步幅。
-    plot : bool, 可选
-        是否绘制STFT图,默认为 False。
-    plot_type : str, 可选
-        绘图类型，支持 "Amplitude" 或 "Power"，默认为 "Amplitude"。
-    **Kwargs
-        其他关键字参数，将传递给绘图函数。
+#     参数：
+#     --------
+#     data : np.ndarray
+#         输入的时域信号。
+#     fs : float
+#         信号时间采样率。
+#     window : np.ndarray
+#         窗函数采样序列。
+#     nhop : int
+#         ��移(hop size)，即窗函数移动的步幅。
+#     plot : bool, 可选
+#         是否绘制STFT图,默认为 False。
+#     plot_type : str, 可选
+#         绘图类型，支持 "Amplitude" 或 "Power"，默认为 "Amplitude"。
+#     **Kwargs
+#         其他关键字参数，将传递给绘图函数。
 
-    返回：
-    -------
-    t : np.ndarray
-        时间轴数组。
-    f : np.ndarray
-        频率轴数组。
-    fft_matrix : np.ndarray
-        计算得到的STFT频谱矩阵。
-    """
-    if plot_type not in ["Amplitude", "Power"]:
-        raise ValueError("绘图类型谱plot_type只能为Amplitude或Power")
-    # 初始化参数
-    N = len(data)
-    nperseg = len(window)
-    if nperseg > N:
-        raise ValueError("窗长大于信号长度,无法绘制STFT图")
+#     返回：
+#     -------
+#     t : np.ndarray
+#         时间轴数组。
+#     f : np.ndarray
+#         频率轴数组。
+#     fft_matrix : np.ndarray
+#         计算得到的STFT频谱矩阵。
+#     """
+#     if plot_type not in ["Amplitude", "Power"]:
+#         raise ValueError("绘图类型谱plot_type只能为Amplitude或Power")
+#     # 初始化参数
+#     N = len(data)
+#     nperseg = len(window)
+#     if nperseg > N:
+#         raise ValueError("窗长大于信号长度,无法绘制STFT图")
 
-    seg_index = np.arange(0, N, nhop)  # 时间轴离散索引
+#     seg_index = np.arange(0, N, nhop)  # 时间轴离散索引
 
-    # 计算STFT
-    fft_matrix = np.zeros(
-        (len(seg_index), nperseg), dtype=complex
-    )  # 按时间离散分段计算频谱
-    for i in seg_index:
-        # 截取窗口数据并补零以适应窗口长度
-        if i - nperseg // 2 < 0:
-            data_seg = data[: nperseg // 2 + i + 1]
-            data_seg = np.pad(data_seg, (nperseg // 2 - i, 0), mode="constant")
-        elif i + nperseg // 2 >= N:
-            data_seg = data[i - nperseg // 2 :]
-            data_seg = np.pad(data_seg, (0, i + nperseg // 2 - N + 1), mode="constant")
-        else:
-            data_seg = data[i - nperseg // 2 : i + nperseg // 2 + 1]
+#     # 计算STFT
+#     fft_matrix = np.zeros(
+#         (len(seg_index), nperseg), dtype=complex
+#     )  # 按时间离散分段计算频谱
+#     for i in seg_index:
+#         # 截取窗口数据并补零以适应窗口长度
+#         if i - nperseg // 2 < 0:
+#             data_seg = data[: nperseg // 2 + i + 1]
+#             data_seg = np.pad(data_seg, (nperseg // 2 - i, 0), mode="constant")
+#         elif i + nperseg // 2 >= N:
+#             data_seg = data[i - nperseg // 2 :]
+#             data_seg = np.pad(data_seg, (0, i + nperseg // 2 - N + 1), mode="constant")
+#         else:
+#             data_seg = data[i - nperseg // 2 : i + nperseg // 2 + 1]
 
-        if len(data_seg) != nperseg:
-            raise ValueError(
-                f"第{i/fs}s采样处窗长{nperseg}与窗口数据长度{len(data_seg)}不匹配"
-            )
+#         if len(data_seg) != nperseg:
+#             raise ValueError(
+#                 f"第{i/fs}s采样处窗长{nperseg}与窗口数据长度{len(data_seg)}不匹配"
+#             )
 
-        # 加窗
-        data_seg = data_seg * window
+#         # 加窗
+#         data_seg = data_seg * window
 
-        # 计算S(t=i*dt,f)
-        fft_data = (fft.fft(data_seg)) / nperseg
-        fft_matrix[i // nhop, :] = fft_data
+#         # 计算S(t=i*dt,f)
+#         fft_data = (fft.fft(data_seg)) / nperseg
+#         fft_matrix[i // nhop, :] = fft_data
 
-    # 生成时间轴和频率轴
-    t = seg_index / fs  # 时间轴
-    f = np.linspace(0, fs, nperseg, endpoint=False)  # 频率轴
-    fft_matrix = np.array(fft_matrix)
+#     # 生成时间轴和频率轴
+#     t = seg_index / fs  # 时间轴
+#     f = np.linspace(0, fs, nperseg, endpoint=False)  # 频率轴
+#     fft_matrix = np.array(fft_matrix)
 
-    # 绘制STFT图
-    if plot:
-        if plot_type == "Amplitude":
-            s = 1 / np.mean(window)
-            matrix = np.abs(fft_matrix) * s
-        elif plot_type == "Power":
-            s = 1 / np.mean(np.square(window))
-            matrix = np.square(np.abs(fft_matrix)) * s
+#     # 绘制STFT图
+#     if plot:
+#         if plot_type == "Amplitude":
+#             s = 1 / np.mean(window)
+#             matrix = np.abs(fft_matrix) * s
+#         elif plot_type == "Power":
+#             s = 1 / np.mean(np.square(window))
+#             matrix = np.square(np.abs(fft_matrix)) * s
 
-        plot_spectrogram(
-            t,
-            f[: nperseg // 2],
-            matrix[:, : nperseg // 2],
-            xlabel="时间t/s",
-            ylabel="频率f/Hz",
-            **Kwargs,
-        )
+#         plot_spectrogram(
+#             t,
+#             f[: nperseg // 2],
+#             matrix[:, : nperseg // 2],
+#             xlabel="时间t/s",
+#             ylabel="频率f/Hz",
+#             **Kwargs,
+#         )
 
-    return t, f, fft_matrix
+#     return t, f, fft_matrix
 
 
-def iStft(
-    matrix: np.ndarray,
-    fs: float,
-    window: np.ndarray,
-    nhop: int,
-    plot: bool = False,
-    **Kwargs,
-) -> np.ndarray:
-    """
-    逆短时傅里叶变换 (ISTFT) 实现，用于从频域信号重构时域信号。
+# def iStft(
+#     matrix: np.ndarray,
+#     fs: float,
+#     window: np.ndarray,
+#     nhop: int,
+#     plot: bool = False,
+#     **Kwargs,
+# ) -> np.ndarray:
+#     """
+#     逆短时傅里叶变换 (ISTFT) 实现，用于从频域信号重构时域信号。
 
-    参数：
-    --------
-    matrix : np.ndarray
-        STFT 变换后的频谱矩阵，形状为 (num_frames, nperseg)。
-    fs : float
-        原始信号采样率,即STFT局部频谱上限频率。
-    window : np.ndarray
-        窗函数数组。
-    nhop : int
-        帧移(hop size)，即窗函数移动的步幅。
-    plot : bool, 可选
-        是否绘制重构后的时域信号，默认为 False。
-    **Kwargs
-        其他关键字参数，将传递给绘图函数。
+#     参数：
+#     --------
+#     matrix : np.ndarray
+#         STFT 变换后的频谱矩阵，形状为 (num_frames, nperseg)。
+#     fs : float
+#         原始信号采样率,即STFT局部频谱上限频率。
+#     window : np.ndarray
+#         窗函数数组。
+#     nhop : int
+#         帧移(hop size)，即窗函数移动的步幅。
+#     plot : bool, 可选
+#         是否绘制重构后的时域信号，默认为 False。
+#     **Kwargs
+#         其他关键字参数，将传递给绘图函数。
 
-    返回：
-    -------
-    reconstructed_signal : np.ndarray
-        重构后的时域信号。
-    """
-    # 从频谱矩阵推断帧长和帧数
-    num_frames, nperseg = matrix.shape
-    if nperseg != len(window):
-        raise ValueError(f"窗口长度 {len(window)} 与 FFT 矩阵的帧长度 {nperseg} 不匹配")
+#     返回：
+#     -------
+#     reconstructed_signal : np.ndarray
+#         重构后的时域信号。
+#     """
+#     # 从频谱矩阵推断帧长和帧数
+#     num_frames, nperseg = matrix.shape
+#     if nperseg != len(window):
+#         raise ValueError(f"窗口长度 {len(window)} 与 FFT 矩阵的帧长度 {nperseg} 不匹配")
 
-    # 检查窗口是否满足 NOLA 条件。因为默认ISTFT后归一化，所以不检查COLA条件
-    if not signal.check_NOLA(window, nperseg, nperseg - nhop):
-        raise ValueError("窗口函数不满足非零重叠加 (NOLA) 条件，无法完整重构")
+#     # 检查窗口是否满足 NOLA 条件。因为默认ISTFT后归一化，所以不检查COLA条件
+#     if not signal.check_NOLA(window, nperseg, nperseg - nhop):
+#         raise ValueError("窗口函数不满足非零重叠加 (NOLA) 条件，无法完整重构")
 
-    # 初始化重构信号的长度
-    signal_length = nhop * (num_frames - 1) + nperseg  # 长度一般大于原始信号
-    reconstructed_signal = np.zeros(signal_length)
-    window_overlap = np.zeros(signal_length)
+#     # 初始化重构信号的长度
+#     signal_length = nhop * (num_frames - 1) + nperseg  # 长度一般大于原始信号
+#     reconstructed_signal = np.zeros(signal_length)
+#     window_overlap = np.zeros(signal_length)
 
-    # 按帧顺序进行IDFT并叠加
-    for i in range(num_frames):
-        # 对单帧数据进行重构
-        time_segment = np.real(fft.ifft(matrix[i])) * nperseg  # 乘以 nperseg 以还原缩放
-        # # ISTFT过程与STFT过程进行相同加窗操作
-        time_segment *= window
-        # 计算当前帧时间，保证正确叠加
-        start = i * nhop
-        end = start + nperseg
-        reconstructed_signal[start:end] += time_segment  # 重构信号叠加
-        window_overlap[start:end] += window**2  # 窗叠加
+#     # 按帧顺序进行IDFT并叠加
+#     for i in range(num_frames):
+#         # 对单帧数据进行重构
+#         time_segment = np.real(fft.ifft(matrix[i])) * nperseg  # 乘以 nperseg 以还原缩放
+#         # # ISTFT过程与STFT过程进行相同加窗操作
+#         time_segment *= window
+#         # 计算当前帧时间，保证正确叠加
+#         start = i * nhop
+#         end = start + nperseg
+#         reconstructed_signal[start:end] += time_segment  # 重构信号叠加
+#         window_overlap[start:end] += window**2  # 窗叠加
 
-    # 归一化，去除STFT和ISFT过程加窗的影响
-    reconstructed_signal = reconstructed_signal[
-        nperseg // 2 : -(nperseg // 2)
-    ]  # 排除端点效应,可能导致重构信号尾部减少最多nhop个点
-    reconstructed_signal /= window_overlap[nperseg // 2 : -(nperseg // 2)]
+#     # 归一化，去除STFT和ISFT过程加窗的影响
+#     reconstructed_signal = reconstructed_signal[
+#         nperseg // 2 : -(nperseg // 2)
+#     ]  # 排除端点效应,可能导致重构信号尾部减少最多nhop个点
+#     reconstructed_signal /= window_overlap[nperseg // 2 : -(nperseg // 2)]
 
-    # 绘制重构信号时域波形
-    if plot:
-        t = np.arange(len(reconstructed_signal)) / fs
-        plot_spectrum(t, reconstructed_signal, xlabel="时间t/s", **Kwargs)
+#     # 绘制重构信号时域波形
+#     if plot:
+#         t = np.arange(len(reconstructed_signal)) / fs
+#         plot_spectrum(t, reconstructed_signal, xlabel="时间t/s", **Kwargs)
 
-    return reconstructed_signal
+#     return reconstructed_signal
 
 
 # def HTenvelope(data: np.ndarray, fs: float, plot=False, **kwargs) -> np.ndarray:
