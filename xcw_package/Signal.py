@@ -6,6 +6,8 @@ xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库
     - class: 
         1. Signal: 自带时间、频率等采样信息的信号类
         2. Analysis: 信号分析基类, 用于创建其他复杂的信号分析、处理方法
+    - function:
+        1. resample: 信号任意时间段重采样函数
 """
 
 from .dependencies import Optional
@@ -64,8 +66,6 @@ class Signal:
         输出信号的采样信息
     plot()
         绘制信号的时域图
-    resample()
-        对信号进行重采样
     """
 
     @Check_Vars(
@@ -177,53 +177,6 @@ class Signal:
         kwargs.pop("title", None)
         plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s", title=Title, **kwargs)
 
-    # ---------------------------------------------------------------------------------------#
-    @Check_Vars({"down_fs": {"OpenLow": 0}, "T": {"OpenLow": 0}})
-    def resample(
-        self, down_fs: int, t0: float = 0, T: Optional[float] = None
-    ) -> "Signal":
-        """
-        对信号进行重采样
-
-        参数:
-        --------
-        down_fs : int
-            重采样频率
-        t0 : float
-            重采样起始时间
-        t1 : float
-            重采样时间长度
-
-        返回:
-        --------
-        resampled_Sig : Signal
-            重采样后的信号
-        """
-        # 获取重采样间隔点数
-        if down_fs > self.fs:
-            raise ValueError("新采样频率应不大于原采样频率")
-        else:
-            ration = int(self.fs / down_fs)
-        # 获取重采样起始点的索引
-        if not self.t0 <= t0 < (self.T + self.t0):
-            raise ValueError("起始时间不在信号时间范围内")
-        else:
-            start_n = int((t0 - self.t0) / self.dt)
-        # 获取重采样点数
-        if T is None:
-            resample_N = -1
-        elif T + t0 >= self.T + self.t0:
-            raise ValueError("重采样时间长度超过信号时间范围")
-        else:
-            resample_N = int(T / (self.dt * ration))  # N = T/(dt*ration)
-        # -----------------------------------------------------------------------------------#
-        # 对信号进行重采样
-        resampled_data = self.data[start_n::ration][:resample_N]  # 重采样
-        resampled_Sig = Signal(
-            resampled_data, label="下采样" + self.label, dt=ration * self.dt, t0=t0
-        )  # 由于离散信号，实际采样率为fs/ration
-        return resampled_Sig
-
 
 # --------------------------------------------------------------------------------------------#
 class Analysis:
@@ -257,3 +210,53 @@ class Analysis:
             return wrapper
 
         return plot_decorator
+
+
+# --------------------------------------------------------------------------------------------#
+@Check_Vars({"down_fs": {"OpenLow": 0}, "T": {"OpenLow": 0}})
+def resample(
+    Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
+) -> Signal:
+    """
+    对信号进行任意时间段的重采样
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    down_fs : int
+        重采样频率
+    t0 : float
+        重采样起始时间
+    t1 : float
+        重采样时间长度
+
+    返回:
+    --------
+    resampled_Sig : Signal
+        重采样后的信号
+    """
+    # 获取重采样间隔点数
+    if down_fs > Sig.fs:
+        raise ValueError("新采样频率应不大于原采样频率")
+    else:
+        ration = int(Sig.fs / down_fs)
+    # 获取重采样起始点的索引
+    if not Sig.t0 <= t0 < (Sig.T + Sig.t0):
+        raise ValueError("起始时间不在信号时间范围内")
+    else:
+        start_n = int((t0 - Sig.t0) / Sig.dt)
+    # 获取重采样点数
+    if T is None:
+        resample_N = -1
+    elif T + t0 >= Sig.T + Sig.t0:
+        raise ValueError("重采样时间长度超过信号时间范围")
+    else:
+        resample_N = int(T / (Sig.dt * ration))  # N = T/(dt*ration)
+    # -----------------------------------------------------------------------------------#
+    # 对信号进行重采样
+    resampled_data = Sig.data[start_n::ration][:resample_N]  # 重采样
+    resampled_Sig = Signal(
+        resampled_data, label="重采样" + Sig.label, dt=ration * Sig.dt, t0=t0
+    )  # 由于离散信号，实际采样率为fs/ration
+    return resampled_Sig

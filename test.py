@@ -38,8 +38,8 @@ SAVEFIG = False
 IF_TEST_PLOT_SPECTRUM = True
 IF_TEST_PLOT_SPECTROGRAM = True
 IF_TEST_PLOT_FINDPEAK = True
-IF_TEST_SIGNAL = True
-IF_TEST_SIGNAL_PLOT = True
+IF_TEST_SIGNAL_SIG = True
+IF_TEST_SIGNAL_SIGPLOT = True
 IF_TEST_SIGNAL_RESAMPLE = True
 IF_TEST_BASICSP_WINDOW = False
 IF_TEST_BASICSP_FT = False
@@ -108,7 +108,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     f.write("测试Signal.py\n")
     print("测试Signal.py")
     # ---------------------------------------------------------------------------------------#
-    if IF_TEST_SIGNAL:
+    if IF_TEST_SIGNAL_SIG:
         try:
             Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
             print("\tSignal()测试通过")
@@ -117,7 +117,7 @@ with open(log_file, "w", encoding="utf-8") as f:
             print("\tSignal()测试失败:", e)
             f.write(f"\tSignal()测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
-    if IF_TEST_SIGNAL_PLOT:
+    if IF_TEST_SIGNAL_SIGPLOT:
         try:
             Sig_test.plot(title="Signal.plot()", savefig=SAVEFIG)
             print("\tSignal.plot()测试通过")
@@ -128,7 +128,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_SIGNAL_RESAMPLE:
         try:
-            res = Sig_test.resample(down_fs=5000, t0=0.1, T=0.5).plot(
+            res = Signal.resample(Sig=Sig_test,down_fs=5000, t0=0.1, T=0.5).plot(
                 title="Signal.resample()", savefig=SAVEFIG
             )
             print("\tSignal.resample()测试通过")
