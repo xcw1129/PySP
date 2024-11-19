@@ -101,7 +101,7 @@ def window(
             ax.set_ylim(0, 1.1)
         title = Kwargs.get("title", "窗函数测试图")
         fig.suptitle(title, fontproperties=zh_font, fontsize=16)
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        plt.tight_layout(rect=[0, 0, 1, 0.98])
         savefig = Kwargs.get("savefig", False)
         if savefig:
             plt.savefig(title + ".svg", format="svg")

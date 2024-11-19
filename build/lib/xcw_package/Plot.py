@@ -11,169 +11,147 @@
 
 from .dependencies import np
 from .dependencies import plt
-from .dependencies import font_manager
 from .dependencies import signal
+from .dependencies import zh_font
+from .dependencies import FLOAT_EPS
 
-from .decorators import Check_Params
-
-from .dependencies import Eps
+from .decorators import Check_Vars
 
 
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
-def __T2_log(data:np.ndarray,eps:float)->np.ndarray:
+def __T2_log(data: np.ndarray, eps: float) -> np.ndarray:
     """
     对输入的数据进行对数变换
-    
+
     参数:
     --------
     data : np.ndarray
         输入数据数组
     eps : float
         避免对数计算错误的微小值
-    
+
     返回:
     --------
     np.ndarray
         对数变换后的数据
     """
-    if np.min(data)<=0:
+    if np.min(data) <= 0:
         raise ValueError("对数坐标轴下数据不能小于等于0")
-    return np.log10(data+eps)
+    return np.log10(data + eps)
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Params(("Axis", 1), ("data", 1))
+@Check_Vars({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
 def plot_spectrum(
     Axis: np.ndarray,
     data: np.ndarray,
-    savefig: bool = False,
     **kwargs,
 ) -> None:
     """
     根据输入的两个一维数据绘制Plot型谱
 
-    参数: 
+    参数:
     ----------
     Axis : np.ndarray
-        横轴数据
+        x轴数据
     data : np.ndarray
-        纵轴数据
+        y轴数据
+    xlabel : str, 可选
+        x轴标签, 默认为None
+    xlim : tuple, 可选
+        x轴刻度范围, 默认为None
+    ylabel : str, 可选
+        y轴标签, 默认为None
+    ylim : tuple, 可选
+        y轴刻度范围, 默认为None
+    title : str, 可选
+        图像标题, 默认为None
     savefig : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
-    type : str, 可选
-        绘图风格, 默认为 Type1
     """
     # 检查数据
     if len(Axis) != len(data):
         raise ValueError(
             f"Axis={len(Axis)}和data={len(data)}的长度不一致"
         )  # 数据长度检查
-    # 指定绘图风格
-    plot_type = kwargs.get("plot_type", "Type1")
     # ---------------------------------------------------------------------------------------#
-    # 绘图风格1
-    if plot_type == "Type1":
-        # 设置图像界面
-        figsize = kwargs.get("figsize", (12, 5))
-        plt.figure(figsize=figsize)
-        # 设置坐标轴尺度
-        xscale = kwargs.get("xscale", "linear")
-        yscale = kwargs.get("yscale", "linear")
-        if xscale == "log":
-            Axis = __T2_log(Axis,Eps)
-        if yscale == "log":
-            data = 20*__T2_log(data,Eps)
-        plt.plot(Axis, data)
-        # 设置标题
-        title = kwargs.get("title", None)
-        plt.title(title)
-        # 设置图像栅格
-        plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
-        # -----------------------------------------------------------------------------------#
-        # 设置坐标轴参数
-        # 设置x轴参数
-        xlabel = kwargs.get("xlabel", None)
-        plt.xlabel(xlabel)  # 标签
-        xlim = kwargs.get("xlim", (None, None))
-        plt.xlim(xlim[0], xlim[1])  # 刻度范围
-        # 设置y轴参数
-        ylabel = kwargs.get("ylabel", None)
-        plt.ylabel(ylabel)  # 标签
-        ylim = kwargs.get("ylim", (None, None))
-        plt.ylim(ylim[0], ylim[1])  # 刻度范围
-        # -----------------------------------------------------------------------------------#
-        # 按指定格式保存图片并显示
-        if savefig:
-            plt.savefig(title + ".svg", format="svg")  # 保存图片
-        plt.show()
+    # 设置图像界面
+    figsize = kwargs.get("figsize", (12, 5))
+    plt.figure(figsize=figsize)
+    # 设置坐标轴尺度
+    xscale = kwargs.get("xscale", "linear")
+    yscale = kwargs.get("yscale", "linear")
+    if xscale == "log":
+        Axis = __T2_log(Axis, FLOAT_EPS)
+    if yscale == "log":
+        data = 20 * __T2_log(data, FLOAT_EPS)
+    plt.plot(Axis, data)
+    # 设置标题
+    title = kwargs.get("title", None)
+    plt.title(title, fontproperties=zh_font)
+    # 设置图像栅格
+    plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
     # ---------------------------------------------------------------------------------------#
-    # 绘图风格2
-    elif plot_type == "Type2":
-        # 设置图像界面
-        figsize = kwargs.get("figsize", (12, 8))  # 大小
-        color = kwargs.get("color", "blue")  # 线条颜色
-        linewidth = kwargs.get("linewidth", 1)  # 线宽
-        plt.figure(figsize=figsize)
-        plt.plot(Axis, data, color=color, linewidth=linewidth)
-        # 设置标题
-        title = kwargs.get("title", None)
-        plt.title(title + "\n", fontsize=23)  # 设置图像标题
-        # 设置图像栅格
-        plt.grid(linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
-        # -----------------------------------------------------------------------------------#
-        # 设置坐标轴参数
-        # 设置x轴参数
-        xlabel = kwargs.get("xlabel", None)
-        plt.xlabel(xlabel, fontsize=18)  # 标签
-        xlim = kwargs.get("xlim", (None, None))
-        plt.xlim(xlim[0], xlim[1])  # 刻度范围
-        # 设置y轴参数
-        ylabel = kwargs.get("ylabel", None)
-        plt.ylabel(ylabel, fontsize=18)  # 标签
-        ylim = kwargs.get("ylim", (None, None))
-        plt.ylim(ylim[0], ylim[1])  # 刻度范围
-        # 设置图像刻度字体大小和方向
-        plt.tick_params(labelsize=15)
-        # -----------------------------------------------------------------------------------#
-        # 按指定格式保存图片并显示
-        if savefig:
-            plt.savefig(
-                title + ".jpg", format="jpg", dpi=300, bbox_inches="tight"
-            )  # 保存图片
-        plt.show()
-
-    else:
-        raise ValueError("不支持的绘图类型")
+    # 设置坐标轴参数
+    # 设置x轴参数
+    xlabel = kwargs.get("xlabel", None)
+    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0.2, loc="right")  # 标签
+    xlim = kwargs.get("xlim", (None, None))
+    plt.xlim(xlim[0], xlim[1])  # 刻度范围
+    # 设置y轴参数
+    ylabel = kwargs.get("ylabel", None)
+    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
+    ylim = kwargs.get("ylim", (None, None))
+    plt.ylim(ylim[0], ylim[1])  # 刻度范围
+    # ---------------------------------------------------------------------------------------#
+    # 按指定格式保存图片并显示
+    savefig = kwargs.get("savefig", False)
+    if savefig:
+        plt.savefig(title + ".svg", format="svg")  # 保存图片
+    plt.show()
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Params(("Axis1", 1), ("Axis2", 1), ("data2D", 2))
+@Check_Vars({"Axis1": {"ndim": 1}, "Axis2": {"ndim": 1}, "data": {"ndim": 2}})
 def plot_spectrogram(
     Axis1: np.ndarray,
     Axis2: np.ndarray,
-    data2D: np.ndarray,
-    savefig: bool = False,
+    data: np.ndarray,
     **kwargs,
 ) -> None:
     """
     根据输入的两个一维数据和一个二维数据绘制imshow型热力谱图
 
-    参数: 
+    参数:
     --------
     Axis1 : np.ndarray
-        横轴数据
+        x轴数据
     Axis2 : np.ndarray
-        纵轴数据
-    data2D : np.ndarray
-        横纵轴对应的二维数据
+        y轴数据
+    data : np.ndarray
+        xy轴对应的二维数据
+    xlabel : str, 可选
+        x轴标签, 默认为None
+    xlim : tuple, 可选
+        x轴刻度范围, 默认为None
+    ylabel : str, 可选
+        y轴标签, 默认为None
+    ylim : tuple, 可选
+        y轴刻度范围, 默认为None
+    colorbar : str, 可选
+        谱图强度标签, 默认为None
+    title : str, 可选
+        图像标题, 默认为None
+    savefig : bool, 可选
+        是否将绘图结果保存为图片, 默认不保存
     savefig : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
-    if (len(Axis1) != data2D.shape[0]) or (len(Axis2) != data2D.shape[1]):
+    if (len(Axis1) != data.shape[0]) or (len(Axis2) != data.shape[1]):
         raise ValueError("Axis1、Axis2与data的对应轴长度不一致")  # 数据长度检查
     # ---------------------------------------------------------------------------------------#
     # 设置图像界面
@@ -186,7 +164,7 @@ def plot_spectrogram(
     vmin = kwargs.get("vmin", None)
     vmax = kwargs.get("vmax", None)
     plt.imshow(
-        data2D.T,
+        data.T,
         aspect=aspect,
         origin=origin,
         cmap=cmap,
@@ -196,17 +174,17 @@ def plot_spectrogram(
     )  # 绘制热力图
     # 设置标题
     title = kwargs.get("title", None)
-    plt.title(title)
+    plt.title(title, fontproperties=zh_font)
     # ---------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
     xlabel = kwargs.get("xlabel", None)
-    plt.xlabel(xlabel)  # 标签
+    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0, loc="right")  # 标签
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
     # 设置y轴参数
     ylabel = kwargs.get("ylabel", None)
-    plt.ylabel(ylabel)  # 标签
+    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0, loc="top")  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # 设置谱图强度标签
@@ -214,18 +192,18 @@ def plot_spectrogram(
     plt.colorbar(label=colorbar)
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
+    savefig = kwargs.get("savefig", False)
     if savefig:
-        plt.savefig(title + "svg", format="svg")
+        plt.savefig(title + ".svg", format="svg")
     plt.show()
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Params(("Axis", 1), ("data", 1))
+@Check_Vars({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
 def plot_findpeak(
     Axis: np.ndarray,
     data: np.ndarray,
     thre: float,
-    savefig: bool = False,
     **kwargs,
 ) -> None:
     """
@@ -239,6 +217,18 @@ def plot_findpeak(
         纵轴数据
     thre : float
         峰值阈值
+    xlabel : str, 可选
+        x轴标签, 默认为None
+    xlim : tuple, 可选
+        x轴刻度范围, 默认为None
+    ylabel : str, 可选
+        y轴标签, 默认为None
+    ylim : tuple, 可选
+        y轴刻度范围, 默认为None
+    title : str, 可选
+        图像标题, 默认为None
+    savefig : bool, 可选
+        是否将绘图结果保存为图片, 默认不保存
     savefig : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
@@ -264,14 +254,14 @@ def plot_findpeak(
     xscale = kwargs.get("xscale", "linear")
     yscale = kwargs.get("yscale", "linear")
     if xscale == "log":
-        Axis = __T2_log(Axis,Eps)
-        peak_axis = __T2_log(peak_axis,Eps)
+        Axis = __T2_log(Axis, FLOAT_EPS)
+        peak_axis = __T2_log(peak_axis, FLOAT_EPS)
     if yscale == "log":
-        data = 20*__T2_log(data,Eps)
-        peak_height = 20*__T2_log(peak_height,Eps)
+        data = 20 * __T2_log(data, FLOAT_EPS)
+        peak_height = 20 * __T2_log(peak_height, FLOAT_EPS)
     plt.plot(Axis, data)  # 绘制原始数据
     # 标注峰值
-    peaks=zip(peak_axis,peak_height)
+    peaks = zip(peak_axis, peak_height)
     for val, amp in peaks:
         plt.annotate(
             f"{val:.1f}",
@@ -297,6 +287,7 @@ def plot_findpeak(
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
+    savefig = kwargs.get("savefig", False)
     if savefig:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.show()

@@ -33,7 +33,7 @@ TEST_DATA["data1"] = DE
 # 测试设置
 Data = TEST_DATA["data1"]
 Fs = 12000
-SAVEFIG = True
+SAVEFIG = False
 
 IF_TEST_PLOT_SPECTRUM = True
 IF_TEST_PLOT_SPECTROGRAM = True
