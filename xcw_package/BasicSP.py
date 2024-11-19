@@ -124,7 +124,7 @@ def window(
 # --------------------------------------------------------------------------------------------#
 @Plot("1D", plot_spectrum)
 @Check_Vars({"Sig":Signal})
-def ft(Sig: Signal, WinType: str = "矩形窗", **kwargs) -> np.ndarray:
+def Cft(Sig: Signal, WinType: str = "矩形窗", **kwargs) -> np.ndarray:
     """
     计算信号的傅里叶级数谱
 
