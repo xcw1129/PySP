@@ -9,6 +9,7 @@ from xcw_package import Plot
 from xcw_package import Signal
 from xcw_package import BasicSP
 from xcw_package import Cep_Analysis
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -34,20 +35,20 @@ Data = TEST_DATA["data1"]
 Fs = 12000
 SAVEFIG = False
 
-IF_TEST_PLOT_SPECTRUM = False
-IF_TEST_PLOT_SPECTROGRAM = False
-IF_TEST_PLOT_FINDPEAK = False
-IF_TEST_SIGNAL = False
-IF_TEST_SIGNAL_PLOT = False
-IF_TEST_SIGNAL_RESAMPLE = False
+IF_TEST_PLOT_SPECTRUM = True
+IF_TEST_PLOT_SPECTROGRAM = True
+IF_TEST_PLOT_FINDPEAK = True
+IF_TEST_SIGNAL = True
+IF_TEST_SIGNAL_PLOT = True
+IF_TEST_SIGNAL_RESAMPLE = True
 IF_TEST_BASICSP_WINDOW = False
 IF_TEST_BASICSP_FT = False
 IF_TEST_BASICSP_STFT = False
 IF_TEST_BASICSP_ISTFT = False
-IF_TEST_CEP_CEPREAL = True
-IF_TEST_CEP_CEPPOWER = True
-IF_TEST_CEP_CEPCOMPLEX=True
-IF_TEST_CEP_CEPANALYTIC=True
+IF_TEST_CEP_CEPREAL = False
+IF_TEST_CEP_CEPPOWER = False
+IF_TEST_CEP_CEPCOMPLEX = False
+IF_TEST_CEP_CEPANALYTIC = False
 # --------------------------------------------------------------------------------------------#
 # 开始测试并记录
 log_file = os.path.join(BASE_DIR + "//test", "test_log.txt")
@@ -127,7 +128,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_SIGNAL_RESAMPLE:
         try:
-            res = Sig_test.resample(down_fs=5000, t0=0.1, t1=0.5).plot(
+            res = Sig_test.resample(down_fs=5000, t0=0.1, T=0.5).plot(
                 title="Signal.resample()", savefig=SAVEFIG
             )
             print("\tSignal.resample()测试通过")
@@ -209,13 +210,18 @@ with open(log_file, "w", encoding="utf-8") as f:
     # 测试xcw_package.Cep_Analysis.
     f.write("测试Cep_Analysis.py\n")
     print("测试Cep_Analysis.py")
-    Sig_test=Signal.Signal(data=Data, label="Test信号", fs=Fs)
+    Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
 
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_CEP_CEPREAL:
         try:
-            res=Cep_Analysis.Cep_Analysis(
-                Sig_test, plot=True,plot_save=SAVEFIG,plot_lineinterval=0.1,ylim=(-1,1), title="Cep_Analysis.Cep_Analysis().Cep_Real()"
+            res = Cep_Analysis.Cep_Analysis(
+                Sig_test,
+                plot=True,
+                plot_save=SAVEFIG,
+                plot_lineinterval=0.1,
+                ylim=(-1, 1),
+                title="Cep_Analysis.Cep_Analysis().Cep_Real()",
             ).Cep_Real()
             print("\tCep_Analysis.Cep_Analysis().Cep_Real()测试通过")
             f.write("\tCep_Analysis.Cep_Analysis().Cep_Real()测试通过\n")
@@ -225,8 +231,11 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_CEP_CEPPOWER:
         try:
-            res=Cep_Analysis.Cep_Analysis(
-                Sig_test, plot=True,plot_save=SAVEFIG, title="Cep_Analysis.Cep_Analysis().Cep_Power()"
+            res = Cep_Analysis.Cep_Analysis(
+                Sig_test,
+                plot=True,
+                plot_save=SAVEFIG,
+                title="Cep_Analysis.Cep_Analysis().Cep_Power()",
             ).Cep_Power()
             print("\tCep_Analysis.Cep_Analysis().Cep_Power()测试通过")
             f.write("\tCep_Analysis.Cep_Analysis().Cep_Power()测试通过\n")
@@ -236,8 +245,11 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_CEP_CEPCOMPLEX:
         try:
-            res=Cep_Analysis.Cep_Analysis(
-                Sig_test, plot=True,plot_save=SAVEFIG, title="Cep_Analysis.Cep_Analysis().Cep_Complex()"
+            res = Cep_Analysis.Cep_Analysis(
+                Sig_test,
+                plot=True,
+                plot_save=SAVEFIG,
+                title="Cep_Analysis.Cep_Analysis().Cep_Complex()",
             ).Cep_Complex()
             print("\tCep_Analysis.Cep_Analysis().Cep_Complex()测试通过")
             f.write("\tCep_Analysis.Cep_Analysis().Cep_Complex()测试通过\n")
@@ -247,15 +259,18 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_CEP_CEPANALYTIC:
         try:
-            res=Cep_Analysis.Cep_Analysis(
-                Sig_test, plot=True,plot_save=SAVEFIG, title="Cep_Analysis.Cep_Analysis().Cep_Analytic()"
+            res = Cep_Analysis.Cep_Analysis(
+                Sig_test,
+                plot=True,
+                plot_save=SAVEFIG,
+                title="Cep_Analysis.Cep_Analysis().Cep_Analytic()",
             ).Cep_Analytic()
             print("\tCep_Analysis.Cep_Analysis().Cep_Analytic()测试通过")
             f.write("\tCep_Analysis.Cep_Analysis().Cep_Analytic()测试通过\n")
         except Exception as e:
             print("\tCep_Analysis.Cep_Analysis().Cep_Analytic()测试失败:", e)
             f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Analytic(): {e}\n")
-    
+
     print("Cep_Analysis.py测试完成\n\n")
     f.write("Cep_Analysis.py测试完成\n\n")
 

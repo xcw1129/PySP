@@ -14,11 +14,15 @@ from scipy import stats  # 统计分析包
 # 可视化绘图库
 import matplotlib.pyplot as plt
 
-plt.rcParams["font.sans-serif"] = ["SimHei"]  # 中文字体
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = ["Times New Roman"]  # 英文字体
 plt.rcParams["axes.unicode_minus"] = False  # 正常显示负号
+# 设置全局字体大小
+plt.rcParams["font.size"] = 16  # 设置全局字体大小
+
 from matplotlib import font_manager
 
+zh_font = font_manager.FontProperties(fname=r"C:\Windows\Fonts\simhei.ttf")  # 中文字体
+
 FLOAT_EPS = np.finfo(float).eps  # 机器精度
-PI= np.pi  # 圆周率
+PI = np.pi  # 圆周率

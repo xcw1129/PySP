@@ -46,20 +46,56 @@ def Check_Vars(*var_checks):
                     # -----------------------------------------------------------------------#
                     # int类
                     if isinstance(var_value, int):
-                        # 条件1：下界检查
-                        if 'LowLimit' in var_cond:
-                            if not (var_cond['LowLimit'] <= var_value):
+                        # 条件1：闭下界检查
+                        if 'CloseLow' in var_cond:
+                            if not (var_cond['CloseLow'] <= var_value):
                                 raise ValueError(
                                     f"输入int变量 '{var_name}' 小于要求的下界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                        # 条件2：闭上界检查
+                        if 'CloseHigh' in var_cond:
+                            if not (var_value <= var_cond['CloseHigh']):
+                                raise ValueError(
+                                    f"输入int变量 '{var_name}' 大于要求的上界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                        # 条件3：开下界检查
+                        if 'OpenLow' in var_cond:
+                            if not (var_cond["OpenLow"] < var_value):
+                                raise ValueError(
+                                    f"输入int变量 '{var_name}' 小于或等于要求的下界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                        # 条件4：开上界检查
+                        if 'OpenHigh' in var_cond:
+                            if not (var_value < var_cond["OpenHigh"]):
+                                raise ValueError(
+                                    f"输入int变量 '{var_name}' 大于或等于要求的上界 {var_cond['limit']}, 实际为{var_value}"
                                 )
                     # -----------------------------------------------------------------------#
                     # float类
                     if isinstance(var_value, float):
-                        # 条件1：下界检查
-                        if 'LowLimit' in var_cond:
-                            if not (var_cond['LowLimit'] <= var_value):
+                        # 条件1：闭下界检查
+                        if 'CloseLow' in var_cond:
+                            if not (var_cond['CloseLow'] <= var_value):
                                 raise ValueError(
                                     f"输入float变量 '{var_name}' 小于要求的下界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                        # 条件2：闭上界检查
+                        if 'CloseHigh' in var_cond:
+                            if not (var_value <= var_cond['CloseHigh']):
+                                raise ValueError(
+                                    f"输入float变量 '{var_name}' 大于要求的上界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                        # 条件3：开下界检查
+                        if 'OpenLow' in var_cond:
+                            if not (var_cond["OpenLow"] < var_value):
+                                raise ValueError(
+                                    f"输入float变量 '{var_name}' 小于或等于要求的下界 {var_cond['limit']}, 实际为{var_value}"
+                                )
+                        # 条件4：开上界检查
+                        if 'OpenHigh' in var_cond:
+                            if not (var_value < var_cond["OpenHigh"]):
+                                raise ValueError(
+                                    f"输入float变量 '{var_name}' 大于或等于要求的上界 {var_cond['limit']}, 实际为{var_value}"
                                 )
                     # Signal类
                     if isinstance(var_value, Signal):

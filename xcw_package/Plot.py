@@ -12,10 +12,10 @@
 from .dependencies import np
 from .dependencies import plt
 from .dependencies import signal
+from .dependencies import zh_font
+from .dependencies import FLOAT_EPS
 
 from .decorators import Check_Vars
-
-from .dependencies import FLOAT_EPS
 
 
 # --------------------------------------------------------------------------------------------#
@@ -83,19 +83,19 @@ def plot_spectrum(
     plt.plot(Axis, data)
     # 设置标题
     title = kwargs.get("title", None)
-    plt.title(title)
+    plt.title(title, fontproperties=zh_font)
     # 设置图像栅格
     plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
     # ---------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
     xlabel = kwargs.get("xlabel", None)
-    plt.xlabel(xlabel)  # 标签
+    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0, loc="right")  # 标签
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
     # 设置y轴参数
     ylabel = kwargs.get("ylabel", None)
-    plt.ylabel(ylabel)  # 标签
+    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0, loc="top")  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
@@ -152,17 +152,17 @@ def plot_spectrogram(
     )  # 绘制热力图
     # 设置标题
     title = kwargs.get("title", None)
-    plt.title(title)
+    plt.title(title, fontproperties=zh_font)
     # ---------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
     xlabel = kwargs.get("xlabel", None)
-    plt.xlabel(xlabel)  # 标签
+    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0, loc="right")  # 标签
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
     # 设置y轴参数
     ylabel = kwargs.get("ylabel", None)
-    plt.ylabel(ylabel)  # 标签
+    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0, loc="top")  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # 设置谱图强度标签
