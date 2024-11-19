@@ -12,13 +12,14 @@
 
 from .dependencies import Optional, Callable
 from .dependencies import np
-from .dependencies import plt
+from .dependencies import plt, zh_font
 from .dependencies import signal
 from .dependencies import fft
 from .dependencies import stats
 
-from .decorators import Check_Vars
+from .decorators import Check_Vars, Plot
 
+from .Signal import Signal
 from .Plot import plot_spectrum, plot_spectrogram
 
 
@@ -26,7 +27,7 @@ from .Plot import plot_spectrum, plot_spectrogram
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
-@Check_Vars({"type": {}, "num": {}})
+@Check_Vars({"type": {}, "num": {"OpenLow": 0}, "padding": {"Low": 0}})
 def window(
     type: str,
     num: int,
@@ -83,10 +84,7 @@ def window(
         return np.ones(1, float)
     n = np.arange(N)  # n=0,1,2,3,...,N-1
     if N % 2 == 0:
-        t = np.linspace(0, 1, N, endpoint=False)
-        N += 1  # 保证window[N//2]采样点幅值为1
-    else:
-        t = np.linspace(0, 1, N, endpoint=True)
+        N += 1  # 保证window[N//2]采样点幅值为1, 此时窗函数非对称
     # ---------------------------------------------------------------------------------------#
     # 检查窗函数,如需要
     if plot:
@@ -99,11 +97,12 @@ def window(
             if key == "自定义窗":
                 continue
             ax.plot(n, func(n))
+            ax.set_title(key, fontproperties=zh_font)
             ax.set_ylim(0, 1.1)
-            ax.set_title(key)
-        plt.tight_layout()
-        savefig = Kwargs.get("savefig", False)
         title = Kwargs.get("title", "窗函数测试图")
+        fig.suptitle(title, fontproperties=zh_font, fontsize=16)
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        savefig = Kwargs.get("savefig", False)
         if savefig:
             plt.savefig(title + ".svg", format="svg")
         plt.show()
@@ -118,44 +117,46 @@ def window(
     if padding is not None:
         win_data = np.pad(
             win_data, padding, mode="constant"
-        )  # 双边各填充padding零数据点
+        )  # 双边各填充padding点, 共延长2*padding点
     return Amp_scale, Engy_scale, win_data
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"data": {"ndim": 1}, "WinType": {}})
-def ft(
-    data: np.ndarray, fs: int, WinType: str = "矩形窗", plot: bool = False, **kwargs
-) -> np.ndarray:
+@Plot("1D", plot_spectrum)
+@Check_Vars({"Sig":Signal})
+def ft(Sig: Signal, WinType: str = "矩形窗", **kwargs) -> np.ndarray:
     """
     计算信号的傅里叶级数谱
 
     参数:
     ----------
-    data : np.ndarray
+    Sig : Signal
         输入信号
-    fs : int
-        信号采样率
     window : str
         加窗类型, 默认为矩形窗
     plot : bool, optional
-        是否绘制0~fN的频谱, 默认不绘制
+        是否绘制频谱, 默认不绘制
+    savefig : bool, optional
+        是否保存绘制的频谱图, 默认不保存
 
     返回:
     -------
-    fft_data : np.ndarray
-        输入信号的傅里叶级数频谱
+    f_Axis : np.ndarray
+        频率轴
+    Amp : np.ndarray
+        单边幅值谱
     """
-    N = len(data)
+    data = Sig.data
+    N = Sig.N
+    # 计算频谱幅值
     scale, _, win_data = window(type=WinType, num=N)
     windowed_data = data * win_data  # 加窗
     fft_data = fft.fft(windowed_data) / N * scale  # 假设信号为功率信号
-    # 绘制频谱
-    if plot:
-        Amp = np.abs(fft_data)
-        f_Axis = (np.linspace(0, 1, N, endpoint=False) * fs)[: N // 2]
-        plot_spectrum(f_Axis, Amp[: len(f_Axis)], xlabel="频率f/Hz", **kwargs)
-    return fft_data
+    Amp = np.abs(fft_data)
+    # 后处理
+    f_Axis = Sig.f_Axis[: N // 2]
+    Amp = 2 * Amp[: len(f_Axis)]
+    return f_Axis, Amp
 
 
 # def pdf(data: np.ndarray, samples: int, plot: bool = False, **Kwargs) -> np.ndarray:
