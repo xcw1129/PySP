@@ -109,7 +109,11 @@ class Cep_Analysis(Analysis):
     """
 
     def __init__(
-        self, Sig: Signal, plot:bool=False, plot_lineinterval: Optional[float] = None, **kwargs
+        self,
+        Sig: Signal,
+        plot: bool = False,
+        plot_lineinterval: Optional[float] = None,
+        **kwargs,
     ):
         super().__init__(Sig=Sig, plot=plot, **kwargs)
         # 该分析类的特有参数
@@ -225,7 +229,7 @@ class Cep_Analysis(Analysis):
         q_Axis = np.linspace(0, self.Sig.T, len(fft_analytic), endpoint=False)[
             : len(fft_analytic) // 2
         ]  # zoom-fft和解析操作不改变采样时间长度
-        zoom_cep=zoom_cep[:len(q_Axis)]
+        zoom_cep = zoom_cep[: len(q_Axis)]
         return q_Axis, zoom_cep
 
     # ---------------------------------------------------------------------------------------#
