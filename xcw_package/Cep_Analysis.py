@@ -297,8 +297,8 @@ def zoom_Aft(
     Sig: Signal,
     center_freq: int,
     bandwidth: int,
-    **kwargs,
 ) -> np.ndarray:
+    # 查询信号数据
     data = Sig.data
     t_Axis = Sig.t_Axis
     fs = Sig.fs

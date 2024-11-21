@@ -163,7 +163,7 @@ class Frequency_Analysis(Analysis):
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
     @Check_Vars({"Sig": Signal})
-    def Cft(self, WinType: str = "矩形窗", **kwargs) -> np.ndarray:
+    def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的单边傅里叶级数谱
 
