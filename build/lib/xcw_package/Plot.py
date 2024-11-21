@@ -290,4 +290,5 @@ def plot_findpeak(
     savefig = kwargs.get("savefig", False)
     if savefig:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
+    plt.tight_layout()
     plt.show()

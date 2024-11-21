@@ -180,11 +180,11 @@ class Signal:
 
 # --------------------------------------------------------------------------------------------#
 class Analysis:
-    @Check_Vars({"signal": {}})
+    @Check_Vars({"Sig": {}})
     def __init__(
-        self, signal: Signal, plot: bool = False, plot_save: bool = False, **kwargs
+        self, Sig: Signal, plot: bool = False, plot_save: bool = False, **kwargs
     ):
-        self.signal = signal
+        self.Sig = Sig
         # 绘图参数全局设置
         self.plot = plot
         self.plot_save = plot_save

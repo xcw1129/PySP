@@ -4,23 +4,72 @@
 ## 内容
     - class
         1.Cep_Analysis: 倒谱分析类
+    - function
+        1. plot_withline: 绘制带有提示线的折线图
+        2. zoom_Aft: Zoom-FFT频谱分析
 """
 
 from .dependencies import Optional
 from .dependencies import np
 from .dependencies import fft, signal
-from .dependencies import plt
-from .dependencies import FLOAT_EPS
+from .dependencies import plt, zh_font
+from .dependencies import FLOAT_EPS, PI
 
 from .Signal import Signal, Analysis
+from .Plot import plot_spectrum
 
-from .decorators import Check_Vars
+from .decorators import Check_Vars, Plot
 
 
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
+@Check_Vars({"Axis": {"ndim:1"}, "data": {"ndim": 1}})
+def plot_withline(
+    Axis: np.ndarray,
+    data: np.ndarray,
+    **kwargs,
+):
+    if len(Axis) != len(data):
+        raise ValueError(f"Axis={len(Axis)}和data={len(data)}的长度不一致")
+    # -----------------------------------------------------------------------------------#
+    # 设置图像界面
+    figsize = kwargs.get("figsize", (12, 5))
+    plt.figure(figsize=figsize)
+    plt.plot(Axis, data)
+    # 绘制间隔线
+    lineinterval = kwargs.get("lineinterval", None)
+    if lineinterval is not None:
+        # 绘制等间隔峰值线
+        for t in np.arange(Axis[0], Axis[-1], lineinterval)[1:]:
+            plt.axvline(t, color="red", linestyle="--", linewidth=1, dashes=(10, 15))
+    # 设置标题
+    title = kwargs.get("title", None)
+    plt.title(title, fontproperties=zh_font)
+    # 设置图像栅格
+    plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
+    # -----------------------------------------------------------------------------------#
+    # 设置坐标轴参数
+    # 设置x轴参数
+    xlabel = kwargs.get("xlabel", None)
+    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0.2, loc="right")  # 标签
+    xlim = kwargs.get("xlim", (None, None))
+    plt.xlim(xlim[0], xlim[1])  # 刻度范围
+    # 设置y轴参数
+    ylabel = kwargs.get("ylabel", None)
+    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
+    ylim = kwargs.get("ylim", (None, None))
+    plt.ylim(ylim[0], ylim[1])  # 刻度范围
+    # -----------------------------------------------------------------------------------#
+    # 按指定格式保存图片并显示
+    savefig = kwargs.get("savefig", False)
+    if savefig:
+        plt.savefig(title + ".svg", format="svg")  # 保存图片
+    plt.show()
+
+
+# ---------------------------------------------------------------------------------------#
 class Cep_Analysis(Analysis):
     """
     倒谱分析类，提供各类倒谱分析与基于倒谱的信号处理方法
@@ -55,71 +104,28 @@ class Cep_Analysis(Analysis):
     Cep_Reconstruct() : 倒谱重构
     Cep_Analytic() : 解析倒谱
     Cep_Zoom() : 频带倒谱
+    Cep_Lift() : 倒谱滤波
     Enco_detect() : 基于倒谱的回声检测
-    Liftering() : 倒谱滤波
     """
 
     def __init__(
-        self, signal: Signal, plot, plot_lineinterval: Optional[float] = None, **kwargs
+        self,
+        Sig: Signal,
+        plot: bool = False,
+        plot_lineinterval: Optional[float] = None,
+        **kwargs,
     ):
-        super().__init__(signal, plot, **kwargs)
+        super().__init__(Sig=Sig, plot=plot, **kwargs)
         # 该分析类的特有参数
         # -----------------------------------------------------------------------------------#
         # 绘图参数
         self.plot_kwargs["lineinterval"] = plot_lineinterval
 
     # ---------------------------------------------------------------------------------------#
-    @Check_Vars({"Axis": {"ndim:1"}, "data": {"ndim": 1}})
-    @staticmethod
-    def plot_withline(
-        Axis: np.ndarray,
-        data: np.ndarray,
-        savefig: bool = False,
-        **kwargs,
-    ):
-        if len(Axis) != len(data):
-            raise ValueError(f"Axis={len(Axis)}和data={len(data)}的长度不一致")
-        # -----------------------------------------------------------------------------------#
-        # 设置图像界面
-        figsize = kwargs.get("figsize", (12, 5))
-        plt.figure(figsize=figsize)
-        plt.plot(Axis, data)
-        # 绘制间隔线
-        lineinterval = kwargs.get("lineinterval", None)
-        if lineinterval is not None:
-            # 绘制等间隔峰值线
-            for t in np.arange(Axis[0], Axis[-1], lineinterval)[1:]:
-                plt.axvline(
-                    t, color="red", linestyle="--", linewidth=1, dashes=(10, 15)
-                )
-        # 设置标题
-        title = kwargs.get("title", None)
-        plt.title(title)
-        # 设置图像栅格
-        plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
-        # -----------------------------------------------------------------------------------#
-        # 设置坐标轴参数
-        # 设置x轴参数
-        xlabel = kwargs.get("xlabel", None)
-        plt.xlabel(xlabel)  # 标签
-        xlim = kwargs.get("xlim", (None, None))
-        plt.xlim(xlim[0], xlim[1])  # 刻度范围
-        # 设置y轴参数
-        ylabel = kwargs.get("ylabel", None)
-        plt.ylabel(ylabel)  # 标签
-        ylim = kwargs.get("ylim", (None, None))
-        plt.ylim(ylim[0], ylim[1])  # 刻度范围
-        # -----------------------------------------------------------------------------------#
-        # 按指定格式保存图片并显示
-        if savefig:
-            plt.savefig(title + ".svg", format="svg")  # 保存图片
-        plt.show()
-
-    # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_withline)
     def Cep_Real(self) -> np.ndarray:
         # 查询信号数据
-        data = self.signal.data
+        data = self.Sig.data
         # 计算实数倒谱
         rfft_data = fft.rfft(data)  # 实数据故使用rfft
         log_A = 10 * np.log10(np.abs(rfft_data) + FLOAT_EPS)
@@ -127,15 +133,15 @@ class Cep_Analysis(Analysis):
         # -----------------------------------------------------------------------------------#
         # 后处理
         real_cep[0] = 0  # 排除对数谱负偏置影响
-        t_Axis = self.signal.t_Axis[0 : self.signal.N // 2]
-        real_cep = real_cep[: len(t_Axis)]
-        return t_Axis, real_cep
+        q_Axis = self.Sig.t_Axis[0 : self.Sig.N // 2]
+        real_cep = real_cep[: len(q_Axis)]
+        return q_Axis, real_cep
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_withline)
     def Cep_Power(self) -> np.ndarray:
         # 查询信号数据
-        data = self.signal.data
+        data = self.Sig.data
         # 计算功率倒谱
         rfft_data = fft.rfft(data)
         log_A = 10 * np.log10(np.abs(rfft_data) + FLOAT_EPS)
@@ -144,15 +150,15 @@ class Cep_Analysis(Analysis):
         # -----------------------------------------------------------------------------------#
         # 后处理
         power_cep[0] = 0  # 排除对数谱负偏置影响
-        t_Axis = self.signal.t_Axis[0 : self.signal.N // 2]
-        power_cep = power_cep[: len(t_Axis)]
-        return t_Axis, power_cep
+        q_Axis = self.Sig.t_Axis[0 : self.Sig.N // 2]
+        power_cep = power_cep[: len(q_Axis)]
+        return q_Axis, power_cep
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_withline)
     def Cep_Complex(self) -> np.ndarray:
         # 查询信号数据
-        data = self.signal.data
+        data = self.Sig.data
         # 计算复数倒谱
         fft_data = fft.fft(data)
         log_A = np.log(np.abs(fft_data) + FLOAT_EPS)
@@ -160,15 +166,16 @@ class Cep_Analysis(Analysis):
         complex_cep = np.real(fft.ifft(log_A + 1j * phi))  # 复数倒谱为实数，故只取实部
         # -----------------------------------------------------------------------------------#
         # 后处理
-        t_Axis = self.signal.t_Axis
-        complex_cep = complex_cep[: len(t_Axis)]
-        return t_Axis, complex_cep
+        q_Axis = self.Sig.t_Axis
+        complex_cep = complex_cep[: len(q_Axis)]
+        return q_Axis, complex_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
-    def Cep_Reconstruct(self) -> np.ndarray:
-        # 查询信号数据
-        data = self.signal.data
+    @staticmethod
+    @Plot("1D", plot_spectrum)
+    def Cep_Reconstruct(q_Axis: np.ndarray, data: np.ndarray, **Kwargs) -> np.ndarray:
+        if len(q_Axis) != len(data):
+            raise ValueError(f"q_Axis={len(q_Axis)}和data={len(data)}的长度不一致")
         # 根据输入的复倒谱重构频谱
         fft_cep = fft.fft(data)
         log_A = np.real(fft_cep)
@@ -178,14 +185,14 @@ class Cep_Analysis(Analysis):
         reconstruct_data = fft.ifft(fft_data).real
         # -----------------------------------------------------------------------------------#
         # 后处理
-        t_Axis = self.signal.t_Axis
+        t_Axis = q_Axis
         return t_Axis, reconstruct_data
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_withline)
     def Cep_Analytic(self) -> np.ndarray:
         # 查询信号数据
-        data = self.signal.data
+        data = self.Sig.data
         # 计算解析倒谱
         fft_data = fft.fft(data)
         log_A = 10 * np.log10(np.abs(fft_data) + FLOAT_EPS)
@@ -198,19 +205,17 @@ class Cep_Analysis(Analysis):
         # -----------------------------------------------------------------------------------#
         # 后处理
         analytic_cep[0] = 0  # 排除对数谱负偏置影响
-        t_Axis = self.signal.t_Axis[0 : self.signal.N // 2]
-        analytic_cep = analytic_cep[: len(t_Axis)]
-        return t_Axis, analytic_cep
+        q_Axis = self.Sig.t_Axis[0 : self.Sig.N // 2]
+        analytic_cep = analytic_cep[: len(q_Axis)]
+        return q_Axis, analytic_cep
 
     # ---------------------------------------------------------------------------------------#
+    @Check_Vars({"fc": {"Low": 1}, "bw": {"Low": 1}})
     @Analysis.Plot("1D", plot_withline)
-    @Check_Vars({"fc": {"LowLimit": 0}, "bw": {"LowLimit": 0}})
     def Cep_Zoom(self, fc: int, bw: int) -> np.ndarray:
-        # 查询信号数据
-        data = self.signal.data
         # 计算Zoom-FFT
-        zoomfft_data = self.zoom_fft(data, center_freq=fc, bandwidth=bw)
-        log_zoomA = 10 * np.log10(np.abs(zoomfft_data) + FLOAT_EPS)  # 取对数幅值
+        _, zoom_Amp = zoom_Aft(Sig=self.Sig, center_freq=fc, bandwidth=bw)
+        log_zoomA = 10 * np.log10(zoom_Amp + FLOAT_EPS)  # 取对数幅值
         log_zoomA -= np.mean(log_zoomA)
         # 计算解析倒谱
         fft_analytic = np.pad(
@@ -221,52 +226,25 @@ class Cep_Analysis(Analysis):
         # -----------------------------------------------------------------------------------#
         # 后处理
         zoom_cep[0] = 0  # 排除对数谱负偏置影响
-        t_Axis = np.linspace(0, self.signal.T, len(fft_analytic), endpoint=False)[
+        q_Axis = np.linspace(0, self.Sig.T, len(fft_analytic), endpoint=False)[
             : len(fft_analytic) // 2
         ]  # zoom-fft和解析操作不改变采样时间长度
-        return t_Axis, zoom_cep
+        zoom_cep = zoom_cep[: len(q_Axis)]
+        return q_Axis, zoom_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Check_Vars({"distance": {"LowLimit": 0}})
-    def Enco_detect(
-        self, height: Optional[float] = None, distance: int = 10
-    ) -> np.ndarray:
-        # 通过倒谱检测回声信号
-        _, cep_real = self.Cep_Real()  # 计算实数倒谱
-        # -----------------------------------------------------------------------------------#
-        # 寻找峰值
-        if height is None:
-            height = 3 * np.std(cep_real, ddof=1)  # 根据倒谱的标准差设置峰值高度
-        peak_idxs, peak_params = signal.find_peaks(
-            cep_real, height=height, distance=distance
-        )  # 限制规则寻找峰值
-        peak_heights = peak_params["peak_heights"]
-        # 按高度对索引排序
-        peak_idxs = peak_idxs[np.argsort(peak_heights)[::-1]]
-        # 去除靠近端点的峰值
-        peak_idxs = peak_idxs[
-            (peak_idxs > distance) & (peak_idxs < self.signal.N - distance)
-        ]
-        # 计算回波时延
-        enco_tau = peak_idxs / self.signal.fs
-        return enco_tau
-
-    # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
     @Check_Vars({"num": {"LowLimit": 1}})
-    def Liftering(
+    @Analysis.Plot("1D", plot_withline)
+    def Cep_Lift(
         self, Q: float, width: float, num: int, type: str = "Type1"
     ) -> np.ndarray:
-        if num < 1:
-            raise ValueError("滤波个数num必须大于等于1")
+        fs = self.Sig.fs
         # 计算复数倒谱
         _, complex_cep = self.Cep_Complex()
         # -----------------------------------------------------------------------------------#
         # 倒频域滤波
         # 生成梳状滤波器
-        q_Axis = (
-            np.arange(len(complex_cep)) / self.signal.fs
-        )  # 倒频率轴，与原始信号时间轴数值相同
+        q_Axis = np.arange(len(complex_cep)) / fs  # 倒频率轴，与原始信号时间轴数值相同
         comb_filter = np.ones(len(q_Axis))
         # 生成滤波器
         for i in range(1, num + 1):
@@ -286,3 +264,68 @@ class Cep_Analysis(Analysis):
         # 倒频域内滤波
         complex_cep *= comb_filter
         return q_Axis, complex_cep
+
+    # ---------------------------------------------------------------------------------------#
+    @Check_Vars({"height": {"OpenLow": 0}, "distance": {"Low": 1}})
+    def Enco_detect(
+        self, height: Optional[float] = None, distance: int = 10
+    ) -> np.ndarray:
+        N = self.Sig.N
+        fs = self.Sig.fs
+        # 通过倒谱检测回声信号
+        _, cep_real = self.Cep_Real()  # 计算实数倒谱
+        # -----------------------------------------------------------------------------------#
+        # 寻找峰值
+        if height is None:
+            height = 3 * np.std(cep_real, ddof=1)  # 根据倒谱的标准差设置峰值高度
+        peak_idxs, peak_params = signal.find_peaks(
+            cep_real, height=height, distance=distance
+        )  # 限制规则寻找峰值
+        peak_heights = peak_params["peak_heights"]
+        # 按高度对索引排序
+        peak_idxs = peak_idxs[np.argsort(peak_heights)[::-1]]
+        # 去除靠近端点的峰值
+        peak_idxs = peak_idxs[(peak_idxs > distance) & (peak_idxs < N - distance)]
+        # 计算回波时延
+        enco_tau = peak_idxs / fs
+        return enco_tau
+
+
+# ---------------------------------------------------------------------------------------#
+@Check_Vars({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
+def zoom_Aft(
+    Sig: Signal,
+    center_freq: int,
+    bandwidth: int,
+    **kwargs,
+) -> np.ndarray:
+    data = Sig.data
+    t_Axis = Sig.t_Axis
+    fs = Sig.fs
+    # 计算Zoom-FFT的参数
+    cutoff = bandwidth / 2  # 低通滤波器的截止频率
+    # 复调制实现频带移动
+    cm_data = data * np.exp(-1j * 2 * PI * center_freq * t_Axis)
+    # 低通数字滤波
+    b, a = signal.butter(8, cutoff, "lowpass", fs=fs)
+    cm_data = signal.filtfilt(b, a, cm_data)
+    # -----------------------------------------------------------------------------------#
+    # 重采样减小无效数据点数
+    Zoom_fs = 2 * cutoff
+    ration = int(fs / Zoom_fs)
+    bp_data = cm_data[::ration]  # 重采样降低数据点数
+    real_Zoom_fs = fs / ration  # 实际细化后的采样频率
+    # 频谱分析
+    zoomfft_data = fft.fftshift(
+        fft.fft(bp_data) / len(bp_data)
+    )  # 非对称频谱,范围为f_low~f_high
+    zoom_Amp = np.abs(zoomfft_data)
+    # -----------------------------------------------------------------------------------#
+    # 后处理
+    f_Axis = np.linspace(
+        center_freq - real_Zoom_fs / 2,
+        center_freq + real_Zoom_fs / 2,
+        len(zoomfft_data),
+        endpoint=False,
+    )
+    return f_Axis, zoom_Amp

@@ -106,6 +106,7 @@ def Plot(plot_type: str, plot_func: callable):
             if plot:
                 if plot_type == "1D":
                     Axis, data = res[0], res[1]
+                    kwargs.pop("data", None)#防止静态方法的输入参数data干扰
                     plot_func(Axis, data, **kwargs)
                 elif plot_type == "2D":
                     Axis1, Axis2, data = res[0], res[1], res[2]
