@@ -112,10 +112,11 @@ class Cep_Analysis(Analysis):
         self,
         Sig: Signal,
         plot: bool = False,
+        plot_save: bool = False,
         plot_lineinterval: Optional[float] = None,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, **kwargs)
+        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
         # 该分析类的特有参数
         # -----------------------------------------------------------------------------------#
         # 绘图参数
