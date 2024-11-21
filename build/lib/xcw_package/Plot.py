@@ -69,7 +69,7 @@ def plot_spectrum(
         y轴刻度范围, 默认为None
     title : str, 可选
         图像标题, 默认为None
-    savefig : bool, 可选
+    plot_save : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
@@ -108,8 +108,8 @@ def plot_spectrum(
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
-    savefig = kwargs.get("savefig", False)
-    if savefig:
+    plot_save = kwargs.get("plot_save", False)
+    if plot_save:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.show()
 
@@ -145,9 +145,9 @@ def plot_spectrogram(
         谱图强度标签, 默认为None
     title : str, 可选
         图像标题, 默认为None
-    savefig : bool, 可选
+    plot_save : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
-    savefig : bool, 可选
+    plot_save : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
@@ -192,8 +192,8 @@ def plot_spectrogram(
     plt.colorbar(label=colorbar)
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
-    savefig = kwargs.get("savefig", False)
-    if savefig:
+    plot_save = kwargs.get("plot_save", False)
+    if plot_save:
         plt.savefig(title + ".svg", format="svg")
     plt.show()
 
@@ -227,9 +227,9 @@ def plot_findpeak(
         y轴刻度范围, 默认为None
     title : str, 可选
         图像标题, 默认为None
-    savefig : bool, 可选
+    plot_save : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
-    savefig : bool, 可选
+    plot_save : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
@@ -287,8 +287,8 @@ def plot_findpeak(
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
-    savefig = kwargs.get("savefig", False)
-    if savefig:
+    plot_save = kwargs.get("plot_save", False)
+    if plot_save:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.tight_layout()
     plt.show()

@@ -63,8 +63,8 @@ def plot_withline(
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # -----------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
-    savefig = kwargs.get("savefig", False)
-    if savefig:
+    plot_save = kwargs.get("plot_save", False)
+    if plot_save:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.show()
 
@@ -76,7 +76,7 @@ class Cep_Analysis(Analysis):
 
     参数:
     --------
-    signal : Signal
+    Sig : Signal
         信号类实例，用于向类方法提供信号数据
     plot : bool
         是否绘制图像。默认为False
@@ -87,7 +87,7 @@ class Cep_Analysis(Analysis):
 
     属性:
     --------
-    signal : Signal
+    Sig : Signal
         信号类实例，用于向类方法提供信号数据
     plot : bool
         是否绘制图像。默认为False
@@ -112,10 +112,11 @@ class Cep_Analysis(Analysis):
         self,
         Sig: Signal,
         plot: bool = False,
+        plot_save: bool = False,
         plot_lineinterval: Optional[float] = None,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, **kwargs)
+        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
         # 该分析类的特有参数
         # -----------------------------------------------------------------------------------#
         # 绘图参数
@@ -174,6 +175,7 @@ class Cep_Analysis(Analysis):
     @staticmethod
     @Plot("1D", plot_spectrum)
     def Cep_Reconstruct(q_Axis: np.ndarray, data: np.ndarray, **Kwargs) -> np.ndarray:
+        # 检查输入数据
         if len(q_Axis) != len(data):
             raise ValueError(f"q_Axis={len(q_Axis)}和data={len(data)}的长度不一致")
         # 根据输入的复倒谱重构频谱
@@ -297,8 +299,8 @@ def zoom_Aft(
     Sig: Signal,
     center_freq: int,
     bandwidth: int,
-    **kwargs,
 ) -> np.ndarray:
+    # 查询信号数据
     data = Sig.data
     t_Axis = Sig.t_Axis
     fs = Sig.fs

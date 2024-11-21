@@ -196,15 +196,13 @@ class Analysis:
             def wrapper(self, *args, **kwargs):
                 res = func(self, *args, **kwargs)
                 if self.plot:
-                    self.plot_kwargs["savefig"] = self.plot_save
+                    self.plot_kwargs["plot_save"] = self.plot_save
                     if plot_type == "1D":
                         Axis, data = res[0], res[1]
                         plot_func(Axis, data, **self.plot_kwargs)
                     elif plot_type == "2D":
                         Axis1, Axis2, data = res[0], res[1], res[2]
-                        plot_func(
-                            Axis1, Axis2, data, **self.plot_kwargs
-                        )
+                        plot_func(Axis1, Axis2, data, **self.plot_kwargs)
                 return res
 
             return wrapper
