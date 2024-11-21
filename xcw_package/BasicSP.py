@@ -3,11 +3,12 @@
 基础信号分析及处理模块
 
 ## 内容
+    - class:
+        1. Time_Analysis: 时域信号分析、处理方法
+        2. Frequency_Analysis: 频域信号分析、处理方法
+        3. TimeFre_Analysis: 时频域信号分析、处理方法
     - function: 
-        1. window: 生成窗函数序列
-        2. ft: 计算信号的归一化傅里叶变换频谱
-        3. Stft: 短时傅里叶变换 (STFT)
-        4. iStft: 逆短时傅里叶变换 (ISTFT)
+        1. window: 生成各类窗函数整周期采样序列
 """
 
 from .dependencies import Optional, Callable
@@ -16,7 +17,7 @@ from .dependencies import plt, zh_font
 from .dependencies import fft
 
 
-from .decorators import Check_Vars, Plot
+from .decorators import Check_Vars
 
 from .Signal import Signal, Analysis
 from .Plot import plot_spectrum
@@ -126,6 +127,9 @@ def window(
 
 # --------------------------------------------------------------------------------------------#
 class Time_Analysis(Analysis):
+    """
+    时域信号分析、处理方法
+    """
     def __init__(
         self,
         Sig: Signal,
@@ -140,6 +144,9 @@ class Time_Analysis(Analysis):
 
 # --------------------------------------------------------------------------------------------#
 class Frequency_Analysis(Analysis):
+    """
+    频域信号分析、处理方法
+    """
     def __init__(
         self,
         Sig: Signal,
@@ -181,6 +188,23 @@ class Frequency_Analysis(Analysis):
         f_Axis = self.Sig.f_Axis[: N // 2]
         Amp = 2 * Amp[: len(f_Axis)]
         return f_Axis, Amp
+
+
+# --------------------------------------------------------------------------------------------#
+class TimeFre_Analysis(Analysis):
+    """
+    时频域信号分析、处理方法
+    """
+    def __init__(
+        self,
+        Sig: Signal,
+        plot: bool = False,
+        plot_save: bool = False,
+        **kwargs,
+    ):
+        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        # 该分析类的特有参数
+        # -----------------------------------------------------------------------------------#
 
 
 # def pdf(data: np.ndarray, samples: int, plot: bool = False, **Kwargs) -> np.ndarray:
