@@ -1,5 +1,5 @@
 # PYTHON基础库
-from typing import Optional, Callable, get_origin, get_args  # 类型提示
+from typing import Optional, Callable, Union, get_origin, get_args  # 类型提示
 from functools import wraps  # 函数对象操作
 import inspect  # 函数检查
 
