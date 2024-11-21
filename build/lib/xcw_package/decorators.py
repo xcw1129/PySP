@@ -1,6 +1,7 @@
 from .dependencies import np
 from .dependencies import inspect
 from .dependencies import wraps
+from .dependencies import get_origin, get_args, Optional
 
 
 # --------------------------------------------------------------------------------------------#
@@ -30,6 +31,9 @@ def Check_Vars(*var_checks):
                 var_cond = var_checks_json[var_name]  # 变量额外检查条件
                 if var_value is not None:
                     # -----------------------------------------------------------------------#
+                    # 处理 Optional 类型
+                    if get_origin(var_type) is Optional:
+                        var_type = get_args(var_type)[0]
                     # 检查输入值类型是否为预设类型
                     if var_type and not isinstance(var_value, var_type):
                         raise TypeError(
@@ -106,7 +110,7 @@ def Plot(plot_type: str, plot_func: callable):
             if plot:
                 if plot_type == "1D":
                     Axis, data = res[0], res[1]
-                    kwargs.pop("data", None)#防止静态方法的输入参数data干扰
+                    kwargs.pop("data", None)  # 防止静态方法的输入参数data干扰
                     plot_func(Axis, data, **kwargs)
                 elif plot_type == "2D":
                     Axis1, Axis2, data = res[0], res[1], res[2]

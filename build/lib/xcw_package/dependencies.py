@@ -1,6 +1,6 @@
 # PYTHON基础库
-from typing import Optional, Callable  # 类型提示
-from functools import wraps  # 装饰器
+from typing import Optional, Callable, get_origin, get_args  # 类型提示
+from functools import wraps  # 函数对象操作
 import inspect  # 函数检查
 
 # 向量数值计算库
