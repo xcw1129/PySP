@@ -1,7 +1,7 @@
 from .dependencies import np
 from .dependencies import inspect
 from .dependencies import wraps
-from .dependencies import get_origin, get_args, Optional
+from .dependencies import get_origin, get_args, Union
 
 
 # --------------------------------------------------------------------------------------------#
@@ -32,8 +32,11 @@ def Check_Vars(*var_checks):
                 if var_value is not None:
                     # -----------------------------------------------------------------------#
                     # 处理 Optional 类型
-                    if get_origin(var_type) is Optional:
+                    if get_origin(var_type) is Union:
                         var_type = get_args(var_type)[0]
+                    # 处理float变量的int输入
+                    if var_type == float and isinstance(var_value, int):
+                        var_value = float(var_value)
                     # 检查输入值类型是否为预设类型
                     if var_type and not isinstance(var_value, var_type):
                         raise TypeError(
