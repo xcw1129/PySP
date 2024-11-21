@@ -33,24 +33,24 @@ TEST_DATA["data1"] = DE
 # 测试设置
 Data = TEST_DATA["data1"]
 Fs = 12000
-SAVEFIG = True
+SAVEFIG = False
 
-IF_TEST_PLOT_SPECTRUM = True
-IF_TEST_PLOT_SPECTROGRAM = True
-IF_TEST_PLOT_FINDPEAK = True
-IF_TEST_SIGNAL_SIG = True
-IF_TEST_SIGNAL_SIGPLOT = True
-IF_TEST_SIGNAL_RESAMPLE = True
-IF_TEST_BASICSP_WINDOW = True
-IF_TEST_BASICSP_FT = True
+IF_TEST_PLOT_SPECTRUM = False
+IF_TEST_PLOT_SPECTROGRAM = False
+IF_TEST_PLOT_FINDPEAK = False
+IF_TEST_SIGNAL_SIG = False
+IF_TEST_SIGNAL_SIGPLOT = False
+IF_TEST_SIGNAL_RESAMPLE = False
+IF_TEST_BASICSP_WINDOW = False
+IF_TEST_BASICSP_FRE_CFT = True
 IF_TEST_BASICSP_STFT = False
 IF_TEST_BASICSP_ISTFT = False
-IF_TEST_CEP_CEPREAL = True
-IF_TEST_CEP_CEPPOWER = True
-IF_TEST_CEP_CEPCOMPLEX = True
-IF_TEST_CEP_CEPRECONSTRUCT = True
-IF_TEST_CEP_CEPANALYTIC = True
-IF_TEST_CEP_CEPZOOM = True
+IF_TEST_CEP_CEPREAL = False
+IF_TEST_CEP_CEPPOWER = False
+IF_TEST_CEP_CEPCOMPLEX = False
+IF_TEST_CEP_CEPRECONSTRUCT = False
+IF_TEST_CEP_CEPANALYTIC = False
+IF_TEST_CEP_CEPZOOM = False
 # --------------------------------------------------------------------------------------------#
 # 开始测试并记录
 log_file = os.path.join(BASE_DIR + "//test", "test_log.txt")
@@ -158,20 +158,19 @@ with open(log_file, "w", encoding="utf-8") as f:
             print("\tBasicSP.window()测试失败:", e)
             f.write(f"\tBasicSP.window()测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
-    if IF_TEST_BASICSP_FT:
+    if IF_TEST_BASICSP_FRE_CFT:
         try:
-            res = BasicSP.ft(
+            res = BasicSP.Frequency_Analysis(
                 Sig=Sig_test,
                 plot=True,
                 xlabel="频率f/Hz",
-                title="BasicSP.ft()",
-                savefig=SAVEFIG,
-            )
-            print("\tBasicSP.ft()测试通过")
-            f.write("\tBasicSP.ft()测试通过\n")
+                title="BasicSP.Frequency_Analysis().Cft()",
+            ).Cft(WinType="汉宁窗")
+            print("\tBasicSP.Frequency_Analysis().Cft()测试通过")
+            f.write("\tBasicSP.Frequency_Analysis().Cft()测试通过\n")
         except Exception as e:
-            print("\tBasicSP.ft()测试失败:", e)
-            f.write(f"\tBasicSP.ft()测试失败: {e}\n")
+            print("\tBasicSP.Frequency_Analysis().Cft()测试失败:", e)
+            f.write(f"\tBasicSP.Frequency_Analysis().Cft()测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_BASICSP_STFT:
         try:
@@ -302,18 +301,18 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_CEP_CEPZOOM:
         try:
-            res=Cep_Analysis.Cep_Analysis(
+            res = Cep_Analysis.Cep_Analysis(
                 Sig=Sig_test,
                 plot=True,
                 plot_save=SAVEFIG,
                 xlabel="倒频率q/s",
                 title="Cep_Analysis.Cep_Analysis().Cep_Zoom()",
-            ).Cep_Zoom(fc=1000,bw=200)
+            ).Cep_Zoom(fc=1000, bw=200)
             print("\tCep_Analysis.Cep_Analysis().Cep_Zoom()测试通过")
             f.write("\tCep_Analysis.Cep_Analysis().Cep_Zoom()测试通过\n")
         except Exception as e:
             print("\tCep_Analysis.Cep_Analysis().Cep_Zoom()测试失败:", e)
-            f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Zoom(): {e}\n")   
+            f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Zoom(): {e}\n")
 # --------------------------------------------------------------------------------------------#
 # 测试完成
 print("测试日志已保存到.../test/test_log.txt")

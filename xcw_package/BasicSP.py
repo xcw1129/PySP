@@ -130,6 +130,7 @@ class Time_Analysis(Analysis):
     """
     时域信号分析、处理方法
     """
+
     def __init__(
         self,
         Sig: Signal,
@@ -147,6 +148,7 @@ class Frequency_Analysis(Analysis):
     """
     频域信号分析、处理方法
     """
+
     def __init__(
         self,
         Sig: Signal,
@@ -167,7 +169,7 @@ class Frequency_Analysis(Analysis):
 
         参数:
         ----------
-        window : str
+        WinType : str
             加窗类型, 默认为矩形窗
 
         返回:
@@ -195,6 +197,7 @@ class TimeFre_Analysis(Analysis):
     """
     时频域信号分析、处理方法
     """
+
     def __init__(
         self,
         Sig: Signal,
