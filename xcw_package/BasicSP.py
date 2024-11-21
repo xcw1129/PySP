@@ -13,20 +13,20 @@
 from .dependencies import Optional, Callable
 from .dependencies import np
 from .dependencies import plt, zh_font
-from .dependencies import signal
 from .dependencies import fft
-from .dependencies import stats
+
 
 from .decorators import Check_Vars, Plot
 
-from .Signal import Signal
-from .Plot import plot_spectrum, plot_spectrogram
+from .Signal import Signal, Analysis
+from .Plot import plot_spectrum
 
 
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
+# --------------------------------------------------------------------------------------------#
 @Check_Vars({"type": {}, "num": {"OpenLow": 0}, "padding": {"Low": 0}})
 def window(
     type: str,
@@ -34,6 +34,7 @@ def window(
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
     plot: bool = False,
+    plot_save: bool = False,
     **Kwargs,
 ) -> np.ndarray:
     """
@@ -51,7 +52,7 @@ def window(
         窗序列双边各零填充点数, 默认不填充
     plot : bool, 可选
         绘制所有自带窗函数图形, 以检查窗函数形状, 默认不检查
-    savefig : bool, 可选
+    plot_save : bool, 可选
         是否保存绘制的窗函数图, 默认不保存
 
     返回:
@@ -104,8 +105,8 @@ def window(
         title = Kwargs.get("title", "窗函数测试图")
         fig.suptitle(title, fontproperties=zh_font, fontsize=16)
         plt.tight_layout(rect=[0, 0, 1, 0.98])
-        savefig = Kwargs.get("savefig", False)
-        if savefig:
+        plot_save = Kwargs.get("plot_save", False)
+        if plot_save:
             plt.savefig(title + ".svg", format="svg")
         plt.show()
     # ---------------------------------------------------------------------------------------#
@@ -124,41 +125,62 @@ def window(
 
 
 # --------------------------------------------------------------------------------------------#
-@Plot("1D", plot_spectrum)
-@Check_Vars({"Sig":Signal})
-def Cft(Sig: Signal, WinType: str = "矩形窗", **kwargs) -> np.ndarray:
-    """
-    计算信号的傅里叶级数谱
+class Time_Analysis(Analysis):
+    def __init__(
+        self,
+        Sig: Signal,
+        plot: bool = False,
+        plot_save: bool = False,
+        **kwargs,
+    ):
+        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        # 该分析类的特有参数
+        # -----------------------------------------------------------------------------------#
 
-    参数:
-    ----------
-    Sig : Signal
-        输入信号
-    window : str
-        加窗类型, 默认为矩形窗
-    plot : bool, optional
-        是否绘制频谱, 默认不绘制
-    savefig : bool, optional
-        是否保存绘制的频谱图, 默认不保存
 
-    返回:
-    -------
-    f_Axis : np.ndarray
-        频率轴
-    Amp : np.ndarray
-        单边幅值谱
-    """
-    data = Sig.data
-    N = Sig.N
-    # 计算频谱幅值
-    scale, _, win_data = window(type=WinType, num=N)
-    windowed_data = data * win_data  # 加窗
-    fft_data = fft.fft(windowed_data) / N * scale  # 假设信号为功率信号
-    Amp = np.abs(fft_data)
-    # 后处理
-    f_Axis = Sig.f_Axis[: N // 2]
-    Amp = 2 * Amp[: len(f_Axis)]
-    return f_Axis, Amp
+# --------------------------------------------------------------------------------------------#
+class Frequency_Analysis(Analysis):
+    def __init__(
+        self,
+        Sig: Signal,
+        plot: bool = False,
+        plot_save: bool = False,
+        **kwargs,
+    ):
+        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        # 该分析类的特有参数
+        # -----------------------------------------------------------------------------------#
+
+    # ---------------------------------------------------------------------------------------#
+    @Analysis.Plot("1D", plot_spectrum)
+    @Check_Vars({"Sig": Signal})
+    def Cft(self, WinType: str = "矩形窗", **kwargs) -> np.ndarray:
+        """
+        计算信号的单边傅里叶级数谱
+
+        参数:
+        ----------
+        window : str
+            加窗类型, 默认为矩形窗
+
+        返回:
+        -------
+        f_Axis : np.ndarray
+            频率轴
+        Amp : np.ndarray
+            单边幅值谱
+        """
+        data = self.Sig.data
+        N = self.Sig.N
+        # 计算频谱幅值
+        scale, _, win_data = window(type=WinType, num=N)
+        windowed_data = data * win_data  # 加窗
+        fft_data = fft.fft(windowed_data) / N * scale  # 假设信号为功率信号, 如周期信号
+        Amp = np.abs(fft_data)
+        # 后处理
+        f_Axis = self.Sig.f_Axis[: N // 2]
+        Amp = 2 * Amp[: len(f_Axis)]
+        return f_Axis, Amp
 
 
 # def pdf(data: np.ndarray, samples: int, plot: bool = False, **Kwargs) -> np.ndarray:
