@@ -59,17 +59,17 @@ def plot_spectrum(
         x轴数据
     data : np.ndarray
         y轴数据
-    xlabel : str, 可选
+    (xlabel) : str, 可选
         x轴标签, 默认为None
-    xlim : tuple, 可选
+    (xlim) : tuple, 可选
         x轴刻度范围, 默认为None
-    ylabel : str, 可选
+    (ylabel) : str, 可选
         y轴标签, 默认为None
-    ylim : tuple, 可选
+    (ylim) : tuple, 可选
         y轴刻度范围, 默认为None
-    title : str, 可选
+    (title) : str, 可选
         图像标题, 默认为None
-    plot_save : bool, 可选
+    (plot_save) : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
@@ -99,6 +99,8 @@ def plot_spectrum(
     # 设置x轴参数
     xlabel = kwargs.get("xlabel", None)
     plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0.2, loc="right")  # 标签
+    xticks = kwargs.get("xticks", None)
+    plt.xticks(xticks)  # 刻度显示
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
     # 设置y轴参数
