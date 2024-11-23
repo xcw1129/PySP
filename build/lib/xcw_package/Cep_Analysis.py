@@ -31,6 +31,7 @@ def plot_withline(
     data: np.ndarray,
     **kwargs,
 ):
+    # 检查输入数据
     if len(Axis) != len(data):
         raise ValueError(f"Axis={len(Axis)}和data={len(data)}的长度不一致")
     # -----------------------------------------------------------------------------------#
@@ -48,7 +49,7 @@ def plot_withline(
     title = kwargs.get("title", None)
     plt.title(title, fontproperties=zh_font)
     # 设置图像栅格
-    plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
+    plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
     # -----------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
@@ -108,6 +109,7 @@ class Cep_Analysis(Analysis):
     Enco_detect() : 基于倒谱的回声检测
     """
 
+    @Analysis.Input({"Sig": {}, "plot_lineinterval": {"OpenLow": 0}})
     def __init__(
         self,
         Sig: Signal,
@@ -174,7 +176,7 @@ class Cep_Analysis(Analysis):
     # ---------------------------------------------------------------------------------------#
     @staticmethod
     @Plot("1D", plot_spectrum)
-    def Cep_Reconstruct(q_Axis: np.ndarray, data: np.ndarray, **Kwargs) -> np.ndarray:
+    def Cep_Reconstruct(q_Axis: np.ndarray, data: np.ndarray,**Kwargs) -> np.ndarray:
         # 检查输入数据
         if len(q_Axis) != len(data):
             raise ValueError(f"q_Axis={len(q_Axis)}和data={len(data)}的长度不一致")
@@ -212,8 +214,8 @@ class Cep_Analysis(Analysis):
         return q_Axis, analytic_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Check_Vars({"fc": {"Low": 1}, "bw": {"Low": 1}})
     @Analysis.Plot("1D", plot_withline)
+    @Analysis.Input({"fc": {"Low": 1}, "bw": {"Low": 1}})
     def Cep_Zoom(self, fc: int, bw: int) -> np.ndarray:
         # 计算Zoom-FFT
         _, zoom_Amp = zoom_Aft(Sig=self.Sig, center_freq=fc, bandwidth=bw)
@@ -235,8 +237,8 @@ class Cep_Analysis(Analysis):
         return q_Axis, zoom_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Check_Vars({"num": {"LowLimit": 1}})
     @Analysis.Plot("1D", plot_withline)
+    @ Analysis.Input({"Q":{"OpenLow":0},"width":{"OpenLow":0},"num": {"Low": 1}})
     def Cep_Lift(
         self, Q: float, width: float, num: int, type: str = "Type1"
     ) -> np.ndarray:
@@ -268,7 +270,7 @@ class Cep_Analysis(Analysis):
         return q_Axis, complex_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Check_Vars({"height": {"OpenLow": 0}, "distance": {"Low": 1}})
+    @Analysis.Input({"height": {"OpenLow": 0}, "distance": {"Low": 1}})
     def Enco_detect(
         self, height: Optional[float] = None, distance: int = 10
     ) -> np.ndarray:
@@ -294,11 +296,13 @@ class Cep_Analysis(Analysis):
 
 
 # ---------------------------------------------------------------------------------------#
+@Plot("1D", plot_spectrum)
 @Check_Vars({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
 def zoom_Aft(
     Sig: Signal,
     center_freq: int,
     bandwidth: int,
+    **Kwargs,
 ) -> np.ndarray:
     # 查询信号数据
     data = Sig.data

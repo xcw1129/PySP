@@ -14,12 +14,12 @@
 from .dependencies import Optional, Callable
 from .dependencies import np
 from .dependencies import plt, zh_font
-from .dependencies import fft
-
+from .dependencies import fft, stats
 
 from .decorators import Check_Vars
 
 from .Signal import Signal, Analysis
+
 from .Plot import plot_spectrum
 
 
@@ -28,14 +28,28 @@ from .Plot import plot_spectrum
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"type": {}, "num": {"OpenLow": 0}, "padding": {"Low": 0}})
+@Check_Vars(
+    {
+        "type": {
+            "Content": (
+                "矩形窗",
+                "汉宁窗",
+                "海明窗",
+                "巴特利特窗",
+                "布莱克曼窗",
+                "自定义窗",
+            )
+        },
+        "num": {"Low": 1},
+        "padding": {"Low": 1},
+    }
+)
 def window(
     type: str,
     num: int,
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
-    plot: bool = False,
-    plot_save: bool = False,
+    check: bool = False,
     **Kwargs,
 ) -> np.ndarray:
     """
@@ -51,10 +65,8 @@ def window(
         自定义窗函数, 默认不使用
     padding : int, 可选
         窗序列双边各零填充点数, 默认不填充
-    plot : bool, 可选
-        绘制所有自带窗函数图形, 以检查窗函数形状, 默认不检查
-    plot_save : bool, 可选
-        是否保存绘制的窗函数图, 默认不保存
+    check : bool, 可选
+        是否绘制所有窗函数图像以检查, 默认不检查
 
     返回:
     --------
@@ -90,8 +102,8 @@ def window(
     if N % 2 == 0:
         N += 1  # 保证window[N//2]采样点幅值为1, 此时窗函数非对称
     # ---------------------------------------------------------------------------------------#
-    # 检查窗函数,如需要
-    if plot:
+    # 检查所有窗函数,如需要
+    if check:
         window_num = len(window_func) - 1
         rows = window_num // 2 if len(window_func) % 2 == 0 else window_num // 2 + 1
         cols = 2
@@ -131,24 +143,7 @@ class Time_Analysis(Analysis):
     时域信号分析、处理方法
     """
 
-    def __init__(
-        self,
-        Sig: Signal,
-        plot: bool = False,
-        plot_save: bool = False,
-        **kwargs,
-    ):
-        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
-        # 该分析类的特有参数
-        # -----------------------------------------------------------------------------------#
-
-
-# --------------------------------------------------------------------------------------------#
-class Frequency_Analysis(Analysis):
-    """
-    频域信号分析、处理方法
-    """
-
+    @Analysis.Input({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
@@ -162,7 +157,90 @@ class Frequency_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
-    @Check_Vars({"Sig": Signal})
+    @Analysis.Input({"samples": {"Low": 20}, "AmpRange": {}})
+    def Pdf(self, samples: int = 100, AmpRange: Optional[tuple] = None) -> np.ndarray:
+        # 获取信号数据
+        data = self.Sig.data
+        # 计算概率密度函数
+        density = stats.gaussian_kde(data)  # 核密度估计
+        if AmpRange is not None:
+            amp_Axis = np.linspace(AmpRange[0], AmpRange[1], samples, endpoint=False)
+        else:
+            amp_Axis = np.linspace(min(data), max(data), samples, endpoint=False)
+        pdf = density(amp_Axis)  # 概率密度函数采样
+        return amp_Axis, pdf
+
+    # ---------------------------------------------------------------------------------------#
+    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Input(
+        {"Feature": {}, "step": {"OpenLow": 0}, "SegLength": {"OpenLow": 0}}
+    )
+    def Trend(self, Feature: str, step: float, SegLength: float) -> np.ndarray:
+        # 获取信号数据
+        data = self.Sig.data
+        N = self.Sig.N
+        fs = self.Sig.fs
+        t_Axis = self.Sig.t_Axis
+        # 计算时域统计特征趋势
+        step_idx = range(0, N, int(step * fs))  # 步长索引
+        SegNum = int(SegLength * fs)
+        seg_data = np.array(
+            [data[i : i + SegNum] for i in step_idx if i + SegNum <= N]
+        )  # 按步长切分数据成(N%step_idx)*SegNum的二维数组
+        t_Axis = t_Axis[:: step_idx[1]][: len(seg_data)]  # 与seg_data对应的时间轴
+        # 计算趋势
+        Feature_func = {
+            # 常用统计特征
+            "均值": np.mean,
+            "方差": np.var,
+            "标准差": np.std,
+            "均方值": lambda x, axis: np.mean(np.square(x), axis=axis),
+            # 有量纲参数指标
+            "方根幅值": lambda x, axis: np.square(
+                np.mean(np.sqrt(np.abs(x)), axis=axis)
+            ),
+            "平均幅值": lambda x, axis: np.mean(np.abs(x), axis=axis),
+            "有效值": lambda x, axis: np.sqrt(np.mean(np.square(x), axis=axis)),
+            "峰值": lambda x, axis: np.max(np.abs(x), axis=axis),
+            # 无量纲参数指标
+            "波形指标": lambda x, axis: np.sqrt(np.mean(np.square(x), axis=axis))
+            / np.mean(np.abs(x), axis=axis),
+            "峰值指标": lambda x, axis: np.max(np.abs(x), axis=axis)
+            / np.sqrt(np.mean(np.square(x), axis=axis)),
+            "脉冲指标": lambda x, axis: np.max(np.abs(x), axis=axis)
+            / np.mean(np.abs(x), axis=axis),
+            "裕度指标": lambda x, axis: np.max(np.abs(x), axis=axis)
+            / np.square(np.mean(np.sqrt(np.abs(x)), axis=axis)),
+            "偏度指标": stats.skew,
+            "峭度指标": stats.kurtosis,
+        }
+        if Feature not in Feature_func.keys():
+            raise ValueError(f"不支持的特征指标{Feature}")
+        trend = Feature_func[Feature](seg_data, axis=1)
+        return t_Axis, trend
+
+
+# --------------------------------------------------------------------------------------------#
+class Frequency_Analysis(Analysis):
+    """
+    信号频域分析、处理方法
+    """
+
+    @Analysis.Input({"Sig": {}})
+    def __init__(
+        self,
+        Sig: Signal,
+        plot: bool = False,
+        plot_save: bool = False,
+        **kwargs,
+    ):
+        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        # 该分析类的特有参数
+        # -----------------------------------------------------------------------------------#
+
+    # ---------------------------------------------------------------------------------------#
+    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Input({"WinType": {}})
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的单边傅里叶级数谱
@@ -179,6 +257,7 @@ class Frequency_Analysis(Analysis):
         Amp : np.ndarray
             单边幅值谱
         """
+        # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
         # 计算频谱幅值
@@ -198,6 +277,7 @@ class TimeFre_Analysis(Analysis):
     时频域信号分析、处理方法
     """
 
+    @Analysis.Input({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
