@@ -33,18 +33,21 @@ TEST_DATA["data1"] = DE
 # 测试设置
 Data = TEST_DATA["data1"]
 Fs = 12000
-SAVEFIG = False
+PLOT_SAVE = False
 
 IF_TEST_PLOT_SPECTRUM = False
 IF_TEST_PLOT_SPECTROGRAM = False
 IF_TEST_PLOT_FINDPEAK = False
 IF_TEST_SIGNAL_SIG = False
+IF_TEST_SIGNAL_SIGINFO = False
 IF_TEST_SIGNAL_SIGPLOT = False
 IF_TEST_SIGNAL_RESAMPLE = False
 IF_TEST_BASICSP_WINDOW = False
-IF_TEST_BASICSP_FRE_CFT = True
-IF_TEST_BASICSP_STFT = False
-IF_TEST_BASICSP_ISTFT = False
+IF_TEST_BASICSP_TIME_PDF = False
+IF_TEST_BASICSP_TIME_TREND = False
+IF_TEST_BASICSP_FRE_CFT = False
+IF_TEST_CEP_PLOTLINE = False
+IF_TEST_CEP_ZOOMAFT = False
 IF_TEST_CEP_CEPREAL = False
 IF_TEST_CEP_CEPPOWER = False
 IF_TEST_CEP_CEPCOMPLEX = False
@@ -64,7 +67,10 @@ with open(log_file, "w", encoding="utf-8") as f:
     if IF_TEST_PLOT_SPECTRUM:
         try:
             Plot.plot_spectrum(
-                n, random.randn(len(n)), title="Plot.plot_spectrum()", savefig=SAVEFIG
+                n,
+                random.randn(len(n)),
+                title="Plot.plot_spectrum()",
+                plot_save=PLOT_SAVE,
             )
             print("\tPlot.plot_spectrum()测试通过")
             f.write("\tPlot.plot_spectrum()测试通过\n")
@@ -80,7 +86,7 @@ with open(log_file, "w", encoding="utf-8") as f:
                 random.randn(len(n), len(n)),
                 figsize=(10, 8),
                 title="Plot.plot_spectrogram()",
-                savefig=SAVEFIG,
+                plot_save=PLOT_SAVE,
             )
             print("\tPlot.plot_spectrogram()测试通过")
             f.write("\tPlot.plot_spectrogram()测试通过\n")
@@ -95,7 +101,7 @@ with open(log_file, "w", encoding="utf-8") as f:
                 random.randn(len(n)),
                 thre=1,
                 title="Plot.plot_findpeak()",
-                savefig=SAVEFIG,
+                plot_save=PLOT_SAVE,
             )
             print("\tPlot.plot_findpeak()测试通过")
             f.write("\tPlot.plot_findpeak()测试通过\n")
@@ -113,26 +119,35 @@ with open(log_file, "w", encoding="utf-8") as f:
     if IF_TEST_SIGNAL_SIG:
         try:
             Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
-            print("\tSignal()测试通过")
-            f.write("\tSignal()测试通过\n")
+            print("\tSignal.Signal().测试通过")
+            f.write("\tSignal.Signal().测试通过\n")
         except Exception as e:
-            print("\tSignal()测试失败:", e)
-            f.write(f"\tSignal()测试失败: {e}\n")
+            print("\tSignal.Signal().测试失败:", e)
+            f.write(f"\tSignal.Signal().测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
     Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
+    if IF_TEST_SIGNAL_SIGINFO:
+        try:
+            res=Sig_test.info(print=False)
+            print("\tSignal.Signal().info()测试通过")
+            f.write("\tSignal.Signal().info()测试通过\n")
+        except Exception as e:
+            print("\tSignal.Signal().info()测试失败:", e)
+            f.write(f"\tSignal.Signal().info()测试失败: {e}\n")
+    # ---------------------------------------------------------------------------------------#
     if IF_TEST_SIGNAL_SIGPLOT:
         try:
-            Sig_test.plot(title="Signal.plot()", savefig=SAVEFIG)
-            print("\tSignal.plot()测试通过")
-            f.write("\tSignal.plot()测试通过\n")
+            Sig_test.plot(title="Signal.Signal().plot()", plot_save=PLOT_SAVE)
+            print("\tSignal.Signal().plot()测试通过")
+            f.write("\tSignal.Signal().plot()测试通过\n")
         except Exception as e:
-            print("\tSignal.plot()测试失败:", e)
-            f.write(f"\tSignal.plot()测试失败: {e}\n")
+            print("\tSignal.Signal().plot()测试失败:", e)
+            f.write(f"\tSignal.Signal().plot()测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_SIGNAL_RESAMPLE:
         try:
             res = Signal.resample(Sig=Sig_test, down_fs=5000, t0=0.1, T=1).plot(
-                title="Signal.resample()", savefig=SAVEFIG
+                title="Signal.resample()", plot_save=PLOT_SAVE
             )
             print("\tSignal.resample()测试通过")
             f.write("\tSignal.resample()测试通过\n")
@@ -151,13 +166,47 @@ with open(log_file, "w", encoding="utf-8") as f:
     if IF_TEST_BASICSP_WINDOW:
         try:
             res = BasicSP.window(
-                "汉宁窗", num=1024, plot=True, title="Basic.window()", savefig=SAVEFIG
+                "汉宁窗",
+                num=1024,
+                check=True,
+                title="Basic.window()",
+                plot_save=PLOT_SAVE,
             )
             print("\tBasicSP.window()测试通过")
             f.write("\tBasicSP.window()测试通过\n")
         except Exception as e:
             print("\tBasicSP.window()测试失败:", e)
             f.write(f"\tBasicSP.window()测试失败: {e}\n")
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_BASICSP_TIME_PDF:
+        try:
+            res = BasicSP.Time_Analysis(
+                Sig=Sig_test,
+                plot=True,
+                plot_save=PLOT_SAVE,
+                xlabel="幅值",
+                title="BasicSP.Time_Analysis().Pdf()",
+            ).Pdf(samples=200)
+            print("\tBasicSP.Time_Analysis().Pdf()测试通过")
+            f.write("\tBasicSP.Time_Analysis().Pdf()测试通过\n")
+        except Exception as e:
+            print("\tBasicSP.Time_Analysis().Pdf()测试失败:", e)
+            f.write(f"\tBasicSP.Time_Analysis().Pdf()测试失败: {e}\n")
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_BASICSP_TIME_TREND:
+        try:
+            res = BasicSP.Time_Analysis(
+                Sig=Sig_test,
+                plot=True,
+                plot_save=PLOT_SAVE,
+                xlabel="时间t/s",
+                title="BasicSP.Time_Analysis().Trend()",
+            ).Trend(Feature="峰值指标", step=0.1, SegLength=1)
+            print("\tBasicSP.Time_Analysis().Trend()测试通过")
+            f.write("\tBasicSP.Time_Analysis().Trend()测试通过\n")
+        except Exception as e:
+            print("\tBasicSP.Time_Analysis().Trend()测试失败:", e)
+            f.write(f"\tBasicSP.Time_Analysis().Trend()测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_BASICSP_FRE_CFT:
         try:
@@ -166,62 +215,60 @@ with open(log_file, "w", encoding="utf-8") as f:
                 plot=True,
                 xlabel="频率f/Hz",
                 title="BasicSP.Frequency_Analysis().Cft()",
+                plot_save=PLOT_SAVE,
             ).Cft(WinType="汉宁窗")
             print("\tBasicSP.Frequency_Analysis().Cft()测试通过")
             f.write("\tBasicSP.Frequency_Analysis().Cft()测试通过\n")
         except Exception as e:
             print("\tBasicSP.Frequency_Analysis().Cft()测试失败:", e)
             f.write(f"\tBasicSP.Frequency_Analysis().Cft()测试失败: {e}\n")
-    # ---------------------------------------------------------------------------------------#
-    if IF_TEST_BASICSP_STFT:
-        try:
-            res = BasicSP.Stft(
-                data=Sig_test.data,
-                fs=Sig_test.fs,
-                window=BasicSP.window("汉宁窗", num=512, padding=128)[-1],
-                nhop=256,
-                plot=True,
-                title="BasicSP.Stft()",
-                savefig=SAVEFIG,
-            )
-            print("\tBasicSP.Stft()测试通过")
-            f.write("\tBasicSP.Stft()测试通过\n")
-        except Exception as e:
-            print("\tBasicSP.Stft()测试失败:", e)
-            f.write(f"\tBasicSP.Stft()测试失败: {e}\n")
-    # ---------------------------------------------------------------------------------------#
-    if IF_TEST_BASICSP_ISTFT:
-        try:
-            res = BasicSP.iStft(
-                matrix=res[2],
-                fs=Sig_test.fs,
-                window=BasicSP.window("汉宁窗", num=512, padding=128)[-1],
-                nhop=256,
-                plot=True,
-                title="BasicSP.iStft()",
-                savefig=SAVEFIG,
-            )
-            print("\tBasicSP.iStft()测试通过")
-            f.write("\tBasicSP.iStft()测试通过\n")
-        except Exception as e:
-            print("\tBasicSP.iStft()测试失败:", e)
-            f.write(f"\tBasicSP.iStft()测试失败: {e}\n")
 
     print("BasicSP.py测试完成\n\n")
     f.write("BasicSP.py测试完成\n\n")
 
-    # 测试xcw_package.Cep_Analysis.
+    # 测试xcw_package.Cep_Analysis
     f.write("测试Cep_Analysis.py\n")
     print("测试Cep_Analysis.py")
     Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
-
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_CEP_PLOTLINE:
+        try:
+            res = Cep_Analysis.plot_withline(
+                Axis=Sig_test.t_Axis,
+                data=Sig_test.data,
+                lineinterval=0.1,
+                xlabel="时间t/s",
+                title="Cep_Analysis.plot_withline()",
+                plot_save=PLOT_SAVE,
+            )
+            print("\tCep_Analysis.plot_withline()测试通过")
+            f.write("\tCep_Analysis.plot_withline()测试通过\n")
+        except Exception as e:
+            print("\tCep_Analysis.plot_withline()测试失败:", e)
+            f.write(f"\tCep_Analysis.plot_withline()测试失败: {e}\n")
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_CEP_ZOOMAFT:
+        try:
+            res = Cep_Analysis.zoom_Aft(
+                Sig=Sig_test,
+                center_freq=1000,
+                bandwidth=200,
+                plot=True,
+                title="Cep_Analysis.zoom_Aft()",
+                plot_save=PLOT_SAVE,
+            )
+            print("\tCep_Analysis.zoom_Aft()测试通过")
+            f.write("\tCep_Analysis.zoom_Aft()测试通过\n")
+        except Exception as e:
+            print("\tCep_Analysis.zoom_Aft()测试失败:", e)
+            f.write(f"\tCep_Analysis.zoom_Aft()测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_CEP_CEPREAL:
         try:
             res = Cep_Analysis.Cep_Analysis(
                 Sig=Sig_test,
                 plot=True,
-                plot_save=SAVEFIG,
+                plot_save=PLOT_SAVE,
                 xlabel="倒频率q/s",
                 plot_lineinterval=0.1,
                 ylim=(-1, 1),
@@ -238,7 +285,7 @@ with open(log_file, "w", encoding="utf-8") as f:
             res = Cep_Analysis.Cep_Analysis(
                 Sig=Sig_test,
                 plot=True,
-                plot_save=SAVEFIG,
+                plot_save=PLOT_SAVE,
                 xlabel="倒频率q/s",
                 title="Cep_Analysis.Cep_Analysis().Cep_Power()",
             ).Cep_Power()
@@ -253,7 +300,7 @@ with open(log_file, "w", encoding="utf-8") as f:
             res = Cep_Analysis.Cep_Analysis(
                 Sig=Sig_test,
                 plot=True,
-                plot_save=SAVEFIG,
+                plot_save=PLOT_SAVE,
                 xlabel="倒频率q/s",
                 title="Cep_Analysis.Cep_Analysis().Cep_Complex()",
             ).Cep_Complex()
@@ -272,7 +319,7 @@ with open(log_file, "w", encoding="utf-8") as f:
                 q_Axis=q_Axis,
                 data=complex_cep,
                 plot=True,
-                savefig=SAVEFIG,
+                plot_save=PLOT_SAVE,
                 xlabel="时间t/s",
                 title="Cep_Analysis.Cep_Analysis.Cep_Reconstruct()",
             )
@@ -287,7 +334,7 @@ with open(log_file, "w", encoding="utf-8") as f:
             res = Cep_Analysis.Cep_Analysis(
                 Sig_test,
                 plot=True,
-                plot_save=SAVEFIG,
+                plot_save=PLOT_SAVE,
                 xlabel="倒频率q/s",
                 title="Cep_Analysis.Cep_Analysis().Cep_Analytic()",
             ).Cep_Analytic()
@@ -296,16 +343,13 @@ with open(log_file, "w", encoding="utf-8") as f:
         except Exception as e:
             print("\tCep_Analysis.Cep_Analysis().Cep_Analytic()测试失败:", e)
             f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Analytic(): {e}\n")
-
-    print("Cep_Analysis.py测试完成\n\n")
-    f.write("Cep_Analysis.py测试完成\n\n")
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_CEP_CEPZOOM:
         try:
             res = Cep_Analysis.Cep_Analysis(
                 Sig=Sig_test,
                 plot=True,
-                plot_save=SAVEFIG,
+                plot_save=PLOT_SAVE,
                 xlabel="倒频率q/s",
                 title="Cep_Analysis.Cep_Analysis().Cep_Zoom()",
             ).Cep_Zoom(fc=1000, bw=200)
@@ -314,6 +358,9 @@ with open(log_file, "w", encoding="utf-8") as f:
         except Exception as e:
             print("\tCep_Analysis.Cep_Analysis().Cep_Zoom()测试失败:", e)
             f.write(f"\tCep_Analysis.Cep_Analysis().Cep_Zoom(): {e}\n")
+
+    print("Cep_Analysis.py测试完成\n\n")
+    f.write("Cep_Analysis.py测试完成\n\n")
 # --------------------------------------------------------------------------------------------#
 # 测试完成
 print("测试日志已保存到.../test/test_log.txt")
