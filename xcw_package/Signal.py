@@ -12,7 +12,9 @@ xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库
 
 from .dependencies import Optional
 from .dependencies import np
-
+from .dependencies import inspect
+from .dependencies import wraps
+from .dependencies import get_origin, get_args, Union
 from .decorators import Check_Vars
 
 from .Plot import plot_spectrum
@@ -143,17 +145,21 @@ class Signal:
         return self.data
 
     # ---------------------------------------------------------------------------------------#
-    def info(self) -> dict:
+    def info(self,print:bool=True) -> dict:
         """
         输出信号的采样信息
 
+        参数:
+        --------
+        print : bool
+            是否打印显示该信号采样信息, 默认为True
+
         返回:
         --------
-        info : str
-            信号的采样信息
+        info_dict : dict
+            信号的采样信息字典, 键为参数名, 值为含单位参数值字符串
         """
         info = (
-            f"{self.label}的采样参数: \n"
             f"N: {self.N}\n"
             f"fs: {self.fs} Hz\n"
             f"t0: {self.t0:.3f} s\n"
@@ -163,24 +169,161 @@ class Signal:
             f"df: {self.df:.3f} Hz\n"
             f"fn: {self.fs / 2:.1f} Hz\n"
         )
-        print(info)
+        if print:
+            print(f"{self.label}的采样参数: \n", info)
         # 将字符串转为字典
-        info = dict([i.split(": ") for i in info.split("\n") if i])
-        return info
+        info = [i.split(": ") for i in info.split("\n") if i]
+        info_dict = {i[0]: i[-1] for i in info}
+        return info_dict
 
     # ---------------------------------------------------------------------------------------#
     def plot(self, **kwargs) -> None:
         """
         绘制信号的时域波形图
         """
-        Title = kwargs.get("title", f"{self.label}时域波形图")
+        title = kwargs.get("title", f"{self.label}时域波形图")
         kwargs.pop("title", None)
-        plot_spectrum(self.t_Axis, self.data, xlabel="时间t/s", title=Title, **kwargs)
+        xticks = kwargs.get("xticks", np.arange(self.t0, self.t0 + self.T, self.T / 10))
+        plot_spectrum(
+            self.t_Axis,
+            self.data,
+            xlabel="时间t/s",
+            xticks=xticks,
+            title=title,
+            **kwargs,
+        )
 
 
 # --------------------------------------------------------------------------------------------#
 class Analysis:
-    @Check_Vars({"Sig": {}})
+    @staticmethod
+    def Plot(plot_type: str, plot_func: callable):
+        def plot_decorator(func):
+            def wrapper(self, *args, **kwargs):  # 针对Analysis类的方法进行装饰
+                res = func(self, *args, **kwargs)
+                if self.plot:
+                    self.plot_kwargs["plot_save"] = self.plot_save
+                    if plot_type == "1D":  # plot一维连线谱
+                        Axis, data = res[0], res[1]
+                        plot_func(Axis, data, **self.plot_kwargs)
+                    elif plot_type == "2D":  # imshow二维热力谱图
+                        Axis1, Axis2, data = res[0], res[1], res[2]
+                        plot_func(Axis1, Axis2, data, **self.plot_kwargs)
+                return res
+
+            return wrapper
+
+        return plot_decorator
+
+    # ---------------------------------------------------------------------------------------#
+    @staticmethod
+    def Input(*var_checks):
+        # 根据json输入生成对应的变量检查装饰器
+        def decorator(func):
+            @wraps(func)  # 保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
+            def wrapper(self, *args, **kwargs):  # 针对Analysis类的方法进行装饰
+                # ---------------------------------------------------------------------------#
+                # 获取函数输入变量
+                Vars = inspect.signature(func)
+                bound_args = Vars.bind(self, *args, **kwargs)
+                bound_args.apply_defaults()
+                # 获取变量的类型注解
+                annotations = func.__annotations__
+                var_checks_json = var_checks[0]
+                # ---------------------------------------------------------------------------#
+                # 按指定方式检查指定的变量
+                for var_name in var_checks_json:
+                    var_value = bound_args.arguments.get(var_name)  # 变量实际值
+                    var_type = annotations.get(var_name)  # 变量预设类型
+                    var_cond = var_checks_json[var_name]  # 变量额外检查条件
+                    # -----------------------------------------------------------------------#
+                    # 对于传值的函数参数进行类型检查
+                    if var_value is not None:
+                        # -------------------------------------------------------------------#
+                        # 处理 Optional 类型
+                        if get_origin(var_type) is Union:
+                            var_type = get_args(var_type)[0]
+                        # 处理float变量的int输入
+                        if var_type is float and isinstance(var_value, int):
+                            var_value = float(var_value)
+                        # 检查输入值类型是否为预设类型
+                        if var_type and not isinstance(var_value, var_type):
+                            raise TypeError(
+                                f"输入变量 '{var_name}' 类型不为要求的 {var_type.__name__}, 实际为 {type(var_value).__name__}"
+                            )
+                        # 针对某些变量类型进行额外检查
+                        # -------------------------------------------------------------------#
+                        # array类检查
+                        if isinstance(var_value, np.ndarray):
+                            # 条件1：数组维度检查
+                            if "ndim" in var_cond:
+                                if var_value.ndim != var_cond["ndim"]:
+                                    raise ValueError(
+                                        f"输入array数组 '{var_name}' 维度不为要求的 {var_cond['ndim']}, 实际为{var_value.ndim}"
+                                    )
+                        # -------------------------------------------------------------------#
+                        # int类
+                        if isinstance(var_value, int):
+                            # 条件1：下界检查
+                            if "Low" in var_cond:
+                                if not (var_cond["Low"] <= var_value):
+                                    raise ValueError(
+                                        f"输入int变量 '{var_name}' 小于要求的下界 {var_cond["Low"]}, 实际为{var_value}"
+                                    )
+                            # 条件2：上界检查
+                            if "High" in var_cond:
+                                if not (var_value <= var_cond["High"]):
+                                    raise ValueError(
+                                        f"输入int变量 '{var_name}' 大于要求的上界 {var_cond["High"]}, 实际为{var_value}"
+                                    )
+                        # -------------------------------------------------------------------#
+                        # float类
+                        if isinstance(var_value, float):
+                            # 条件1：闭下界检查
+                            if "CloseLow" in var_cond:
+                                if not (var_cond["CloseLow"] <= var_value):
+                                    raise ValueError(
+                                        f"输入float变量 '{var_name}' 小于要求的下界 {var_cond["CloseLow"]}, 实际为{var_value}"
+                                    )
+                            # 条件2：闭上界检查
+                            if "CloseHigh" in var_cond:
+                                if not (var_value <= var_cond["CloseHigh"]):
+                                    raise ValueError(
+                                        f"输入float变量 '{var_name}' 大于要求的上界 {var_cond["CloseHigh"]}, 实际为{var_value}"
+                                    )
+                            # 条件3：开下界检查
+                            if "OpenLow" in var_cond:
+                                if not (var_cond["OpenLow"] < var_value):
+                                    raise ValueError(
+                                        f"输入float变量 '{var_name}' 小于或等于要求的下界 {var_cond["OpenLow"]}, 实际为{var_value}"
+                                    )
+                            # 条件4：开上界检查
+                            if "OpenHigh" in var_cond:
+                                if not (var_value < var_cond["OpenHigh"]):
+                                    raise ValueError(
+                                        f"输入float变量 '{var_name}' 大于或等于要求的上界 {var_cond["OpenHigh"]}, 实际为{var_value}"
+                                    )
+                        # -------------------------------------------------------------------#
+                        # str类
+                        if isinstance(var_value, str):
+                            # 条件1：字符串内容检查
+                            if "Content" in var_cond:
+                                if var_value not in var_cond["Content"]:
+                                    raise ValueError(
+                                        f"输入str变量 '{var_name}' 不在要求的范围 {var_cond['Content']}, 实际为{var_value}"
+                                    )
+                        # -------------------------------------------------------------------#
+                        # Signal类
+                        if isinstance(var_value, Signal):
+                            pass
+                # ---------------------------------------------------------------------------#
+                return func(self, *args, **kwargs)  # 检查通过，执行类方法
+
+            return wrapper
+
+        return decorator
+
+    # ---------------------------------------------------------------------------------------#
     def __init__(
         self, Sig: Signal, plot: bool = False, plot_save: bool = False, **kwargs
     ):
@@ -190,28 +333,9 @@ class Analysis:
         self.plot_save = plot_save
         self.plot_kwargs = kwargs
 
-    @staticmethod
-    def Plot(plot_type: str, plot_func: callable):
-        def plot_decorator(func):
-            def wrapper(self, *args, **kwargs):
-                res = func(self, *args, **kwargs)
-                if self.plot:
-                    self.plot_kwargs["plot_save"] = self.plot_save
-                    if plot_type == "1D":
-                        Axis, data = res[0], res[1]
-                        plot_func(Axis, data, **self.plot_kwargs)
-                    elif plot_type == "2D":
-                        Axis1, Axis2, data = res[0], res[1], res[2]
-                        plot_func(Axis1, Axis2, data, **self.plot_kwargs)
-                return res
-
-            return wrapper
-
-        return plot_decorator
-
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
+@Check_Vars({"Sig":{},"down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
 def resample(
     Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
 ) -> Signal:
