@@ -31,6 +31,7 @@ def plot_withline(
     data: np.ndarray,
     **kwargs,
 ):
+    # 检查输入数据
     if len(Axis) != len(data):
         raise ValueError(f"Axis={len(Axis)}和data={len(data)}的长度不一致")
     # -----------------------------------------------------------------------------------#
@@ -48,7 +49,7 @@ def plot_withline(
     title = kwargs.get("title", None)
     plt.title(title, fontproperties=zh_font)
     # 设置图像栅格
-    plt.grid(axis="y", linestyle="--", linewidth=0.5, color="grey", dashes=(5, 10))
+    plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
     # -----------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
@@ -174,7 +175,7 @@ class Cep_Analysis(Analysis):
     # ---------------------------------------------------------------------------------------#
     @staticmethod
     @Plot("1D", plot_spectrum)
-    def Cep_Reconstruct(q_Axis: np.ndarray, data: np.ndarray, **Kwargs) -> np.ndarray:
+    def Cep_Reconstruct(q_Axis: np.ndarray, data: np.ndarray) -> np.ndarray:
         # 检查输入数据
         if len(q_Axis) != len(data):
             raise ValueError(f"q_Axis={len(q_Axis)}和data={len(data)}的长度不一致")
@@ -235,7 +236,7 @@ class Cep_Analysis(Analysis):
         return q_Axis, zoom_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Check_Vars({"num": {"LowLimit": 1}})
+    @Check_Vars({"num": {"Low": 1}})
     @Analysis.Plot("1D", plot_withline)
     def Cep_Lift(
         self, Q: float, width: float, num: int, type: str = "Type1"

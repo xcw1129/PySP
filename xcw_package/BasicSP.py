@@ -28,7 +28,7 @@ from .Plot import plot_spectrum
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"type": {}, "num": {"OpenLow": 0}, "padding": {"Low": 0}})
+@Check_Vars({"type": {}, "num": {"Low": 1}, "padding": {"Low": 1}})
 def window(
     type: str,
     num: int,
@@ -146,7 +146,7 @@ class Time_Analysis(Analysis):
 # --------------------------------------------------------------------------------------------#
 class Frequency_Analysis(Analysis):
     """
-    频域信号分析、处理方法
+    信号频域分析、处理方法
     """
 
     def __init__(
@@ -161,8 +161,8 @@ class Frequency_Analysis(Analysis):
         # -----------------------------------------------------------------------------------#
 
     # ---------------------------------------------------------------------------------------#
+    @Check_Vars({"WinType": {}})
     @Analysis.Plot("1D", plot_spectrum)
-    @Check_Vars({"Sig": Signal})
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的单边傅里叶级数谱
@@ -179,6 +179,7 @@ class Frequency_Analysis(Analysis):
         Amp : np.ndarray
             单边幅值谱
         """
+        # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
         # 计算频谱幅值
