@@ -20,6 +20,7 @@ from .decorators import Check_Vars
 
 from .Signal import Signal, Analysis
 
+
 from .Plot import plot_spectrum
 
 
@@ -218,6 +219,25 @@ class Time_Analysis(Analysis):
             raise ValueError(f"不支持的特征指标{Feature}")
         trend = Feature_func[Feature](seg_data, axis=1)
         return t_Axis, trend
+
+    # ---------------------------------------------------------------------------------------#
+    @Analysis.Plot("1D", plot_spectrum)
+    def Autocorr(self, std: bool = False,both:bool=False) -> np.ndarray:
+        # 获取信号数据
+        data = self.Sig.data
+        N = self.Sig.N
+        t_Axis = self.Sig.t_Axis
+        # 计算自相关
+        R = np.correlate(data, data, mode="full")  # 卷积
+        corr = R / N  # 自相关函数
+        if std is True:
+            corr /= np.var(data)  # 标准化得自相关系数
+        # 后处理
+        if both is False:
+            corr = corr[-1 * N :]  # 只取0~T部分
+        else:
+            t_Axis=np.concatenate((-1*t_Axis[::-1],t_Axis[1:]))#t=-T~T
+        return t_Axis, corr
 
 
 # --------------------------------------------------------------------------------------------#
