@@ -18,6 +18,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
 # 导入测试数据
+# 测试数据1
 TEST_DATA = {
     "data1": os.path.join(BASE_DIR, "test", "test_data", "OR007@6_1.mat"),
 }
@@ -29,10 +30,13 @@ keys = data.keys()
 DE = [s for s in keys if "DE" in s][0]
 DE = data[DE].flatten()  # 读取驱动端数据
 TEST_DATA["data1"] = DE
+# 测试数据2
+t_Axis = np.arange(0, 10, 1 / 1000)
+TEST_DATA["data2"] = np.sin(2 * np.pi * 10 * t_Axis) + random.randn(len(t_Axis))
 # --------------------------------------------------------------------------------------------#
 # 测试设置
-Data = TEST_DATA["data1"]
-Fs = 12000
+Data = TEST_DATA["data2"]
+Fs = 1000
 PLOT_SAVE = False
 
 IF_TEST_PLOT_SPECTRUM = False
@@ -45,6 +49,7 @@ IF_TEST_SIGNAL_RESAMPLE = False
 IF_TEST_BASICSP_WINDOW = False
 IF_TEST_BASICSP_TIME_PDF = False
 IF_TEST_BASICSP_TIME_TREND = False
+IF_TEST_BASICSP_TIME_AC = True
 IF_TEST_BASICSP_FRE_CFT = False
 IF_TEST_CEP_PLOTLINE = False
 IF_TEST_CEP_ZOOMAFT = False
@@ -128,7 +133,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
     if IF_TEST_SIGNAL_SIGINFO:
         try:
-            res=Sig_test.info(print=False)
+            res = Sig_test.info(print=False)
             print("\tSignal.Signal().info()测试通过")
             f.write("\tSignal.Signal().info()测试通过\n")
         except Exception as e:
@@ -207,6 +212,21 @@ with open(log_file, "w", encoding="utf-8") as f:
         except Exception as e:
             print("\tBasicSP.Time_Analysis().Trend()测试失败:", e)
             f.write(f"\tBasicSP.Time_Analysis().Trend()测试失败: {e}\n")
+    # ---------------------------------------------------------------------------------------#
+    if IF_TEST_BASICSP_TIME_AC:
+        try:
+            res = BasicSP.Time_Analysis(
+                Sig=Sig_test,
+                plot=True,
+                plot_save=PLOT_SAVE,
+                xlabel="时间t/s",
+                title="BasicSP.Time_Analysis().Autocorr()",
+            ).Autocorr(std=True, both=True)
+            print("\tBasicSP.Time_Analysis().Autocorr()测试通过")
+            f.write("\tBasicSP.Time_Analysis().Autocorr()测试通过\n")
+        except Exception as e:
+            print("\tBasicSP.Time_Analysis().Autocorr()测试失败:", e)
+            f.write(f"\tBasicSP.Time_Analysis().Autocorr()测试失败: {e}\n")
     # ---------------------------------------------------------------------------------------#
     if IF_TEST_BASICSP_FRE_CFT:
         try:
