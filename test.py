@@ -49,10 +49,11 @@ IF_TEST_SIGNAL_RESAMPLE = False
 IF_TEST_BASICSP_WINDOW = False
 IF_TEST_BASICSP_TIME_PDF = False
 IF_TEST_BASICSP_TIME_TREND = False
-IF_TEST_BASICSP_TIME_AC = False
+IF_TEST_BASICSP_TIME_AC = True
 IF_TEST_BASICSP_FRE_CFT = False
-IF_TEST_BASICSP_FRE_PSD = False
-IF_TEST_BASICSP_FRE_EVSPR = True
+IF_TEST_BASICSP_FRE_PSD = True
+IF_TEST_BASICSP_FRE_PSDCORR = True
+IF_TEST_BASICSP_FRE_EVSPR = False
 IF_TEST_CEP_PLOTLINE = False
 IF_TEST_CEP_ZOOMAFT = False
 IF_TEST_CEP_CEPREAL = False
@@ -223,7 +224,7 @@ with open(log_file, "w", encoding="utf-8") as f:
                 plot_save=PLOT_SAVE,
                 xlabel="时间t/s",
                 title="BasicSP.Time_Analysis().Autocorr()",
-            ).Autocorr(std=True, both=True)
+            ).Autocorr(std=False, both=True)
             print("\tBasicSP.Time_Analysis().Autocorr()测试通过")
             f.write("\tBasicSP.Time_Analysis().Autocorr()测试通过\n")
         except Exception as e:
@@ -253,12 +254,27 @@ with open(log_file, "w", encoding="utf-8") as f:
                 xlabel="频率f/Hz",
                 title="BasicSP.Frequency_Analysis().Psd()",
                 plot_save=PLOT_SAVE,
-            ).Psd(WinType="汉宁窗", both=True)
+            ).Psd(density=True)
             print("\tBasicSP.Frequency_Analysis().Psd()测试通过")
             f.write("\tBasicSP.Frequency_Analysis().Psd()测试通过\n")
         except Exception as e:
             print("\tBasicSP.Frequency_Analysis().Psd()测试失败:", e)
             f.write(f"\tBasicSP.Frequency_Analysis().Psd()测试失败: {e}\n")
+    # ----------------------------------------------------------------------------------------#
+    if IF_TEST_BASICSP_FRE_PSDCORR:
+        try:
+            res = BasicSP.Frequency_Analysis(
+                Sig=Sig_test,
+                plot=True,
+                xlabel="频率f/Hz",
+                title="BasicSP.Frequency_Analysis().Psd_corr()",
+                plot_save=PLOT_SAVE,
+            ).Psd_corr(density=True)
+            print("\tBasicSP.Frequency_Analysis().Psd_corr()测试通过")
+            f.write("\tBasicSP.Frequency_Analysis().Psd_corr()测试通过\n")
+        except Exception as e:
+            print("\tBasicSP.Frequency_Analysis().Psd_corr()测试失败:", e)
+            f.write(f"\tBasicSP.Frequency_Analysis().Psd_corr()测试失败: {e}\n")
     # ----------------------------------------------------------------------------------------#
     if IF_TEST_BASICSP_FRE_EVSPR:
         try:
@@ -266,14 +282,15 @@ with open(log_file, "w", encoding="utf-8") as f:
                 Sig=Sig_test,
                 plot=True,
                 xlabel="频率f/Hz",
-                title="BasicSP.Frequency_Analysis().Psd()",
+                xlim=(0, 200),
+                title="BasicSP.Frequency_Analysis().HTenve_spectra()",
                 plot_save=PLOT_SAVE,
-            ).EvSpr()
-            print("\tBasicSP.Frequency_Analysis().Psd()测试通过")
-            f.write("\tBasicSP.Frequency_Analysis().Psd()测试通过\n")
+            ).HTenve_spectra()
+            print("\tBasicSP.Frequency_Analysis().HTenve_spectra()测试通过")
+            f.write("\tBasicSP.Frequency_Analysis().HTenve_spectra()测试通过\n")
         except Exception as e:
-            print("\tBasicSP.Frequency_Analysis().Psd()测试失败:", e)
-            f.write(f"\tBasicSP.Frequency_Analysis().Psd()测试失败: {e}\n")
+            print("\tBasicSP.Frequency_Analysis().HTenve_spectra()测试失败:", e)
+            f.write(f"\tBasicSP.Frequency_Analysis().HTenve_spectra()测试失败: {e}\n")
 
     print("BasicSP.py测试完成\n\n")
     f.write("BasicSP.py测试完成\n\n")
