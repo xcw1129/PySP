@@ -1,77 +1,27 @@
-# 信号处理库
+# 项目库开发流程
+## 本地开发流程
+1. 当需要在本地设备进行开发时，首先创建本地开发`local1`分支；
+2. 从远程`origin/main`分支拉取正式库，以更新`local1`分支；
+3. 进行更改，更改后发布远程`origin/local1`分支；
+4. 往后开发保持`local1`分支和远程`origin/local1`分支的互联；
 
-该信号处理库包含多个Python文件，每个文件实现了不同的信号处理算法和功能。以下是各个文件的功能介绍：
+## 本地库与远程库
+当在本地库local1开发时，需要注意以下：
+- 确保`local1`分支的基为最新的远程origin/main分支；
+- `local1`分支的所有更改在开发完成后，及时推送到远程`origin/local1`分支；
+- 避免直接从他人远程`origin/local2`分支等直接拉取未经测试的更改；
 
-## Signal.py
+## 单人库维护与多人库维护
+单人库维护与多人库维护的区别主要在于：**如何将本地开发提交到远程正式库**
+- **单人库维护**:
+  1. `local1`分支完成开发和测试后，将`local1`分支合并到`main`分支；
+  2. 将`main`分支推送到远程`origin/main`分支；
+- 注意：
+  - 此时远程`origin/local`分支一般没有，或只有一个。可以从远程`origin/local`分支拉取作为`local`分支的基，以继续开发
 
-该文件定义了一个`Signal`类，用于表示带有时间和频率采样信息的信号，并提供了一些基本的信号处理方法。
-
-- `Signal` 类：
-  - `__init__`：初始化信号对象，计算采样时间间隔、采样频率、频率分辨率等属性。
-  - `__array__`：使Signal对象在被numpy库函数调用时，自动返回data属性
-  - `info`：输出信号的采样信息。
-  - `plot`：绘制信号的时域图。
-  - `resample`：对信号进行重采样。
-
-## Plot.py
-
-该文件实现了各种绘图函数，用于可视化信号处理结果。
-
-- `plot_spectrum`：根据轴和输入数据绘制单变量谱。
-- `plot_spectrogram`：根据输入的二维数据绘制热力谱图。
-- `plot_findpeak`：寻找输入的一维数据中的峰值并绘制峰值图。
-
-## BasicSP.py
-
-该文件实现了一些基本的信号处理算法。
-
-- `window`：生成窗函数序列。
-- `ft`：计算信号的归一化傅里叶变换频谱。
-- `pdf`：计算概率密度函数 (PDF)，并按照指定样本数生成幅值域采样点。
-- `Stft`：短时傅里叶变换 (STFT)，用于考察信号在固定分辨率的时频面上分布。
-- `iStft`：逆短时傅里叶变换 (ISTFT)，用于从频域信号重构时域信号。
-- `HTenvelope`：计算信号的希尔伯特变换包络。
-- `autocorr`：计算信号的自相关函数。
-- `PSD`：计算信号的功率谱密度。
-
-## Cep_Analysis.py
-
-该文件实现了倒谱分析算法。
-
-- `Cep_Analysis` 类：
-  - `Cep_Real`：计算实数倒谱。
-  - `Cep_Power`：计算功率倒谱。
-  - `Cep_Complex`：计算复数倒谱。
-  - `Cep_Reconstruct`：根据输入的复倒谱重构频谱。
-  - `Cep_Analytic`：计算解析倒谱。
-  - `Cep_Zoom`：计算Zoom-FFT, 并据此计算解析倒谱。
-  - `Enco_detect`：通过倒谱检测回声信号。
-  - `Liftering`：对复数倒谱进行梳状滤波。
-  - `plot_Cep_withline`：带有等间隔谱线的倒谱绘制。
-
-## EMD_Analysis.py
-
-该文件实现了经验模态分解 (EMD) 和变分模态分解 (VMD) 等算法。
-
-- `EMDmethod` 类：
-  - `info`：输出EMD分析类的属性及其当前值。
-  - `emd`：对输入数据进行EMD分解，得到IMF分量和残余分量。
-  - `eemd`：对输入数据进行EEMD分解，得到IMF分量和残余分量。
-  - `vmd`：对输入数据进行VMD分解，得到IMF分量和对应的中心频率。
-  - `select_mode`：根据指定方法筛选IMF分量。
-  - `fre_centerG`：计算频谱的重心频率。
-  - `get_DC`：计算输入数据的直流分量。
-  - `extractIMF`：提取IMF分量。
-  - `isIMF`：判断输入数据是否为IMF分量。
-
-- `Hilbert`：计算数据的希尔伯特变换。
-- `HTinsvector`：根据Hilbert变换计算信号瞬时幅度、瞬时频率。
-- `HTspectrum`：根据原信号分解得到的IMFs计算希尔伯特谱。
-- `HTmargspectrum`：根据输入的希尔伯特谱计算频率边际谱。
-- `HTstationary`：根据输入的希尔伯特谱计算平稳度谱。
-
-## SK_Analysis.py
-
-该文件实现了谱峭度分析算法。
-
-- `stft_SKs`：计算短时傅里叶变换 (STFT) 的谱峭度。
+- **多人库维护**：
+  1. `local1`分支完成开发后，将local分支推送到远程`origin/local1`分支；
+  2. 测试远程`origin/local1`分支，若测试通过，创建`Pull Request`；
+  3. 经正式库管理者同意`Pull Request`，此时即将远程`origin/local1`分支合并到远程`origin/main`分支；
+- 注意：
+  - 此时远程`origin/local`分支一般存在多个。一般应避免拉取他人远程`origin/local`分支
