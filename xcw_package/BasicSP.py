@@ -279,6 +279,32 @@ class Frequency_Analysis(Analysis):
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
+    def Dft(self) -> np.ndarray:
+        # 获取信号数据
+        data = self.Sig.data
+        N = self.Sig.N
+        f_Axis = self.Sig.f_Axis
+        # 计算频谱幅值
+        dft_data = (
+            fft.fft(data) / N
+        )  # DFT默认将信号视为周期信号, 并计算双边傅里叶级数谱
+        return f_Axis, dft_data
+
+    # ----------------------------------------------------------------------------------------#
+    def ft(self) -> np.ndarray:
+        # 获取信号数据
+        data = self.Sig.data
+        N = self.Sig.N
+        df=self.Sig.df
+        dt=self.Sig.dt
+        # 计算频谱幅值
+        dft_data = fft.fft(data) / N# DFT默认将信号视为周期信号, 并计算双边傅里叶级数谱
+        fft_data=fft.fftshift(dft_data)/df # 还原回双边傅里叶频谱
+        # 后处理
+        f_Axis = fft.fftshift(fft.fftfreq(N,dt))
+        return f_Axis, fft_data
+
+    # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
@@ -311,16 +337,21 @@ class Frequency_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
-    def Psd(self, WinType: str = "矩形窗", both: bool = False) -> np.ndarray:
+    def Psd(
+        self, WinType: str = "矩形窗", density: bool = False, both: bool = False
+    ) -> np.ndarray:
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
+        df = self.Sig.df
         f_Axis = self.Sig.f_Axis
         # 周期图法计算功率谱
         _, scale, win_data = window(type=WinType, num=N)
         windowed_data = data * win_data
-        fft_data = fft.fft(windowed_data) / N
-        power = np.square(np.abs(fft_data)) * scale
+        fft_data = fft.fft(windowed_data) / N  # 双边幅值谱
+        power = np.square(np.abs(fft_data)) * scale  # 双边功率谱
+        if density is True:
+            power /= df  # 双边功率谱密度
         # 后处理
         if both is False:  # 双边功率谱转单边
             f_Axis = f_Axis[: N // 2]
@@ -329,19 +360,38 @@ class Frequency_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
-    def EvSpr(self):
+    def Psd_corr(self, density: bool = False, both: bool = False) -> np.ndarray:
+        # 获取信号数据
+        N = self.Sig.N
+        df = self.Sig.df
+        fs = self.Sig.fs
+        # 自相关法计算功率谱
+        _, corr = Time_Analysis(self.Sig).Autocorr(both=True)
+        power = np.abs(fft.fft(corr)/N)  # 双边功率谱
+        if density is True:
+            power /= df  # 双边功率谱密度
+        # 后处理
+        f_Axis = np.linspace(0, fs, len(power), endpoint=False)
+        if both is False:  # 双边功率谱转单边
+            f_Axis = f_Axis[: int(fs / 2 / f_Axis[1])]
+            power = 2 * power[: len(f_Axis)]
+        return f_Axis, power
+
+    # ----------------------------------------------------------------------------------------#
+    @Analysis.Plot("1D", plot_spectrum)
+    def HTenve_spectra(self):
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
         f_Axis = self.Sig.f_Axis
         # 计算解析信号
         analyze = signal.hilbert(data)
-        envelop = np.abs(analyze)
-        Evp_spectra = np.abs(fft(envelop)) / N
+        envelop = np.abs(analyze)  # 希尔伯特包络幅值
+        spectra = np.abs(fft.fft(envelop)) / N
         # 后处理
         f_Axis = f_Axis[: N // 2]
-        Evp_spectra = 2 * Evp_spectra[: len(f_Axis)]
-        return f_Axis, Evp_spectra
+        spectra = 2 * spectra[: len(f_Axis)]
+        return f_Axis, spectra
 
 
 # --------------------------------------------------------------------------------------------#
