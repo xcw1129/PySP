@@ -31,8 +31,10 @@ DE = [s for s in keys if "DE" in s][0]
 DE = data[DE].flatten()  # 读取驱动端数据
 TEST_DATA["data1"] = DE
 # 测试数据2
-t_Axis = np.arange(0, 10, 1 / 1000)
-TEST_DATA["data2"] = random.randn(len(t_Axis))
+t_Axis = np.arange(0, 1, 1 / 10000)
+TEST_DATA["data2"] = np.cos(2 * np.pi * 100 * t_Axis) + 0.5 * np.cos(
+    2 * np.pi * 200 * t_Axis
+)
 # --------------------------------------------------------------------------------------------#
 # 测试设置
 Data = TEST_DATA["data1"]
@@ -42,18 +44,23 @@ PLOT_SAVE = False
 IF_TEST_PLOT_SPECTRUM = False
 IF_TEST_PLOT_SPECTROGRAM = False
 IF_TEST_PLOT_FINDPEAK = False
+
 IF_TEST_SIGNAL_SIG = False
 IF_TEST_SIGNAL_SIGINFO = False
 IF_TEST_SIGNAL_SIGPLOT = False
 IF_TEST_SIGNAL_RESAMPLE = False
+
 IF_TEST_BASICSP_WINDOW = False
 IF_TEST_BASICSP_TIME_PDF = False
 IF_TEST_BASICSP_TIME_TREND = False
-IF_TEST_BASICSP_TIME_AC = True
+IF_TEST_BASICSP_TIME_AC = False
 IF_TEST_BASICSP_FRE_CFT = False
-IF_TEST_BASICSP_FRE_PSD = True
-IF_TEST_BASICSP_FRE_PSDCORR = True
+IF_TEST_BASICSP_FRE_PSD = False
+IF_TEST_BASICSP_FRE_PSDCORR = False
 IF_TEST_BASICSP_FRE_EVSPR = False
+IF_TEST_BASICSP_TIMEFRE_STFT = True
+IF_TEST_BASICSP_TIMEFRE_ISTFT = True
+
 IF_TEST_CEP_PLOTLINE = False
 IF_TEST_CEP_ZOOMAFT = False
 IF_TEST_CEP_CEPREAL = False
@@ -291,6 +298,53 @@ with open(log_file, "w", encoding="utf-8") as f:
         except Exception as e:
             print("\tBasicSP.Frequency_Analysis().HTenve_spectra()测试失败:", e)
             f.write(f"\tBasicSP.Frequency_Analysis().HTenve_spectra()测试失败: {e}\n")
+
+    print("BasicSP.py测试完成\n\n")
+    f.write("BasicSP.py测试完成\n\n")
+
+    # 测试xcw_package.Cep_Analysis
+    f.write("测试Cep_Analysis.py\n")
+    print("测试Cep_Analysis.py")
+    Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
+    # ----------------------------------------------------------------------------------------#
+    if IF_TEST_BASICSP_TIMEFRE_STFT:
+        try:
+            t_Axis, f_Axis, Amp = BasicSP.TimeFre_Analysis(
+                Sig=Sig_test,
+                plot=True,
+                xlabel="时间t/s",
+                ylabel="频率f/Hz",
+                title="BasicSP.TimeFre_Analysis().st_Cft()",
+                plot_save=PLOT_SAVE,
+            ).st_Cft(nperseg=257, nhop=128, WinType="汉宁窗")
+            print("\tBasicSP.TimeFre_Analysis().st_Cft()测试通过")
+            f.write("\tBasicSP.TimeFre_Analysis().st_Cft()测试通过\n")
+        except Exception as e:
+            print("\tBasicSP.TimeFre_Analysis().st_Cft()测试失败:", e)
+            f.write(f"\tBasicSP.TimeFre_Analysis().st_Cft()测试失败: {e}\n")
+    # ----------------------------------------------------------------------------------------#
+    if IF_TEST_BASICSP_TIMEFRE_ISTFT:
+        try:
+            # 计算 STFT 结果
+            t_Axis, f_Axis, stft = BasicSP.TimeFre_Analysis(
+                Sig=Sig_test,
+            ).stft(nperseg=257, nhop=128, WinType="汉宁窗")
+            # 使用 ISTFT 重构信号
+            res = BasicSP.TimeFre_Analysis.istft(
+                stft,
+                fs=Sig_test.fs,
+                nhop=128,
+                WinType="汉宁窗",
+                plot=True,
+                xlabel="时间t(s)",
+                plot_save=PLOT_SAVE,
+                title="BasicSP.TimeFre_Analysis().istft()",
+            )
+            print("\tBasicSP.TimeFre_Analysis().istft()测试通过")
+            f.write("\tBasicSP.TimeFre_Analysis().istft()测试通过\n")
+        except Exception as e:
+            print("\tBasicSP.TimeFre_Analysis().istft()测试失败:", e)
+            f.write(f"\tBasicSP.TimeFre_Analysis().istft()测试失败: {e}\n")
 
     print("BasicSP.py测试完成\n\n")
     f.write("BasicSP.py测试完成\n\n")

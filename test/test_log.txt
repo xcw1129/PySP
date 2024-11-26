@@ -5,9 +5,11 @@ Plot.py测试完成
 Signal.py测试完成
 
 测试BasicSP.py
-	BasicSP.Time_Analysis().Autocorr()测试通过
-	BasicSP.Frequency_Analysis().Psd()测试通过
-	BasicSP.Frequency_Analysis().Psd_corr()测试通过
+BasicSP.py测试完成
+
+测试Cep_Analysis.py
+	BasicSP.TimeFre_Analysis().st_Cft()测试通过
+	BasicSP.TimeFre_Analysis().istft()测试通过
 BasicSP.py测试完成
 
 测试Cep_Analysis.py
