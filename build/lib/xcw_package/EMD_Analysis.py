@@ -1,27 +1,12 @@
-from typing import Optional, Union
-import inspect
+from .dependencies import inspect
+from .dependencies import np
+from .dependencies import plt
+from .dependencies import fft, signal, stats, interpolate
 
-# 数据处理库
-import numpy as np
-
-# 绘图库
-import matplotlib.pyplot as plt
+from .Plot import plot_spectrum
 
 
-# 自建信号预处理库
-import xcw_package
-from xcw_package import Signal
-from xcw_package.Signal import plot_spectrum
-
-# 信号处理库
-from scipy.signal import argrelextrema  # 极值点查找
-from scipy.signal import hilbert
-from scipy.interpolate import UnivariateSpline  # 包络三次样条曲线插值
-from scipy.fft import fft, ifft  # 傅里叶变换
-from scipy.stats import kurtosis  # 峭度计算
-
-
-class EMDmethod:
+class EMD_Analysis:
     def __init__(self, **kwargs) -> None:
         # EMD分解终止准则
         self.Dec_stopcriteria = kwargs.get("Dec_stopcriteria", "c1")
@@ -277,7 +262,7 @@ class EMDmethod:
             DC_mode = self.get_DC(
                 extend_data, self.vmd_DCmethod, windowsize=_N // 10
             )  # 按指定方法提取直流分量
-            u_hat_DC = fft(DC_mode) * 2
+            u_hat_DC = fft.fft(DC_mode) * 2
             u_hat_DC[_N // 2 :] = 0
 
         lambda_hat = np.zeros(_N, dtype=complex)  # 迭代过程的解析形式lambda
@@ -285,7 +270,7 @@ class EMDmethod:
         alpha = (10 ** (3 / 20) - 1) / (2 * (np.pi * bw) ** 2)  # 根据限制带宽计算alpha
         alpha = alpha * np.ones(k_num)  # 针对每个模态的alpha，默认相同
 
-        f_hat = fft(extend_data) * 2  # 迭代过程的唯一输入
+        f_hat = fft.fft(extend_data) * 2  # 迭代过程的唯一输入
         f_hat[_N // 2 :] = 0  # 解析形式原始信号频谱
 
         Resdiue = np.zeros(_N, dtype=complex)  # 初始化残余分量为0
@@ -321,7 +306,7 @@ class EMDmethod:
 
         u = np.zeros((k_num, _N), dtype=float)
         for k in range(k_num):
-            u[k] = np.real(ifft(u_hat[k]))  # 解析信号ifft后求实部得到原实信号
+            u[k] = np.real(fft.ifft(u_hat[k]))  # 解析信号ifft后求实部得到原实信号
         if self.vmd_extend:
             u = u[:, N // 2 : N // 2 + N]
         fc = w / (2 * np.pi)
@@ -373,7 +358,7 @@ class EMDmethod:
             # 计算每个IMF的峭度
             kur = np.zeros(len(data))
             for i, imf in enumerate(data):
-                kur[i] = kurtosis(imf)
+                kur[i] = stats.kurtosis(imf)
             # 选择峭度前num个最大的IMF
             select = np.argsort(kur)[::-1][:num]
 
@@ -388,7 +373,7 @@ class EMDmethod:
         elif method == "enve_entropy":
             entropy = np.zeros(len(data))
             for i, imf in enumerate(data):
-                analytic = hilbert(data)
+                analytic = signal.hilbert(data)
                 amplitude = np.abs(analytic)  # 求包络
                 amplitude /= np.sum(amplitude)  # 归一化
                 entropy[i] = -np.sum((amplitude * np.log(amplitude)))  # 求包络熵
@@ -542,9 +527,9 @@ class EMDmethod:
 
         # 三次样条插值
         # 参与插值的极值点数必须大于k
-        max_spline = UnivariateSpline(max_index, data[max_index], k=3, s=0)
+        max_spline = interpolate.UnivariateSpline(max_index, data[max_index], k=3, s=0)
         upper_envelop = max_spline(np.arange(N))  # 获得上包络线
-        min_spline = UnivariateSpline(min_index, data[min_index], k=3, s=0)
+        min_spline = interpolate.UnivariateSpline(min_index, data[min_index], k=3, s=0)
         lower_envelop = min_spline(np.arange(N))  # 获得下包络线
         mean = (upper_envelop + lower_envelop) / 2  # 计算均值线
 
@@ -606,8 +591,8 @@ class EMDmethod:
     ) -> np.ndarray:
         num = neibhbors // 2  # 计算局部极值的邻域点数
         # 查找局部极值
-        max_index = argrelextrema(data, np.greater, order=num)[0]
-        min_index = argrelextrema(data, np.less, order=num)[0]
+        max_index = signal.argrelextrema(data, np.greater, order=num)[0]
+        min_index = signal.argrelextrema(data, np.less, order=num)[0]
 
         # 计算极值点右侧曲线变化,去除微小抖动产生的极值点
         diff = np.abs(data[max_index] - data[max_index - num])
@@ -717,7 +702,7 @@ class EMDmethod:
         return wc
 
 
-def Hilbert(data: np.ndarray) -> np.ndarray:
+def hilbert(data: np.ndarray) -> np.ndarray:
     """
     计算数据的希尔伯特变换
 
@@ -732,18 +717,18 @@ def Hilbert(data: np.ndarray) -> np.ndarray:
         希尔伯特变换结果
     """
     x = np.array(data)
-    fft_x = fft(data)
+    fft_x = fft.fft(data)
     positive = fft_x[: len(fft_x) // 2] * 2  # 取正部乘2
     negative = fft_x[len(fft_x) // 2 :] * 0  # 取负部乘0
     fft_s = np.concatenate((positive, negative))  # 得解析信号的频谱
     fft_s[0] = fft_x[0]
-    hat_x = np.imag(ifft(fft_s))  # 取解析信号的虚部得到原始信号的希尔伯特变换
+    hat_x = np.imag(fft.ifft(fft_s))  # 取解析信号的虚部得到原始信号的希尔伯特变换
     return hat_x
 
 
 def HTinsvector(data: np.array, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
     """
-    根据Hilbert变换计算信号瞬时幅度、瞬时频率
+    根据signal.hilbert变换计算信号瞬时幅度、瞬时频率
 
     Parameters
     ----------
@@ -759,7 +744,7 @@ def HTinsvector(data: np.array, fs: float, plot: bool = False, **kwargs) -> np.n
     (np.ndarray, np.ndarray)
         瞬时幅度, 瞬时频率
     """
-    Vector = data + 1j * Hilbert(data)  # 得到解析信号
+    Vector = data + 1j * signal.hilbert(data)  # 得到解析信号
     Amp = np.abs(Vector)  # 得到瞬时幅度
     Phase = np.angle(Vector)  # 得到瞬时相位
     Phase = np.unwrap(Phase)  # 对相位进行解包裹
@@ -934,52 +919,3 @@ def HTstationary(
         plt.show()
 
     return DS
-
-
-def plot_spectrum(Axis: np.ndarray, data: np.ndarray, savefig=False, **kwargs):
-    """
-    根据轴和输入数据绘制单变量谱
-
-    Parameters
-    ----------
-    Axis : np.ndarray
-        横轴数据
-    data : np.ndarray
-        纵轴数据
-    savefig : _type_
-        是否保存svg图片
-
-    Raises
-    ------
-    ValueError
-        Axis和data的长度不一致
-    """
-    if len(Axis) != len(data):
-        raise ValueError("Axis和data的长度不一致")
-
-    figsize = kwargs.get("figsize", (12, 5))
-    plt.figure(figsize=figsize)
-    plt.plot(Axis, data)
-
-    # 设置x轴标签
-    xlabel = kwargs.get("xlabel", "时间t/s")
-    plt.xlabel(xlabel)
-    # 设置x轴范围
-    xlim = kwargs.get("xlim", None)
-    if xlim is not None:
-        plt.xlim(xlim[0], xlim[1])
-    # 设置y轴范围
-    ylim = kwargs.get("ylim", None)
-    if ylim is not None:
-        plt.ylim(ylim[0], ylim[1])
-    # 设置y轴显示方式
-    yscale = kwargs.get("yscale", "linear")
-    plt.yscale(yscale)
-    # 设置标题
-    title = kwargs.get("title", None)
-    if title is not None:
-        plt.title(title)
-
-    if savefig:
-        plt.savefig(title + "图", "svg")
-    plt.show()

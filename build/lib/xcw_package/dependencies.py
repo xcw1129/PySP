@@ -10,6 +10,7 @@ import numpy as np
 from scipy import signal  # 信号处理包
 from scipy import fft  # 快速傅里叶变换包
 from scipy import stats  # 统计分析包
+from scipy import interpolate  # 插值分析包
 
 # 可视化绘图库
 import matplotlib.pyplot as plt
