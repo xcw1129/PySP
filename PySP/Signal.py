@@ -4,10 +4,10 @@ xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库
 
 ## 内容
     - class: 
-        1. Signal: 自带时间、频率等采样信息的信号类
+        1. Signal: 自带采样信息的信号类, 可进行简单预处理操作
         2. Analysis: 信号分析基类, 用于创建其他复杂的信号分析、处理方法
     - function:
-        1. resample: 信号任意时间段重采样函数
+        1. resample: 对信号进行任意时间段的重采样
 """
 
 from .dependencies import Optional
@@ -34,14 +34,10 @@ class Signal:
         输入数据数组，用于构建信号
     label : str
         信号标签
-    dt : float
-        采样时间间隔
-    or
-    fs : int
-        采样频率
-    or
-    T : float
-        信号采样时长
+    dt/fs/T : float/int/float
+        采样时间间隔/采样频率/信号采样时长, 输入其中一个即可
+    t0 : float, 可选
+        信号起始时间, 默认为0
 
     属性：
     --------
@@ -89,29 +85,20 @@ class Signal:
         t0: Optional[float] = 0,
     ):
         self.data = data
-        self.N = len(data)
+        N = len(data)
         # 只允许给出一个采样参数
         if not [dt, fs, T].count(None) == 2:
             raise ValueError("采样参数错误, 请只给出一个采样参数且符合格式要求")
         # -----------------------------------------------------------------------------------#
         # 采样参数初始化, dt, fs, T三者知一得三
         if dt is not None:
-            self.dt = dt
             self.fs = 1 / dt
-            self.df = self.fs / (self.N)  # 保证Fs=N*df
-            self.T = self.N * self.dt  # 保证dt=T/N
         elif fs is not None:
             self.fs = fs
-            self.dt = 1 / fs
-            self.df = self.fs / (self.N)
-            self.T = self.N * self.dt
         elif T is not None:
-            self.T = T
-            self.dt = T / self.N
-            self.fs = 1 / self.dt
-            self.df = self.fs / (self.N)
+            self.fs = N / T
         else:
-            raise ValueError("采样参数错误")
+            raise ValueError("采样参数错误, 请只给出一个采样参数且符合格式要求")
         self.t0 = t0
         # -----------------------------------------------------------------------------------#
         # 设置信号标签
@@ -119,9 +106,41 @@ class Signal:
 
     # ---------------------------------------------------------------------------------------#
     @property
+    def dt(self) -> float:
+        """
+        采样时间间隔
+        """
+        return 1/self.fs
+
+    # ---------------------------------------------------------------------------------------#
+    @property
+    def df(self) -> float:
+        """
+        频率分辨率
+        """
+        return self.fs / self.N
+
+    # ---------------------------------------------------------------------------------------#
+    @property
+    def T(self) -> float:
+        """
+        信号采样时长
+        """
+        return self.N * self.dt
+
+    # ---------------------------------------------------------------------------------------#
+    @property
+    def N(self) -> int:
+        """
+        信号长度
+        """
+        return len(self.data)
+
+    # ---------------------------------------------------------------------------------------#
+    @property
     def t_Axis(self) -> np.ndarray:
         """
-        动态生成时间坐标轴
+        信号时间坐标轴
         """
         return (
             np.arange(0, self.N) * self.dt + self.t0
@@ -131,7 +150,7 @@ class Signal:
     @property
     def f_Axis(self) -> np.ndarray:
         """
-        动态生成频率坐标轴
+        信号频率坐标轴
         """
         return np.linspace(
             0, self.fs, self.N, endpoint=False
@@ -162,12 +181,12 @@ class Signal:
         info = (
             f"N: {self.N}\n"
             f"fs: {self.fs} Hz\n"
-            f"t0: {self.t0:.3f} s\n"
-            f"dt: {self.dt:.6f} s\n"
-            f"T {self.T:.3f} s\n"
-            f"t1: {self.t0+self.T:.3f} s\n"
-            f"df: {self.df:.3f} Hz\n"
-            f"fn: {self.fs / 2:.1f} Hz\n"
+            f"t0: {self.t0:.2g} s\n"
+            f"dt: {self.dt:.2g} s\n"
+            f"T: {self.T:.2f} s\n"
+            f"t1: {self.t0+self.T:.2f} s\n"
+            f"df: {self.df:.2g} Hz\n"
+            f"fn: {self.fs / 2:.2f} Hz\n"
         )
         if print:
             print(f"{self.label}的采样参数: \n", info)
@@ -183,6 +202,7 @@ class Signal:
         """
         title = kwargs.get("title", f"{self.label}时域波形图")
         kwargs.pop("title", None)
+
         xticks = kwargs.get("xticks", np.arange(self.t0, self.t0 + self.T, self.T / 10))
         plot_spectrum(
             self.t_Axis,
@@ -196,6 +216,36 @@ class Signal:
 
 # --------------------------------------------------------------------------------------------#
 class Analysis:
+    """
+    信号分析基类, 用于创建其他复杂的信号分析、处理方法
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool, 默认为False
+        是否绘制分析结果图
+    plot_save : bool, 默认为False
+        是否保存绘图
+
+    属性：
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_save : bool
+        是否保存绘图
+    plot_kwargs : dict
+        绘图细节设置
+
+    方法：
+    --------
+    Plot(plot_type, plot_func)
+        绘图装饰器, 用于对分析方法进行绘图
+    Input(*var_checks)
+        输入变量检查装饰器, 用于对分析方法输入变量进行检查
+    """
     @staticmethod
     def Plot(plot_type: str, plot_func: callable):
         def plot_decorator(func):
