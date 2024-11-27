@@ -39,36 +39,35 @@ TEST_DATA["data2"] = np.cos(2 * np.pi * 100 * t_Axis) + 0.5 * np.cos(
 # 测试设置
 Data = TEST_DATA["data1"]
 Fs = 12000
-PLOT_SAVE = False
+PLOT_SAVE = True
+IF_TEST_PLOT_SPECTRUM = True
+IF_TEST_PLOT_SPECTROGRAM = True
+IF_TEST_PLOT_FINDPEAK = True
 
-IF_TEST_PLOT_SPECTRUM = False
-IF_TEST_PLOT_SPECTROGRAM = False
-IF_TEST_PLOT_FINDPEAK = False
-
-IF_TEST_SIGNAL_SIG = False
-IF_TEST_SIGNAL_SIGINFO = False
+IF_TEST_SIGNAL_SIG = True
+IF_TEST_SIGNAL_SIGINFO = True
 IF_TEST_SIGNAL_SIGPLOT = True
-IF_TEST_SIGNAL_RESAMPLE = False
+IF_TEST_SIGNAL_RESAMPLE = True
 
-IF_TEST_BASICSP_WINDOW = False
-IF_TEST_BASICSP_TIME_PDF = False
-IF_TEST_BASICSP_TIME_TREND = False
-IF_TEST_BASICSP_TIME_AC = False
-IF_TEST_BASICSP_FRE_CFT = False
-IF_TEST_BASICSP_FRE_PSD = False
-IF_TEST_BASICSP_FRE_PSDCORR = False
-IF_TEST_BASICSP_FRE_EVSPR = False
+IF_TEST_BASICSP_WINDOW = True
+IF_TEST_BASICSP_TIME_PDF = True
+IF_TEST_BASICSP_TIME_TREND = True
+IF_TEST_BASICSP_TIME_AC = True
+IF_TEST_BASICSP_FRE_CFT = True
+IF_TEST_BASICSP_FRE_PSD = True
+IF_TEST_BASICSP_FRE_PSDCORR = True
+IF_TEST_BASICSP_FRE_EVSPR = True
 IF_TEST_BASICSP_TIMEFRE_STFT = True
 IF_TEST_BASICSP_TIMEFRE_ISTFT = True
 
-IF_TEST_CEP_PLOTLINE = False
-IF_TEST_CEP_ZOOMAFT = False
-IF_TEST_CEP_CEPREAL = False
-IF_TEST_CEP_CEPPOWER = False
-IF_TEST_CEP_CEPCOMPLEX = False
-IF_TEST_CEP_CEPRECONSTRUCT = False
-IF_TEST_CEP_CEPANALYTIC = False
-IF_TEST_CEP_CEPZOOM = False
+IF_TEST_CEP_PLOTLINE = True
+IF_TEST_CEP_ZOOMAFT = True
+IF_TEST_CEP_CEPREAL = True
+IF_TEST_CEP_CEPPOWER = True
+IF_TEST_CEP_CEPCOMPLEX = True
+IF_TEST_CEP_CEPRECONSTRUCT = True
+IF_TEST_CEP_CEPANALYTIC = True
+IF_TEST_CEP_CEPZOOM = True
 # --------------------------------------------------------------------------------------------#
 # 开始测试并记录
 log_file = os.path.join(BASE_DIR + "//test", "test_log.txt")
@@ -360,7 +359,7 @@ with open(log_file, "w", encoding="utf-8") as f:
             res = Cep_Analysis.plot_withline(
                 Axis=Sig_test.t_Axis,
                 data=Sig_test.data,
-                lineinterval=0.1,
+                lineinterval=1,
                 xlabel="时间t/s",
                 title="Cep_Analysis.plot_withline()",
                 plot_save=PLOT_SAVE,
@@ -378,6 +377,7 @@ with open(log_file, "w", encoding="utf-8") as f:
                 center_freq=1000,
                 bandwidth=200,
                 plot=True,
+                xlabel="频率f/Hz",
                 title="Cep_Analysis.zoom_Aft()",
                 plot_save=PLOT_SAVE,
             )
@@ -441,7 +441,7 @@ with open(log_file, "w", encoding="utf-8") as f:
             ).Cep_Complex()
             res = Cep_Analysis.Cep_Analysis.Cep_Reconstruct(
                 q_Axis=q_Axis,
-                data=complex_cep,
+                complex_cep=complex_cep,
                 plot=True,
                 plot_save=PLOT_SAVE,
                 xlabel="时间t/s",
