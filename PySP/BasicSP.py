@@ -66,13 +66,17 @@ def window(
         窗序列双边各零填充点数, 默认不填充
     check : bool, 可选
         是否绘制所有窗函数图像以检查, 默认不检查
+    (title) : str, 可选
+        绘图标题, 默认"窗函数测试图"
+    (plot_save) : bool, 可选
+        是否保存绘图, 默认不保存
 
     返回:
     --------
     Amp_scale : float
-        窗函数幅值归一化系数
+        幅值归一化系数
     Engy_scale : float
-        窗函数能量归一化系数
+        能量归一化系数
     win_data : np.ndarray
         窗函数采样序列
     """
@@ -104,6 +108,7 @@ def window(
     # 检查所有窗函数,如需要
     if check:
         window_num = len(window_func) - 1
+        # 2列多行显示
         rows = window_num // 2 if len(window_func) % 2 == 0 else window_num // 2 + 1
         cols = 2
         fig, ax = plt.subplots(rows, cols, figsize=(10, 5 * rows))
@@ -140,6 +145,35 @@ def window(
 class Time_Analysis(Analysis):
     """
     时域信号分析、处理方法
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool, 默认为False
+        是否绘制分析结果图
+    plot_save : bool, 默认为False
+        是否保存绘图
+
+    属性:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_save : bool
+        是否保存绘图
+    plot_kwargs : dict
+        绘图参数
+
+    方法:
+    --------
+    Pdf(samples: int = 100, AmpRange: Optional[tuple] = None) -> np.ndarray
+        估计信号的概率密度函数
+    Trend(Feature: str, step: float, SegLength: float) -> np.ndarray
+        计算信号指定统计特征的时间趋势
+    Autocorr(std: bool = False, both: bool = False) -> np.ndarray
+        计算信号自相关
     """
 
     @Analysis.Input({"Sig": {}})
@@ -158,6 +192,23 @@ class Time_Analysis(Analysis):
     @Analysis.Plot("1D", plot_spectrum)
     @Analysis.Input({"samples": {"Low": 20}})
     def Pdf(self, samples: int = 100, AmpRange: Optional[tuple] = None) -> np.ndarray:
+        """
+        估计信号的概率密度函数(PDF)
+
+        参数:
+        --------
+        samples : int, 默认为100
+            PDF的幅值域采样点数
+        AmpRange : tuple, 可选
+            PDF的幅值域范围, 默认为信号数据的最值
+
+        返回:
+        --------
+        amp_Axis : np.ndarray
+            PDF的幅值域采样点
+        pdf : np.ndarray
+            估计的概率密度函数
+        """
         # 获取信号数据
         data = self.Sig.data
         # 计算概率密度函数
@@ -196,6 +247,30 @@ class Time_Analysis(Analysis):
         }
     )
     def Trend(self, Feature: str, step: float, SegLength: float) -> np.ndarray:
+        """
+        计算信号指定统计特征的时间趋势
+
+        参数:
+        --------
+        Feature : str
+            统计特征指标, 可选:  
+                                "均值", "方差", "标准差", 
+                                "均方值", "方根幅值", "平均幅值", 
+                                "有效值", "峰值", "波形指标", 
+                                "峰值指标", "脉冲指标", "裕度指标", 
+                                "偏度指标", "峭度指标"
+        step : float
+            时间趋势采样步长
+        SegLength : float
+            时间趋势采样段长
+
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        trend : np.ndarray
+            统计特征的时间趋势
+        """
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
@@ -242,6 +317,23 @@ class Time_Analysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
     def Autocorr(self, std: bool = False, both: bool = False) -> np.ndarray:
+        """
+        计算信号自相关
+
+        参数:
+        --------
+        std : bool, 默认为False
+            是否标准化得自相关系数
+        both : bool, 默认为False
+            是否返回双边自相关
+        
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        corr : np.ndarray
+            自相关结果
+        """
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
@@ -263,6 +355,39 @@ class Time_Analysis(Analysis):
 class Frequency_Analysis(Analysis):
     """
     信号频域分析、处理方法
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_save : bool
+        是否保存绘图
+
+    属性:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_save : bool
+        是否保存绘图
+    plot_kwargs : dict
+        绘图参数
+    
+    方法:
+    --------
+    ft() -> np.ndarray
+        计算信号的双边频谱  
+    Cft(WinType: str = "矩形窗") -> np.ndarray
+        计算信号的单边傅里叶级数谱幅值  
+    Psd(WinType: str = "矩形窗", density: bool = False, both: bool = False) -> np.ndarray
+        计算信号的功率谱密度
+    Psd_corr(density: bool = False, both: bool = False) -> np.ndarray
+        自相关法计算信号的功率谱密度
+    HTenve_spectra() -> np.ndarray
+        计算信号的希尔伯特包络谱
     """
 
     @Analysis.Input({"Sig": {}})
@@ -279,6 +404,16 @@ class Frequency_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     def ft(self) -> np.ndarray:
+        """
+        计算信号的双边频谱
+
+        返回:
+        --------
+        f_Axis : np.ndarray
+            频率轴
+        ft_data : np.ndarray
+            双边频谱密度
+        """
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
@@ -294,6 +429,24 @@ class Frequency_Analysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
+        """
+        计算信号的单边傅里叶级数谱幅值
+
+        参数:
+        --------
+        WinType : str, 默认为"矩形窗"
+            加窗类型, 可选: 
+                        "矩形窗", "汉宁窗", "海明窗", 
+                        "巴特利特窗", "布莱克曼窗", 
+                        "自定义窗"
+        
+        返回:
+        --------
+        f_Axis : np.ndarray
+            频率轴
+        Amp : np.ndarray
+            单边傅里叶级数谱
+        """
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
@@ -310,8 +463,30 @@ class Frequency_Analysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
     def Psd(
-        self, WinType: str = "矩形窗", density: bool = False, both: bool = False
+        self, WinType: str = "矩形窗", density: bool = True, both: bool = False
     ) -> np.ndarray:
+        """
+        计算信号的功率谱密度
+
+        参数:
+        --------
+        WinType : str, 默认为"矩形窗"
+            加窗类型, 可选: 
+                        "矩形窗", "汉宁窗", "海明窗", 
+                        "巴特利特窗", "布莱克曼窗", 
+                        "自定义窗"
+        density : bool, 默认为True
+            是否计算谱密度
+        both : bool, 默认为False
+            是否返回双边功率谱
+
+        返回:
+        --------
+        f_Axis : np.ndarray
+            频率轴
+        power : np.ndarray
+            功率谱密度
+        """
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
@@ -333,6 +508,23 @@ class Frequency_Analysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
     def Psd_corr(self, density: bool = False, both: bool = False) -> np.ndarray:
+        """
+        自相关法计算信号的功率谱密度
+
+        参数:
+        --------
+        density : bool, 默认为False
+            是否计算谱密度
+        both : bool, 默认为False
+            是否返回双边功率谱
+        
+        返回:
+        --------
+        f_Axis : np.ndarray
+            频率轴
+        power : np.ndarray
+            功率谱密度
+        """
         # 获取信号数据
         N = self.Sig.N
         df = self.Sig.df
@@ -352,6 +544,16 @@ class Frequency_Analysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("1D", plot_spectrum)
     def HTenve_spectra(self):
+        """
+        计算信号的希尔伯特包络谱
+
+        返回:
+        --------
+        f_Axis : np.ndarray
+            频率轴
+        spectra : np.ndarray
+            希尔伯特包络谱
+        """
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
@@ -370,6 +572,35 @@ class Frequency_Analysis(Analysis):
 class TimeFre_Analysis(Analysis):
     """
     时频域信号分析、处理方法
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_save : bool
+        是否保存绘图
+    
+    属性:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_save : bool
+        是否保存绘图
+    plot_kwargs : dict
+        绘图参数
+    
+    方法:
+    --------
+    stft(nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray
+        计算信号的短时傅里叶变换频谱
+    st_Cft(nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray
+        计算信号的短时单边傅里叶级数谱幅值
+    istft(stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray
+        根据STFT数据重构时域信号
     """
 
     @Analysis.Input({"Sig": {}})
@@ -387,6 +618,30 @@ class TimeFre_Analysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @Analysis.Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
     def stft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
+        """
+        计算信号的短时傅里叶变换频谱
+
+        参数:
+        --------
+        nperseg : int
+            段长
+        nhop : int
+            段移
+        WinType : str, 默认为"矩形窗"
+            加窗类型, 可选: 
+                        "矩形窗", "汉宁窗", "海明窗", 
+                        "巴特利特窗", "布莱克曼窗", 
+                        "自定义窗"
+
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        f_Axis : np.ndarray
+            频率轴
+        ft_data_matrix : np.ndarray
+            短时傅里叶变换结果
+        """
         # 获取信号数据
         data = self.Sig.data
         N = self.Sig.N
@@ -403,7 +658,7 @@ class TimeFre_Analysis(Analysis):
         # ------------------------------------------------------------------------------------#
         # 分段计算STFT
         ft_data_matrix = np.zeros((len(seg_index), nperseg), dtype=complex)
-        scale, _, win = window(type=WinType, num=nperseg)
+        _, _, win = window(type=WinType, num=nperseg)
         for i in seg_index:  # i=0,nhop,2*nhop,...
             # 截取窗口数据并补零以适应窗口长度
             if i - nperseg // 2 < 0:
@@ -419,7 +674,7 @@ class TimeFre_Analysis(Analysis):
             # 加窗
             data_seg = data_seg * win
             # 计算S(t=i*dt,f)
-            ft_data_seg = (fft.fft(data_seg)) / nperseg * scale
+            ft_data_seg = (fft.fft(data_seg)) / nperseg
             ft_data_matrix[i // nhop, :] = ft_data_seg
         # ------------------------------------------------------------------------------------#
         # 后处理
@@ -430,6 +685,30 @@ class TimeFre_Analysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot("2D", plot_spectrogram)
     def st_Cft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
+        """
+        计算信号的短时单边傅里叶级数谱幅值
+
+        参数:
+        --------
+        nperseg : int
+            段长
+        nhop : int
+            段移
+        WinType : str, 默认为"矩形窗"
+            加窗类型, 可选: 
+                        "矩形窗", "汉宁窗", "海明窗", 
+                        "巴特利特窗", "布莱克曼窗", 
+                        "自定义窗"
+        
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        f_Axis : np.ndarray
+            频率轴
+        Amp : np.ndarray
+            单边傅里叶级数谱幅值
+        """
         t_Axis, f_Axis, ft_data_matrix = self.stft(nperseg, nhop, WinType)
         # 计算短时单边傅里叶级数谱
         Amp = np.abs(ft_data_matrix) * 2
@@ -441,12 +720,36 @@ class TimeFre_Analysis(Analysis):
     @staticmethod
     @Plot("1D", plot_spectrum)
     def istft(
-        stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗",**Kwargs
+        stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗", **Kwargs
     ) -> np.ndarray:
+        """
+        根据STFT数据重构时域信号
+
+        参数:
+        --------
+        stft_data : np.ndarray
+            STFT数据
+        fs : int
+            原始信号采样频率
+        nhop : int
+            STFT的段移
+        WinType : str, 默认为"矩形窗"
+            STFT的加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
+                        "自定义窗"
+
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        RC_data : np.ndarray
+            重构后的时域信号
+        """
         # 获取STFT数据
         num_frames, nperseg = stft_data.shape
         # 获取窗函数序列
-        _,_,win = window(type=WinType, num=nperseg)
+        _, _, win = window(type=WinType, num=nperseg)
         # 检查窗口是否满足 NOLA 条件。因为默认ISTFT后归一化，所以不检查COLA条件
         if not signal.check_NOLA(win, nperseg, nperseg - nhop):
             raise ValueError(
@@ -477,99 +780,3 @@ class TimeFre_Analysis(Analysis):
         RC_data /= win_overlap[nperseg // 2 : -(nperseg // 2)]
         t_Axis = np.arange(len(RC_data)) / fs
         return t_Axis, RC_data
-
-
-# def iStft(
-#     matrix: np.ndarray,
-#     fs: float,
-#     window: np.ndarray,
-#     nhop: int,
-#     plot: bool = False,
-#     **Kwargs,
-# ) -> np.ndarray:
-#     reconstructed_signal : np.ndarray
-#         重构后的时域信号。
-#     """
-#     # 从频谱矩阵推断帧长和帧数
-#     num_frames, nperseg = matrix.shape
-#     if nperseg != len(window):
-#         raise ValueError(f"窗口长度 {len(window)} 与 FFT 矩阵的帧长度 {nperseg} 不匹配")
-
-#     # 检查窗口是否满足 NOLA 条件。因为默认ISTFT后归一化，所以不检查COLA条件
-#     if not signal.check_NOLA(window, nperseg, nperseg - nhop):
-#         raise ValueError("窗口函数不满足非零重叠加 (NOLA) 条件，无法完整重构")
-
-#     # 初始化重构信号的长度
-#     signal_length = nhop * (num_frames - 1) + nperseg  # 长度一般大于原始信号
-#     reconstructed_signal = np.zeros(signal_length)
-#     window_overlap = np.zeros(signal_length)
-
-#     # 按帧顺序进行IDFT并叠加
-#     for i in range(num_frames):
-#         # 对单帧数据进行重构
-#         time_segment = np.real(fft.ifft(matrix[i])) * nperseg  # 乘以 nperseg 以还原缩放
-#         # # ISTFT过程与STFT过程进行相同加窗操作
-#         time_segment *= window
-#         # 计算当前帧时间，保证正确叠加
-#         start = i * nhop
-#         end = start + nperseg
-#         reconstructed_signal[start:end] += time_segment  # 重构信号叠加
-#         window_overlap[start:end] += window**2  # 窗叠加
-
-#     # 归一化，去除STFT和ISFT过程加窗的影响
-#     reconstructed_signal = reconstructed_signal[
-#         nperseg // 2 : -(nperseg // 2)
-#     ]  # 排除端点效应,可能导致重构信号尾部减少最多nhop个点
-#     reconstructed_signal /= window_overlap[nperseg // 2 : -(nperseg // 2)]
-
-#     # 绘制重构信号时域波形
-#     if plot:
-#         t = np.arange(len(reconstructed_signal)) / fs
-#         plot_spectrum(t, reconstructed_signal, xlabel="时间t/s", **Kwargs)
-
-#     return reconstructed_signal
-
-
-# def HTenvelope(data: np.ndarray, fs: float, plot=False, **kwargs) -> np.ndarray:
-#     N = len(data)
-#     analyze = signal.hilbert(data)
-#     magnitude = np.abs(analyze)  # 解析信号幅值，即原信号包络
-#     magnitude -= np.mean(magnitude)  # 去除直流分量
-#     FT = np.abs(fft(magnitude)) / N
-#     f = np.arange(0, N) * (fs / N)
-
-#     # 绘制包络谱
-#     if plot:
-#         plot_spectrum(f[: N // 2], FT[: N // 2], **kwargs)
-
-#     return FT
-
-
-# def autocorr(
-#     data: np.ndarray, fs: float, plot: bool = False, **kwargs
-# ) -> np.ndarray:  # 绘制自相关图
-#     N = len(data)
-#     mean = np.mean(data)
-#     autocorr = np.correlate(
-#         data - mean, data - mean, mode="full"
-#     )  # 计算自相关，减去均值以忽略直流分量
-#     autocorr = autocorr[N - 1 :] / autocorr[N - 1]  # 除以信号总能量归一化，并只取右半部
-
-#     if plot:
-#         t = np.arange(len(autocorr)) / fs
-#         plot_spectrum(t, autocorr, xlabel="时间t/s", **kwargs)
-
-#     return autocorr
-
-
-# def PSD(data: np.ndarray, fs: float, plot: bool = False, **kwargs) -> np.ndarray:
-#     fft_data = fft(data)
-#     # 根据功率的能量时间平均定义式计算
-#     energy = np.square(np.abs(fft_data))
-#     power = energy / len(data)
-
-#     if plot:
-#         f = np.linspace(0, fs, len(data), endpoint=False)[: len(data) // 2]
-#         plot_spectrum(f, power[: len(f)], **kwargs)
-
-#     return power
