@@ -1,12 +1,12 @@
 """
 # Plot 
-信号处理常用可视化绘图方法模块
+信号处理中, 常用可视化绘图方法模块
 
 ## 内容
     - function:
-        1. plot_spectrum: 根据输入的两个一维数据绘制Plot型谱
-        2. plot_spectrogram: 根据输入的两个一维数据和一个二维数据绘制imshow型热力谱图
-        3. plot_findpeak: 寻找输入的一维数据中的峰值, 并绘制plot型峰值谱
+        1. plot_spectrum: 根据输入的两个一维数组, 绘制Plot型谱
+        2. plot_spectrogram: 根据输入的两个一维数组和一个二维数组, 绘制imshow型热力谱图
+        3. plot_findpeak: 按要求寻找输入的一维数组中的峰值, 并绘制plot型峰值谱
 """
 
 from .dependencies import np
@@ -24,7 +24,7 @@ from .decorators import Check_Vars
 # ----------## -------------------------------------------------------------------------------#
 def __log(data: np.ndarray, eps: float) -> np.ndarray:
     """
-    对输入的数据序列进行对数变换
+    对输入数组进行对数变换
 
     参数:
     --------
@@ -51,7 +51,7 @@ def plot_spectrum(
     **kwargs,
 ) -> None:
     """
-    根据输入的两个一维数据绘制Plot型谱
+    根据输入的两个一维数组, 绘制Plot型谱
 
     参数:
     ----------
@@ -61,6 +61,8 @@ def plot_spectrum(
         y轴数据
     (xlabel) : str, 可选
         x轴标签, 默认为None
+    (xticks) : list, 可选
+        x轴刻度, 默认为None
     (xlim) : tuple, 可选
         x轴刻度范围, 默认为None
     (ylabel) : str, 可选
@@ -125,7 +127,7 @@ def plot_spectrogram(
     **kwargs,
 ) -> None:
     """
-    根据输入的两个一维数据和一个二维数据绘制imshow型热力谱图
+    根据输入的两个一维数组和一个二维数组, 绘制imshow型热力谱图
 
     参数:
     --------
@@ -137,14 +139,20 @@ def plot_spectrogram(
         xy轴对应的二维数据
     (xlabel) : str, 可选
         x轴标签, 默认为None
+    (xticks) : list, 可选
+        x轴刻度, 默认为None
     (xlim) : tuple, 可选
         x轴刻度范围, 默认为None
     (ylabel) : str, 可选
         y轴标签, 默认为None
     (ylim) : tuple, 可选
         y轴刻度范围, 默认为None
-    (colorbar) : str, 可选
+    (colorbarlabel) : str, 可选
         谱图强度标签, 默认为None
+    (vmin) : float, 可选
+        谱图热力强度最小值, 默认为None
+    (vmax) : float, 可选
+        谱图热力强度最大值, 默认为None
     (title) : str, 可选
         图像标题, 默认为None
     (plot_save) : bool, 可选
@@ -168,7 +176,7 @@ def plot_spectrogram(
         aspect=aspect,
         origin=origin,
         cmap=cmap,
-        extent=[0, Axis1[-1], 0, Axis2[-1]],
+        extent=[Axis1[0], Axis1[-1], Axis2[0], Axis2[-1]],
         vmin=vmin,
         vmax=vmax,
     )  # 绘制热力图
@@ -188,7 +196,7 @@ def plot_spectrogram(
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # 设置谱图强度标签
-    colorbar = kwargs.get("colorbar", None)
+    colorbar = kwargs.get("colorbarlabel", None)
     plt.colorbar(label=colorbar)
     # ---------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
@@ -203,11 +211,11 @@ def plot_spectrogram(
 def plot_findpeak(
     Axis: np.ndarray,
     data: np.ndarray,
-    thre: float,
+    height: float,
     **kwargs,
 ) -> None:
     """
-    寻找输入的一维数据中的峰值, 并绘制plot型峰值谱
+    按要求寻找输入的一维数组中的峰值, 并绘制plot型峰值谱
 
     参数：
     --------
@@ -215,35 +223,33 @@ def plot_findpeak(
         横轴数据
     data : np.ndarray
         纵轴数据
-    thre : float
+    height : float
         峰值阈值
-    xlabel : str, 可选
+    (xlabel) : str, 可选
         x轴标签, 默认为None
-    xlim : tuple, 可选
+    (xticks) : list, 可选
+        x轴刻度, 默认为None
+    (xlim) : tuple, 可选
         x轴刻度范围, 默认为None
-    ylabel : str, 可选
+    (ylabel) : str, 可选
         y轴标签, 默认为None
-    ylim : tuple, 可选
+    (ylim) : tuple, 可选
         y轴刻度范围, 默认为None
-    title : str, 可选
+    (title) : str, 可选
         图像标题, 默认为None
-    plot_save : bool, 可选
+    (plot_save) : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
-    plot_save : bool, 可选
+    (plot_save) : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
-    # 检查数据
-    if (type(data) != np.ndarray) or (type(Axis) != np.ndarray):
-        raise ValueError("输入数据类型不为array数组")  # 数据类型检查
-    elif (data.ndim != 1) or (Axis.ndim != 1):
-        raise ValueError("输入数据维度不为1")  # 数据维度检查
-    elif len(Axis) != len(data):
+    # 检查输入数据
+    if len(Axis) != len(data):
         raise ValueError(
             f"Axis={len(Axis)}和data={len(data)}的长度不一致"
         )  # 数据长度检查
     # ---------------------------------------------------------------------------------------#
     # 寻找峰值
-    peak_idx, peak_params = signal.find_peaks(data, height=thre)
+    peak_idx, peak_params = signal.find_peaks(data, height=height)
     peak_height = peak_params["peak_heights"]
     peak_axis = Axis[peak_idx]
     # ---------------------------------------------------------------------------------------#
@@ -260,29 +266,36 @@ def plot_findpeak(
         data = 20 * __log(data, FLOAT_EPS)
         peak_height = 20 * __log(peak_height, FLOAT_EPS)
     plt.plot(Axis, data)  # 绘制原始数据
+    # 设置标题
+    title = kwargs.get("title", None)
+    plt.title(title)
+    # 设置图像栅格
+    plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
+    # ---------------------------------------------------------------------------------------#
     # 标注峰值
     peaks = zip(peak_axis, peak_height)
     for val, amp in peaks:
         plt.annotate(
-            f"{val:.1f}",
+            f"({val:.1f},{amp:.1f})",
             (val, amp),
             textcoords="offset points",
             xytext=(0, 10),
             ha="center",
+            color="red",
+            fontsize=10,
         )
-    # 设置标题
-    title = kwargs.get("title", None)
-    plt.title(title)
     # ---------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置 x 轴参数
     xlabel = kwargs.get("xlabel", None)
-    plt.xlabel(xlabel)  # 标签
+    plt.xlabel(xlabel, fontproperties=zh_font, labelpad=0.2, loc="right")  # 标签
+    xticks = kwargs.get("xticks", None)
+    plt.xticks(xticks)  # 刻度显示
     xlim = kwargs.get("xlim", (None, None))
     plt.xlim(xlim[0], xlim[1])  # 刻度范围
     # 设置 y 轴参数
     ylabel = kwargs.get("ylabel", None)
-    plt.ylabel(ylabel)  # 标签
+    plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
     # ---------------------------------------------------------------------------------------#
