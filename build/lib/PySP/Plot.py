@@ -22,9 +22,9 @@ from .decorators import Check_Vars
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
-def __T2_log(data: np.ndarray, eps: float) -> np.ndarray:
+def __log(data: np.ndarray, eps: float) -> np.ndarray:
     """
-    对输入的数据进行对数变换
+    对输入的数据序列进行对数变换
 
     参数:
     --------
@@ -38,8 +38,8 @@ def __T2_log(data: np.ndarray, eps: float) -> np.ndarray:
     np.ndarray
         对数变换后的数据
     """
-    if np.min(data) <= 0:
-        raise ValueError("对数坐标轴下数据不能小于等于0")
+    if np.min(data) < 0:
+        raise ValueError("对数坐标轴下数据不能小于0")
     return np.log10(data + eps)
 
 
@@ -85,9 +85,9 @@ def plot_spectrum(
     xscale = kwargs.get("xscale", "linear")
     yscale = kwargs.get("yscale", "linear")
     if xscale == "log":
-        Axis = __T2_log(Axis, FLOAT_EPS)
+        Axis = __log(Axis, FLOAT_EPS)
     if yscale == "log":
-        data = 20 * __T2_log(data, FLOAT_EPS)
+        data = 20 * __log(data, FLOAT_EPS)
     plt.plot(Axis, data)
     # 设置标题
     title = kwargs.get("title", None)
@@ -135,21 +135,19 @@ def plot_spectrogram(
         y轴数据
     data : np.ndarray
         xy轴对应的二维数据
-    xlabel : str, 可选
+    (xlabel) : str, 可选
         x轴标签, 默认为None
-    xlim : tuple, 可选
+    (xlim) : tuple, 可选
         x轴刻度范围, 默认为None
-    ylabel : str, 可选
+    (ylabel) : str, 可选
         y轴标签, 默认为None
-    ylim : tuple, 可选
+    (ylim) : tuple, 可选
         y轴刻度范围, 默认为None
-    colorbar : str, 可选
+    (colorbar) : str, 可选
         谱图强度标签, 默认为None
-    title : str, 可选
+    (title) : str, 可选
         图像标题, 默认为None
-    plot_save : bool, 可选
-        是否将绘图结果保存为图片, 默认不保存
-    plot_save : bool, 可选
+    (plot_save) : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     """
     # 检查数据
@@ -256,11 +254,11 @@ def plot_findpeak(
     xscale = kwargs.get("xscale", "linear")
     yscale = kwargs.get("yscale", "linear")
     if xscale == "log":
-        Axis = __T2_log(Axis, FLOAT_EPS)
-        peak_axis = __T2_log(peak_axis, FLOAT_EPS)
+        Axis = __log(Axis, FLOAT_EPS)
+        peak_axis = __log(peak_axis, FLOAT_EPS)
     if yscale == "log":
-        data = 20 * __T2_log(data, FLOAT_EPS)
-        peak_height = 20 * __T2_log(peak_height, FLOAT_EPS)
+        data = 20 * __log(data, FLOAT_EPS)
+        peak_height = 20 * __log(peak_height, FLOAT_EPS)
     plt.plot(Axis, data)  # 绘制原始数据
     # 标注峰值
     peaks = zip(peak_axis, peak_height)
