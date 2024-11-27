@@ -72,7 +72,7 @@ def plot_spectrum(
     (title) : str, 可选
         图像标题, 默认为None
     (plot_save) : bool, 可选
-        是否将绘图结果保存为图片, 默认不保存
+        是否将绘图结果保存为svg图片, 默认不保存
     """
     # 检查数据
     if len(Axis) != len(data):
@@ -156,7 +156,7 @@ def plot_spectrogram(
     (title) : str, 可选
         图像标题, 默认为None
     (plot_save) : bool, 可选
-        是否将绘图结果保存为图片, 默认不保存
+        是否将绘图结果保存为svg图片, 默认不保存
     """
     # 检查数据
     if (len(Axis1) != data.shape[0]) or (len(Axis2) != data.shape[1]):
@@ -240,7 +240,7 @@ def plot_findpeak(
     (plot_save) : bool, 可选
         是否将绘图结果保存为图片, 默认不保存
     (plot_save) : bool, 可选
-        是否将绘图结果保存为图片, 默认不保存
+        是否将绘图结果保存为svg图片, 默认不保存
     """
     # 检查输入数据
     if len(Axis) != len(data):
