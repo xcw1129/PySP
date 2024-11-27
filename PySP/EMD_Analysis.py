@@ -1,3 +1,15 @@
+"""
+# EMD_Analysis
+经验模态分解(EMD)相关分析、处理方法模块
+
+## 内容
+- class:
+    1. EMD_Analysis: EMD分解、EEMD分解、VMD分解等方法
+- function:
+    1. hilbert: 计算希尔伯特变换
+    2. HTinsvector: 计算信号的瞬时幅度、瞬时频率
+"""
+
 from .dependencies import inspect
 from .dependencies import np
 from .dependencies import plt
