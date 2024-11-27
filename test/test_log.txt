@@ -2,6 +2,7 @@
 Plot.py测试完成
 
 测试Signal.py
+	Signal.Signal().plot()测试通过
 Signal.py测试完成
 
 测试BasicSP.py

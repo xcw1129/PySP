@@ -41,14 +41,14 @@ Data = TEST_DATA["data1"]
 Fs = 12000
 PLOT_SAVE = False
 
-IF_TEST_PLOT_SPECTRUM = True
-IF_TEST_PLOT_SPECTROGRAM = True
-IF_TEST_PLOT_FINDPEAK = True
+IF_TEST_PLOT_SPECTRUM = False
+IF_TEST_PLOT_SPECTROGRAM = False
+IF_TEST_PLOT_FINDPEAK = False
 
-IF_TEST_SIGNAL_SIG = True
-IF_TEST_SIGNAL_SIGINFO = True
+IF_TEST_SIGNAL_SIG = False
+IF_TEST_SIGNAL_SIGINFO = False
 IF_TEST_SIGNAL_SIGPLOT = True
-IF_TEST_SIGNAL_RESAMPLE = True
+IF_TEST_SIGNAL_RESAMPLE = False
 
 IF_TEST_BASICSP_WINDOW = False
 IF_TEST_BASICSP_TIME_PDF = False
@@ -58,8 +58,8 @@ IF_TEST_BASICSP_FRE_CFT = False
 IF_TEST_BASICSP_FRE_PSD = False
 IF_TEST_BASICSP_FRE_PSDCORR = False
 IF_TEST_BASICSP_FRE_EVSPR = False
-IF_TEST_BASICSP_TIMEFRE_STFT = False
-IF_TEST_BASICSP_TIMEFRE_ISTFT = False
+IF_TEST_BASICSP_TIMEFRE_STFT = True
+IF_TEST_BASICSP_TIMEFRE_ISTFT = True
 
 IF_TEST_CEP_PLOTLINE = False
 IF_TEST_CEP_ZOOMAFT = False
@@ -114,7 +114,7 @@ with open(log_file, "w", encoding="utf-8") as f:
             Plot.plot_findpeak(
                 n,
                 random.randn(len(n)),
-                thre=1,
+                height=1,
                 title="Plot.plot_findpeak()",
                 plot_save=PLOT_SAVE,
             )
@@ -144,6 +144,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     if IF_TEST_SIGNAL_SIGINFO:
         try:
             res = Sig_test.info(print=False)
+            print("\t", res)
             print("\tSignal.Signal().info()测试通过")
             f.write("\tSignal.Signal().info()测试通过\n")
         except Exception as e:
