@@ -60,10 +60,10 @@ class Signal:
 
     方法：
     --------
-    info()
+    info(print:bool=True) -> dict
         输出信号的采样信息
-    plot()
-        绘制信号的时域图
+    plot(**kwargs) -> None
+        绘制信号的时域波形图
     """
 
     @Check_Vars(
@@ -237,7 +237,7 @@ class Analysis:
     plot_save : bool
         是否保存绘图
     plot_kwargs : dict
-        绘图细节设置
+        绘图参数
 
     方法：
     --------
