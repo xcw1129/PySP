@@ -20,7 +20,6 @@ from .decorators import Check_Vars, Plot
 
 from .Signal import Signal, Analysis
 
-
 from .Plot import plot_spectrum, plot_spectrogram
 
 

@@ -5,10 +5,10 @@ from numpy import random
 import os
 
 # 待测试的模块内容
-from xcw_package import Plot
-from xcw_package import Signal
-from xcw_package import BasicSP
-from xcw_package import Cep_Analysis
+from PySP import Plot
+from PySP import Signal
+from PySP import BasicSP
+from PySP import Cep_Analysis
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -41,14 +41,14 @@ Data = TEST_DATA["data1"]
 Fs = 12000
 PLOT_SAVE = False
 
-IF_TEST_PLOT_SPECTRUM = False
-IF_TEST_PLOT_SPECTROGRAM = False
-IF_TEST_PLOT_FINDPEAK = False
+IF_TEST_PLOT_SPECTRUM = True
+IF_TEST_PLOT_SPECTROGRAM = True
+IF_TEST_PLOT_FINDPEAK = True
 
-IF_TEST_SIGNAL_SIG = False
-IF_TEST_SIGNAL_SIGINFO = False
-IF_TEST_SIGNAL_SIGPLOT = False
-IF_TEST_SIGNAL_RESAMPLE = False
+IF_TEST_SIGNAL_SIG = True
+IF_TEST_SIGNAL_SIGINFO = True
+IF_TEST_SIGNAL_SIGPLOT = True
+IF_TEST_SIGNAL_RESAMPLE = True
 
 IF_TEST_BASICSP_WINDOW = False
 IF_TEST_BASICSP_TIME_PDF = False
@@ -58,8 +58,8 @@ IF_TEST_BASICSP_FRE_CFT = False
 IF_TEST_BASICSP_FRE_PSD = False
 IF_TEST_BASICSP_FRE_PSDCORR = False
 IF_TEST_BASICSP_FRE_EVSPR = False
-IF_TEST_BASICSP_TIMEFRE_STFT = True
-IF_TEST_BASICSP_TIMEFRE_ISTFT = True
+IF_TEST_BASICSP_TIMEFRE_STFT = False
+IF_TEST_BASICSP_TIMEFRE_ISTFT = False
 
 IF_TEST_CEP_PLOTLINE = False
 IF_TEST_CEP_ZOOMAFT = False
@@ -74,7 +74,7 @@ IF_TEST_CEP_CEPZOOM = False
 log_file = os.path.join(BASE_DIR + "//test", "test_log.txt")
 with open(log_file, "w", encoding="utf-8") as f:
 
-    # 测试xcw_package.Plot
+    # 测试PySP.Plot
     f.write("测试Plot.py\n")
     print("测试Plot.py")
     n = np.arange(0, 100)
@@ -127,7 +127,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     print("Plot.py测试完成\n\n")
     f.write("Plot.py测试完成\n\n")
 
-    # 测试xcw_package.Signal
+    # 测试PySP.Signal
     f.write("测试Signal.py\n")
     print("测试Signal.py")
     # ----------------------------------------------------------------------------------------#
@@ -173,7 +173,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     print("Signal.py测试完成\n\n")
     f.write("Signal.py测试完成\n\n")
 
-    # 测试xcw_package.BasicSP
+    # 测试PySP.BasicSP
     f.write("测试BasicSP.py\n")
     print("测试BasicSP.py")
     Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
@@ -302,7 +302,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     print("BasicSP.py测试完成\n\n")
     f.write("BasicSP.py测试完成\n\n")
 
-    # 测试xcw_package.Cep_Analysis
+    # 测试PySP.Cep_Analysis
     f.write("测试Cep_Analysis.py\n")
     print("测试Cep_Analysis.py")
     Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
@@ -349,7 +349,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     print("BasicSP.py测试完成\n\n")
     f.write("BasicSP.py测试完成\n\n")
 
-    # 测试xcw_package.Cep_Analysis
+    # 测试PySP.Cep_Analysis
     f.write("测试Cep_Analysis.py\n")
     print("测试Cep_Analysis.py")
     Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
