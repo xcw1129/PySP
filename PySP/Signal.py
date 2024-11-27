@@ -1,6 +1,6 @@
 """
 # Signal
-xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库其它模块的桥接
+框架模块, 定义了一些基本的类, 实现库其它模块的桥接
 
 ## 内容
     - class: 
@@ -53,6 +53,8 @@ class Signal:
         信号采样时长
     df : float
         频率分辨率
+    t0 : float
+        信号采样起始时间
     t_Axis : np.ndarray
         时间坐标序列
     f_Axis : np.ndarray
