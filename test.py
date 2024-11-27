@@ -39,35 +39,37 @@ TEST_DATA["data2"] = np.cos(2 * np.pi * 100 * t_Axis) + 0.5 * np.cos(
 # 测试设置
 Data = TEST_DATA["data1"]
 Fs = 12000
-PLOT_SAVE = True
-IF_TEST_PLOT_SPECTRUM = True
-IF_TEST_PLOT_SPECTROGRAM = True
-IF_TEST_PLOT_FINDPEAK = True
+PLOT_SAVE = False
+IF_TEST_PLOT_SPECTRUM = False
+IF_TEST_PLOT_SPECTROGRAM = False
+IF_TEST_PLOT_FINDPEAK = False
 
-IF_TEST_SIGNAL_SIG = True
-IF_TEST_SIGNAL_SIGINFO = True
-IF_TEST_SIGNAL_SIGPLOT = True
-IF_TEST_SIGNAL_RESAMPLE = True
+IF_TEST_SIGNAL_SIG = False
+IF_TEST_SIGNAL_SIGINFO = False
+IF_TEST_SIGNAL_SIGPLOT = False
+IF_TEST_SIGNAL_RESAMPLE = False
 
-IF_TEST_BASICSP_WINDOW = True
-IF_TEST_BASICSP_TIME_PDF = True
-IF_TEST_BASICSP_TIME_TREND = True
-IF_TEST_BASICSP_TIME_AC = True
-IF_TEST_BASICSP_FRE_CFT = True
-IF_TEST_BASICSP_FRE_PSD = True
-IF_TEST_BASICSP_FRE_PSDCORR = True
-IF_TEST_BASICSP_FRE_EVSPR = True
-IF_TEST_BASICSP_TIMEFRE_STFT = True
-IF_TEST_BASICSP_TIMEFRE_ISTFT = True
+IF_TEST_BASICSP_WINDOW = False
+IF_TEST_BASICSP_TIME_PDF = False
+IF_TEST_BASICSP_TIME_TREND = False
+IF_TEST_BASICSP_TIME_AC = False
+IF_TEST_BASICSP_FRE_CFT = False
+IF_TEST_BASICSP_FRE_PSD = False
+IF_TEST_BASICSP_FRE_PSDCORR = False
+IF_TEST_BASICSP_FRE_EVSPR = False
+IF_TEST_BASICSP_TIMEFRE_STFT = False
+IF_TEST_BASICSP_TIMEFRE_ISTFT = False
 
-IF_TEST_CEP_PLOTLINE = True
-IF_TEST_CEP_ZOOMAFT = True
-IF_TEST_CEP_CEPREAL = True
-IF_TEST_CEP_CEPPOWER = True
-IF_TEST_CEP_CEPCOMPLEX = True
-IF_TEST_CEP_CEPRECONSTRUCT = True
-IF_TEST_CEP_CEPANALYTIC = True
-IF_TEST_CEP_CEPZOOM = True
+IF_TEST_CEP_PLOTLINE = False
+IF_TEST_CEP_ZOOMAFT = False
+IF_TEST_CEP_CEPREAL = False
+IF_TEST_CEP_CEPPOWER = False
+IF_TEST_CEP_CEPCOMPLEX = False
+IF_TEST_CEP_CEPRECONSTRUCT = False
+IF_TEST_CEP_CEPANALYTIC = False
+IF_TEST_CEP_CEPZOOM = False
+
+IF_TEST_EMD = True
 # --------------------------------------------------------------------------------------------#
 # 开始测试并记录
 log_file = os.path.join(BASE_DIR + "//test", "test_log.txt")
@@ -485,6 +487,17 @@ with open(log_file, "w", encoding="utf-8") as f:
 
     print("Cep_Analysis.py测试完成\n\n")
     f.write("Cep_Analysis.py测试完成\n\n")
+
+    # 测试PySP.EMD_Analysis.py
+    f.write("测试EMD_Analysis.py\n")
+    print("测试EMD_Analysis.py")
+    Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
+    # ----------------------------------------------------------------------------------------#
+    if IF_TEST_EMD:
+        try:
+            
+        except Exception as e:
+            print(e)
 # --------------------------------------------------------------------------------------------#
 # 测试完成
 print("测试日志已保存到.../test/test_log.txt")
