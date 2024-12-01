@@ -13,6 +13,7 @@ xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库
 from .dependencies import Optional
 from .dependencies import np
 from .dependencies import inspect
+from .dependencies import copy
 from .dependencies import wraps
 from .dependencies import get_origin, get_args, Union
 from .decorators import Check_Vars
@@ -161,7 +162,14 @@ class Signal:
         """
         返回信号数据数组, 用于在传递给NumPy函数时自动调用
         """
-        return self.data
+        return self.data.copy()
+    
+    # ---------------------------------------------------------------------------------------#
+    def copy(self) -> "Signal":
+        """
+        返回信号的深拷贝
+        """
+        return copy.deepcopy(self)
 
     # ---------------------------------------------------------------------------------------#
     def info(self,print:bool=True) -> dict:
@@ -377,7 +385,7 @@ class Analysis:
     def __init__(
         self, Sig: Signal, plot: bool = False, plot_save: bool = False, **kwargs
     ):
-        self.Sig = Sig
+        self.Sig = Sig.copy() # 防止对原信号进行修改
         # 绘图参数全局设置
         self.plot = plot
         self.plot_save = plot_save

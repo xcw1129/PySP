@@ -2,6 +2,7 @@
 from typing import Optional, Callable, Union, get_origin, get_args  # 类型提示
 from functools import wraps  # 函数对象操作
 import inspect  # 函数检查
+import copy # 对象复制
 
 # 向量数值计算库
 import numpy as np
