@@ -7,6 +7,10 @@
 		{
 			"name": "PySP: dev",
 			"path": "../PySP.worktrees/dev"
+		},
+		{
+			"name": "PySP: hotfix",
+			"path": "../PySP.worktrees/hotfix"
 		}
 	]
 }
