@@ -2,13 +2,8 @@ README.md
 setup.py
 PySP/BasicSP.py
 PySP/Cep_Analysis.py
-PySP/CycloS_Analysis.py
-PySP/EMD_Analysis.py
-PySP/Homo_Analysis.py
 PySP/Plot.py
-PySP/SK_Analysis.py
 PySP/Signal.py
-PySP/Wavelet_Analysis.py
 PySP/__init__.py
 PySP/decorators.py
 PySP/dependencies.py
