@@ -1,7 +1,12 @@
 {
 	"folders": [
 		{
+			"name": "PySP"
 			"path": "."
+		},
+		{
+			"name": "PySP: dev",
+			"path": "../PySP.worktrees/dev"
 		}
 	]
 }
