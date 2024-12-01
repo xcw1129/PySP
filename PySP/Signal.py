@@ -1,6 +1,6 @@
 """
 # Signal
-xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库其它模块的桥接
+PySP库的框架模块, 定义了一些基本的类, 实现PySP库其它模块的桥接
 
 ## 内容
     - class: 
