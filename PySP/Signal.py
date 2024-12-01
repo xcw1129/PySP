@@ -1,6 +1,6 @@
 """
 # Signal
-框架模块, 定义了一些基本的类, 实现库其它模块的桥接
+PySP库的框架模块, 定义了一些基本的类, 实现PySP库其它模块的桥接
 
 ## 内容
     - class: 
@@ -13,6 +13,7 @@
 from .dependencies import Optional
 from .dependencies import np
 from .dependencies import inspect
+from .dependencies import copy
 from .dependencies import wraps
 from .dependencies import get_origin, get_args, Union
 from .decorators import Check_Vars
@@ -112,7 +113,7 @@ class Signal:
         """
         采样时间间隔
         """
-        return 1/self.fs
+        return 1 / self.fs
 
     # ---------------------------------------------------------------------------------------#
     @property
@@ -159,14 +160,72 @@ class Signal:
         )  # 频率坐标，f=[0,df,2df,...,(N-1)df]
 
     # ---------------------------------------------------------------------------------------#
+    def __repr__(self) -> str:
+        """
+        返回Signal类对象的字符串表示, 用于调试
+        """
+        return f"Signal(data={self.data}, fs={self.fs}, label={self.label})"
+
+    # ---------------------------------------------------------------------------------------#
+    def __str__(self) -> str:
+        """
+        返回Signal类对象的介绍信息, 用于打印
+        """
+        info = self.info(print=False)
+        return f"{self.label}的采样参数: \n" + "\n".join(
+            [f"{k}: {v}" for k, v in info.items()]
+        )
+
+    # ---------------------------------------------------------------------------------------#
+    def __len__(self) -> int:
+        """
+        返回信号长度, 用于在传递给len()函数时自动调用
+        """
+        return self.N
+
+    # ---------------------------------------------------------------------------------------#
+    def __getitem__(self, index):
+        """
+        返回信号数据数组的指定索引值, 使Signal类对象支持切片访问
+        """
+        return self.data[index]
+
+    # ---------------------------------------------------------------------------------------#
+    def __setitem__(self, index, value):
+        """
+        修改信号数据数组的指定索引值, 使Signal类对象支持切片赋值
+        """
+        self.data[index] = value
+
+    # ---------------------------------------------------------------------------------------#
     def __array__(self) -> np.ndarray:
         """
         返回信号数据数组, 用于在传递给NumPy函数时自动调用
         """
-        return self.data
+        return self.data.copy()
 
     # ---------------------------------------------------------------------------------------#
-    def info(self,print:bool=True) -> dict:
+    def __eq__(self, other):
+        """
+        判断两个Signal类对象是否相等, 使Signal类对象支持==运算符
+        """
+        if isinstance(other, Signal):
+            return (
+                np.array_equal(self.data, other.data)
+                and self.t0 == other.t0
+                and self.fs == other.fs
+            )
+        return False
+
+    # ---------------------------------------------------------------------------------------#
+    def copy(self) -> "Signal":
+        """
+        返回信号的深拷贝
+        """
+        return copy.deepcopy(self)
+
+    # ---------------------------------------------------------------------------------------#
+    def info(self, print: bool = True) -> dict:
         """
         输出信号的采样信息
 
@@ -248,6 +307,7 @@ class Analysis:
     Input(*var_checks)
         输入变量检查装饰器, 用于对分析方法输入变量进行检查
     """
+
     @staticmethod
     def Plot(plot_type: str, plot_func: callable):
         def plot_decorator(func):
@@ -379,7 +439,7 @@ class Analysis:
     def __init__(
         self, Sig: Signal, plot: bool = False, plot_save: bool = False, **kwargs
     ):
-        self.Sig = Sig
+        self.Sig = Sig.copy()  # 防止对原信号进行修改
         # 绘图参数全局设置
         self.plot = plot
         self.plot_save = plot_save
@@ -387,7 +447,7 @@ class Analysis:
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"Sig":{},"down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
+@Check_Vars({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
 def resample(
     Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
 ) -> Signal:

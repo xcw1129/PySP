@@ -209,7 +209,7 @@ class Time_Analysis(Analysis):
         pdf : np.ndarray
             估计的概率密度函数
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         # 计算概率密度函数
         density = stats.gaussian_kde(data)  # 核密度估计
@@ -271,7 +271,7 @@ class Time_Analysis(Analysis):
         trend : np.ndarray
             统计特征的时间趋势
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         N = self.Sig.N
         fs = self.Sig.fs
@@ -334,7 +334,7 @@ class Time_Analysis(Analysis):
         corr : np.ndarray
             自相关结果
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         N = self.Sig.N
         t_Axis = self.Sig.t_Axis
@@ -414,7 +414,7 @@ class Frequency_Analysis(Analysis):
         ft_data : np.ndarray
             双边频谱密度
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         N = self.Sig.N
         fs = self.Sig.fs
@@ -447,7 +447,7 @@ class Frequency_Analysis(Analysis):
         Amp : np.ndarray
             单边傅里叶级数谱
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         N = self.Sig.N
         # 计算功率信号的单边傅里叶级数谱
@@ -487,7 +487,7 @@ class Frequency_Analysis(Analysis):
         power : np.ndarray
             功率谱密度
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         N = self.Sig.N
         df = self.Sig.df
@@ -525,7 +525,7 @@ class Frequency_Analysis(Analysis):
         power : np.ndarray
             功率谱密度
         """
-        # 获取信号数据
+        # 初始化
         N = self.Sig.N
         df = self.Sig.df
         fs = self.Sig.fs
@@ -554,7 +554,7 @@ class Frequency_Analysis(Analysis):
         spectra : np.ndarray
             希尔伯特包络谱
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         N = self.Sig.N
         f_Axis = self.Sig.f_Axis
@@ -642,7 +642,7 @@ class TimeFre_Analysis(Analysis):
         ft_data_matrix : np.ndarray
             短时傅里叶变换结果
         """
-        # 获取信号数据
+        # 初始化
         data = self.Sig.data
         N = self.Sig.N
         dt = self.Sig.dt

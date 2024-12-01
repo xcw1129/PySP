@@ -159,7 +159,7 @@ class Cep_Analysis(Analysis):
         real_cep : np.ndarray
             单边实数倒谱
         """
-        # 查询信号数据
+        # 初始化
         data = self.Sig.data
         # 计算实数倒谱
         rfft_data = fft.rfft(data)  # 实数据故使用rfft
@@ -185,7 +185,7 @@ class Cep_Analysis(Analysis):
         power_cep : np.ndarray
             单边功率倒谱
         """
-        # 查询信号数据
+        # 初始化
         data = self.Sig.data
         # 计算功率倒谱
         rfft_data = fft.rfft(data)
@@ -212,7 +212,7 @@ class Cep_Analysis(Analysis):
         complex_cep : np.ndarray
             复数倒谱
         """
-        # 查询信号数据
+        # 初始化
         data = self.Sig.data
         # 计算复数倒谱
         fft_data = fft.fft(data)
@@ -278,7 +278,7 @@ class Cep_Analysis(Analysis):
         analytic_cep : np.ndarray
             单边解析倒谱
         """
-        # 查询信号数据
+        # 初始化
         data = self.Sig.data
         # 计算解析倒谱
         fft_data = fft.fft(data)
@@ -470,7 +470,7 @@ def zoom_Aft(
     (plot_save) : bool, 可选
         是否将绘图结果保存为svg图片, 默认不保存
     """
-    # 查询信号数据
+    # 初始化
     data = Sig.data
     t_Axis = Sig.t_Axis
     fs = Sig.fs
