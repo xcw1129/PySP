@@ -50,7 +50,7 @@ IF_TEST_SIGNAL_SIGPLOT = False
 IF_TEST_SIGNAL_RESAMPLE = False
 
 IF_TEST_BASICSP_WINDOW = False
-IF_TEST_BASICSP_TIME_PDF = False
+IF_TEST_BASICSP_TIME_PDF = True
 IF_TEST_BASICSP_TIME_TREND = False
 IF_TEST_BASICSP_TIME_AC = False
 IF_TEST_BASICSP_FRE_CFT = False
@@ -493,11 +493,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     print("测试EMD_Analysis.py")
     Sig_test = Signal.Signal(data=Data, label="Test信号", fs=Fs)
     # ----------------------------------------------------------------------------------------#
-    if IF_TEST_EMD:
-        try:
-            
-        except Exception as e:
-            print(e)
+
 # --------------------------------------------------------------------------------------------#
 # 测试完成
 print("测试日志已保存到.../test/test_log.txt")
