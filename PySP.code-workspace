@@ -6,11 +6,11 @@
 		},
 		{
 			"name": "PySP: dev",
-			"path": "../PySP.worktrees/dev"
+			"path": "D:/OneDrive/UserFiles/工作/代码库/PySP.worktrees/dev"
 		},
 		{
 			"name": "PySP: hotfix",
-			"path": "../PySP.worktrees/hotfix"
+			"path": "D:/OneDrive/UserFiles/工作/代码库/PySP.worktrees/hotfix"
 		}
 	]
 }
