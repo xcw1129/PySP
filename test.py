@@ -203,7 +203,7 @@ with open(log_file, "w", encoding="utf-8") as f:
                 plot_save=PLOT_SAVE,
                 xlabel="幅值",
                 title="BasicSP.Time_Analysis().Pdf()",
-            ).Pdf(samples=200)
+            ).Pdf(samples=200,x=3)
             print("\tBasicSP.Time_Analysis().Pdf()测试通过")
             f.write("\tBasicSP.Time_Analysis().Pdf()测试通过\n")
         except Exception as e:
