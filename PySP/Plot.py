@@ -11,6 +11,7 @@
 
 from .dependencies import np
 from .dependencies import plt
+from .dependencies import animation
 from .dependencies import signal
 from .dependencies import zh_font
 from .dependencies import FLOAT_EPS
@@ -19,9 +20,9 @@ from .decorators import Check_Vars
 
 
 # --------------------------------------------------------------------------------------------#
-# --## ---------------------------------------------------------------------------------------#
-# ------## -----------------------------------------------------------------------------------#
-# ----------## -------------------------------------------------------------------------------#
+# -## ----------------------------------------------------------------------------------------#
+# -----## ------------------------------------------------------------------------------------#
+# ---------## --------------------------------------------------------------------------------#
 def __log(data: np.ndarray, eps: float) -> np.ndarray:
     """
     对输入数组进行对数变换
@@ -79,7 +80,7 @@ def plot_spectrum(
         raise ValueError(
             f"Axis={len(Axis)}和data={len(data)}的长度不一致"
         )  # 数据长度检查
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 设置图像界面
     figsize = kwargs.get("figsize", (12, 5))
     plt.figure(figsize=figsize)
@@ -96,7 +97,7 @@ def plot_spectrum(
     plt.title(title, fontproperties=zh_font)
     # 设置图像栅格
     plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
     xlabel = kwargs.get("xlabel", None)
@@ -110,7 +111,7 @@ def plot_spectrum(
     plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
     plot_save = kwargs.get("plot_save", False)
     if plot_save:
@@ -161,7 +162,7 @@ def plot_spectrogram(
     # 检查数据
     if (len(Axis1) != data.shape[0]) or (len(Axis2) != data.shape[1]):
         raise ValueError("Axis1、Axis2与data的对应轴长度不一致")  # 数据长度检查
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 设置图像界面
     figsize = kwargs.get("figsize", (10, 8))
     plt.figure(figsize=figsize)
@@ -183,7 +184,7 @@ def plot_spectrogram(
     # 设置标题
     title = kwargs.get("title", None)
     plt.title(title, fontproperties=zh_font)
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置x轴参数
     xlabel = kwargs.get("xlabel", None)
@@ -198,7 +199,7 @@ def plot_spectrogram(
     # 设置谱图强度标签
     colorbar = kwargs.get("colorbarlabel", None)
     plt.colorbar(label=colorbar)
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
     plot_save = kwargs.get("plot_save", False)
     if plot_save:
@@ -247,12 +248,12 @@ def plot_findpeak(
         raise ValueError(
             f"Axis={len(Axis)}和data={len(data)}的长度不一致"
         )  # 数据长度检查
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 寻找峰值
     peak_idx, peak_params = signal.find_peaks(data, height=height)
     peak_height = peak_params["peak_heights"]
     peak_axis = Axis[peak_idx]
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 设置图像界面
     figsize = kwargs.get("figsize", (12, 5))
     plt.figure(figsize=figsize)
@@ -271,7 +272,7 @@ def plot_findpeak(
     plt.title(title)
     # 设置图像栅格
     plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 标注峰值
     peaks = zip(peak_axis, peak_height)
     for val, amp in peaks:
@@ -284,7 +285,7 @@ def plot_findpeak(
             color="red",
             fontsize=10,
         )
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置 x 轴参数
     xlabel = kwargs.get("xlabel", None)
@@ -298,10 +299,108 @@ def plot_findpeak(
     plt.ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
     ylim = kwargs.get("ylim", (None, None))
     plt.ylim(ylim[0], ylim[1])  # 刻度范围
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     # 按指定格式保存图片并显示
     plot_save = kwargs.get("plot_save", False)
     if plot_save:
         plt.savefig(title + ".svg", format="svg")  # 保存图片
     plt.tight_layout()
     plt.show()
+
+# --------------------------------------------------------------------------------------------#
+@Check_Vars({"Axis": {"ndim": 1}, "data_Array": {"ndim": 2}})
+def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
+    """
+    根据输入的横轴数据和多个纵轴数据组成的列表, 绘制Plot动图
+
+    参数:
+    --------
+    Axis : np.ndarray
+        x轴数据
+    data_Array : np.ndarray
+        y轴数据列表
+    (xlabel) : str, 可选
+        x轴标签, 默认为None
+    (xticks) : list, 可选
+        x轴刻度, 默认为None
+    (xlim) : tuple, 可选
+        x轴刻度范围, 默认为None
+    (ylabel) : str, 可选
+        y轴标签, 默认为None
+    (ylim) : tuple, 可选
+        y轴刻度范围, 默认为None
+    (title) : str, 可选
+        图像标题, 默认为None
+    (linecolor) : str, 可选
+        线条颜色, 默认为black
+    (frameFps) : int, 可选
+        动画帧率, 默认为10
+    (framelabel) : list, 可选
+        每帧数据标签列表, 默认为[第i帧]
+    """
+    # 检查输入数据
+    if len(Axis) != data_Array.shape[1]:
+        raise ValueError(
+            f"Axis={len(Axis)}和data={len(data_Array)}的长度不一致"
+        )  # 数据长度检查
+    # ----------------------------------------------------------------------------------------#
+    # 设置图像界面
+    figsize = Kwargs.get("figsize", (12, 5))
+    fig, ax = plt.subplots(figsize=figsize)
+    # 设置坐标轴尺度
+    xscale = Kwargs.get("xscale", "linear")
+    yscale = Kwargs.get("yscale", "linear")
+    if xscale == "log":
+        Axis = __log(Axis, FLOAT_EPS)
+    if yscale == "log":
+        data_Array = 20 * __log(data_Array, FLOAT_EPS)
+    # 设置标题
+    title = Kwargs.get("title", "2维Plot动图")
+    ax.set_title(title, fontproperties=zh_font)
+    # 设置图像栅格
+    ax.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
+    # ----------------------------------------------------------------------------------------#
+    # 设置坐标轴参数
+    # 设置 x 轴参数
+    xlabel = Kwargs.get("xlabel", None)
+    ax.set_xlabel(xlabel, fontproperties=zh_font, labelpad=0.2, loc="right")  # 标签
+    xticks = Kwargs.get("xticks", None)
+    plt.xticks(xticks)  # 刻度显示
+    xlim = Kwargs.get("xlim", (Axis[0], Axis[-1]))
+    ax.set_xlim(xlim[0], xlim[1])  # 刻度范围
+    # 设置 y 轴参数
+    ylabel = Kwargs.get("ylabel", None)
+    ax.set_ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
+    ylim = Kwargs.get("ylim", (np.min(data_Array), np.max(data_Array)))
+    ax.set_ylim(ylim[0], ylim[1])  # 刻度范围
+    # ----------------------------------------------------------------------------------------#
+    # 设置动画
+    frameNum = data_Array.shape[0]
+    linecolor = Kwargs.get("linecolor", "black")
+    frameFps = Kwargs.get("frameFps", 10)
+    (line,) = ax.plot([], [], color=linecolor)
+    framelabel = Kwargs.get("framelabel", [f"第{i+1}帧" for i in range(frameNum)])
+
+    # 初始化函数
+    def init():
+        line.set_data([], [])
+        return (line,)
+
+    # 更新函数
+    def update(frame, x, y, line):
+        line.set_data(x, y[frame])
+        plt.legend([framelabel[frame]], loc="upper right", prop=zh_font)
+        return (line,)
+
+    # 绘制动画
+    anim = animation.FuncAnimation(
+        fig,
+        update,
+        init_func=init,
+        frames=frameNum,
+        fargs=(Axis, data_Array, line),
+        interval=1000 / frameFps,
+        blit=True,
+    )
+    anim.save(title + ".gif",writer='pillow')
+    plt.close(fig)# 默认只保存不显示
