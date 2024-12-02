@@ -337,6 +337,13 @@ class Analysis:
                 # ---------------------------------------------------------------------------#
                 # 获取函数输入变量
                 Vars = inspect.signature(func)
+                # 检查实际输入变量是否在函数参数中
+                if "kwargs" not in Vars.parameters:
+                    for var_name in kwargs:
+                        if var_name not in Vars.parameters:
+                            raise TypeError(
+                                f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"
+                            )
                 bound_args = Vars.bind(self, *args, **kwargs)
                 bound_args.apply_defaults()
                 # 获取变量的类型注解
