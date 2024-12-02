@@ -15,16 +15,15 @@ from scipy import interpolate  # 插值分析包
 
 # 可视化绘图库
 import matplotlib.pyplot as plt
+from matplotlib import animation  # 动画绘图
+from matplotlib import font_manager# 字体管理
 
-plt.rcParams["font.family"] = "sans-serif"
-plt.rcParams["font.sans-serif"] = ["Times New Roman"]  # 英文字体
+plt.rcParams["font.family"] = "sans-serif" # 默认字体类型
+plt.rcParams["font.sans-serif"] = ["Times New Roman"]  # 默认字体
 plt.rcParams["axes.unicode_minus"] = False  # 正常显示负号
-# 设置全局字体大小
 plt.rcParams["font.size"] = 16  # 设置全局字体大小
-
-from matplotlib import font_manager
-
 zh_font = font_manager.FontProperties(fname=r"C:\Windows\Fonts\simhei.ttf")  # 中文字体
+en_font = font_manager.FontProperties(fname=r"C:\Windows\Fonts\Times New Roman.ttf")  # 英文字体
 
 FLOAT_EPS = np.finfo(float).eps  # 机器精度
 PI = np.pi  # 圆周率
