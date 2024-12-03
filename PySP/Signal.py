@@ -218,9 +218,53 @@ class Signal:
         return False
 
     # ---------------------------------------------------------------------------------------#
+    def __add__(self, other):
+        """
+        实现Signal对象与Signal/array对象的加法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data + other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data + other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
+    def __sub__(self, other):
+        """
+        实现Signal对象与Signal/array对象的减法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data - other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data - other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
+    def __mul__(self, other):
+        """
+        实现Signal对象与Signal/array对象的乘法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data * other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data * other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
+    def __div__(self, other):
+        """
+        实现Signal对象与Signal/array对象的除法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data / other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data / other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
     def copy(self) -> "Signal":
         """
-        返回信号的深拷贝
+        返回Signal对象的深拷贝
         """
         return copy.deepcopy(self)
 
