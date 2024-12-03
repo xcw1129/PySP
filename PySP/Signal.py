@@ -87,7 +87,7 @@ class Signal:
         T: Optional[float] = None,
         t0: Optional[float] = 0,
     ):
-        self.data = data
+        self.data = data.copy()
         N = len(data)
         # 只允许给出一个采样参数
         if not [dt, fs, T].count(None) == 2:
