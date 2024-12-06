@@ -48,9 +48,10 @@ IF_TEST_SIGNAL_SIG = False
 IF_TEST_SIGNAL_SIGINFO = False
 IF_TEST_SIGNAL_SIGPLOT = False
 IF_TEST_SIGNAL_RESAMPLE = False
+IF_TEST_SIGNAL_GENERATESIM= False
 
 IF_TEST_BASICSP_WINDOW = False
-IF_TEST_BASICSP_TIME_PDF = True
+IF_TEST_BASICSP_TIME_PDF = False
 IF_TEST_BASICSP_TIME_TREND = False
 IF_TEST_BASICSP_TIME_AC = False
 IF_TEST_BASICSP_FRE_CFT = False
@@ -171,6 +172,16 @@ with open(log_file, "w", encoding="utf-8") as f:
         except Exception as e:
             print("\tSignal.resample()测试失败:", e)
             f.write(f"\tSignal.resample()测试失败: {e}\n")
+    # ----------------------------------------------------------------------------------------#
+    if IF_TEST_SIGNAL_GENERATESIM:
+        try:
+            res = Signal.generate_simulated_signal(fs=2000,T=2,CosParams=([24,1.2,43],[63,3.2,12],[254,0.5,68]),noise=0.5)
+            res.plot(title="Signal.generate_simulated_signal()", plot_save=PLOT_SAVE)
+            print("\tSignal.generate_simulated_signal()测试通过")
+            f.write("\tSignal.generate_simulated_signal()测试通过\n")
+        except Exception as e:
+            print("\tSignal.generate_simulated_signal()测试失败:", e)
+            f.write(f"\tSignal.generate_simulated_signal()测试失败: {e}\n")
 
     print("Signal.py测试完成\n\n")
     f.write("Signal.py测试完成\n\n")

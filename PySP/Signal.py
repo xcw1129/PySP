@@ -11,7 +11,7 @@ PySP库的框架模块, 定义了一些基本的类, 实现PySP库其它模块�
 """
 
 from .dependencies import Optional
-from .dependencies import np
+from .dependencies import np, random
 from .dependencies import inspect
 from .dependencies import copy
 from .dependencies import wraps
@@ -570,3 +570,14 @@ def resample(
         resampled_data, label="重采样" + Sig.label, dt=ration * Sig.dt, t0=t0
     )  # 由于离散信号，实际采样率为fs/ration
     return resampled_Sig
+
+def generate_simulated_signal(fs:int,T:float,CosParams:tuple,noise:float=0)->Signal:
+    t_Axis=np.arange(0,T,1/fs)
+    data=np.zeros_like(t_Axis)
+    for i,params in enumerate(CosParams):
+        if len(params)!=3:
+            raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
+        f,A,phi=params
+        data+=A*np.cos(2*np.pi*f*t_Axis+phi)#生成任意频率、幅值、相位的余弦信号
+    data+=random.randn(len(t_Axis))*noise#加入高斯白噪声
+    return Signal(data,fs=fs,label="仿真含噪准周期信号")
