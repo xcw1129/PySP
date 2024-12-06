@@ -54,6 +54,8 @@ class Signal:
         信号采样时长
     df : float
         频率分辨率
+    t0 : float
+        信号采样起始时间
     t_Axis : np.ndarray
         时间坐标序列
     f_Axis : np.ndarray
@@ -85,7 +87,7 @@ class Signal:
         T: Optional[float] = None,
         t0: Optional[float] = 0,
     ):
-        self.data = data
+        self.data = data.copy()
         N = len(data)
         # 只允许给出一个采样参数
         if not [dt, fs, T].count(None) == 2:
@@ -216,9 +218,53 @@ class Signal:
         return False
 
     # ---------------------------------------------------------------------------------------#
+    def __add__(self, other):
+        """
+        实现Signal对象与Signal/array对象的加法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data + other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data + other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
+    def __sub__(self, other):
+        """
+        实现Signal对象与Signal/array对象的减法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data - other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data - other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
+    def __mul__(self, other):
+        """
+        实现Signal对象与Signal/array对象的乘法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data * other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data * other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
+    def __div__(self, other):
+        """
+        实现Signal对象与Signal/array对象的除法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data / other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data / other, self.dt, self.t0, self.fs, self.label)
+
+    # ---------------------------------------------------------------------------------------#
     def copy(self) -> "Signal":
         """
-        返回信号的深拷贝
+        返回Signal对象的深拷贝
         """
         return copy.deepcopy(self)
 
@@ -335,6 +381,13 @@ class Analysis:
                 # ---------------------------------------------------------------------------#
                 # 获取函数输入变量
                 Vars = inspect.signature(func)
+                # 检查实际输入变量是否在函数参数中
+                if "kwargs" not in Vars.parameters:
+                    for var_name in kwargs:
+                        if var_name not in Vars.parameters:
+                            raise TypeError(
+                                f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"
+                            )
                 bound_args = Vars.bind(self, *args, **kwargs)
                 bound_args.apply_defaults()
                 # 获取变量的类型注解

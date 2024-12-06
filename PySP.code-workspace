@@ -1,7 +1,17 @@
 {
 	"folders": [
 		{
+			"name": "PySP",
 			"path": "."
+		},
+		{
+			"name": "PySP: dev",
+			"path": "F:/OneDrive/UserFiles/工作/代码库/PySP.worktrees/dev"
+		},
+		{
+			"name": "PySP: hotfix",
+			"path": "F:/OneDrive/UserFiles/工作/代码库/PySP.worktrees/hotfix"
 		}
-	]
+	],
+	"settings": {}
 }
