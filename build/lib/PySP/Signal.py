@@ -1,18 +1,19 @@
 """
 # Signal
-xcw_package库的框架模块, 定义了一些基本的类, 实现xcw_package库其它模块的桥接
+PySP库的框架模块, 定义了一些基本的类, 实现PySP库其它模块的桥接
 
 ## 内容
     - class: 
-        1. Signal: 自带时间、频率等采样信息的信号类
+        1. Signal: 自带采样信息的信号类, 可进行简单预处理操作
         2. Analysis: 信号分析基类, 用于创建其他复杂的信号分析、处理方法
     - function:
-        1. resample: 信号任意时间段重采样函数
+        1. resample: 对信号进行任意时间段的重采样
 """
 
 from .dependencies import Optional
-from .dependencies import np
+from .dependencies import np, random
 from .dependencies import inspect
+from .dependencies import copy
 from .dependencies import wraps
 from .dependencies import get_origin, get_args, Union
 from .decorators import Check_Vars
@@ -21,9 +22,9 @@ from .Plot import plot_spectrum
 
 
 # --------------------------------------------------------------------------------------------#
-# --## ---------------------------------------------------------------------------------------#
-# ------## -----------------------------------------------------------------------------------#
-# ----------## -------------------------------------------------------------------------------#
+# -## ----------------------------------------------------------------------------------------#
+# -----## ------------------------------------------------------------------------------------#
+# ---------## --------------------------------------------------------------------------------#
 class Signal:
     """
     自带采样信息的信号类, 可进行简单预处理操作
@@ -34,14 +35,10 @@ class Signal:
         输入数据数组，用于构建信号
     label : str
         信号标签
-    dt : float
-        采样时间间隔
-    or
-    fs : int
-        采样频率
-    or
-    T : float
-        信号采样时长
+    dt/fs/T : float/int/float
+        采样时间间隔/采样频率/信号采样时长, 输入其中一个即可
+    t0 : float, 可选
+        信号起始时间, 默认为0
 
     属性：
     --------
@@ -57,6 +54,8 @@ class Signal:
         信号采样时长
     df : float
         频率分辨率
+    t0 : float
+        信号采样起始时间
     t_Axis : np.ndarray
         时间坐标序列
     f_Axis : np.ndarray
@@ -64,10 +63,10 @@ class Signal:
 
     方法：
     --------
-    info()
+    info(print:bool=True) -> dict
         输出信号的采样信息
-    plot()
-        绘制信号的时域图
+    plot(**kwargs) -> None
+        绘制信号的时域波形图
     """
 
     @Check_Vars(
@@ -88,64 +87,214 @@ class Signal:
         T: Optional[float] = None,
         t0: Optional[float] = 0,
     ):
-        self.data = data
-        self.N = len(data)
+        self.data = data.copy()
+        N = len(data)
         # 只允许给出一个采样参数
         if not [dt, fs, T].count(None) == 2:
             raise ValueError("采样参数错误, 请只给出一个采样参数且符合格式要求")
-        # -----------------------------------------------------------------------------------#
+        # ------------------------------------------------------------------------------------#
         # 采样参数初始化, dt, fs, T三者知一得三
         if dt is not None:
-            self.dt = dt
             self.fs = 1 / dt
-            self.df = self.fs / (self.N)  # 保证Fs=N*df
-            self.T = self.N * self.dt  # 保证dt=T/N
         elif fs is not None:
             self.fs = fs
-            self.dt = 1 / fs
-            self.df = self.fs / (self.N)
-            self.T = self.N * self.dt
         elif T is not None:
-            self.T = T
-            self.dt = T / self.N
-            self.fs = 1 / self.dt
-            self.df = self.fs / (self.N)
+            self.fs = N / T
         else:
-            raise ValueError("采样参数错误")
+            raise ValueError("采样参数错误, 请只给出一个采样参数且符合格式要求")
         self.t0 = t0
-        # -----------------------------------------------------------------------------------#
+        # ------------------------------------------------------------------------------------#
         # 设置信号标签
         self.label = label
 
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
+    @property
+    def dt(self) -> float:
+        """
+        采样时间间隔
+        """
+        return 1 / self.fs
+
+    # ----------------------------------------------------------------------------------------#
+    @property
+    def df(self) -> float:
+        """
+        频率分辨率
+        """
+        return self.fs / self.N
+
+    # ----------------------------------------------------------------------------------------#
+    @property
+    def T(self) -> float:
+        """
+        信号采样时长
+        """
+        return self.N * self.dt
+
+    # ----------------------------------------------------------------------------------------#
+    @property
+    def N(self) -> int:
+        """
+        信号长度
+        """
+        return len(self.data)
+
+    # ----------------------------------------------------------------------------------------#
     @property
     def t_Axis(self) -> np.ndarray:
         """
-        动态生成时间坐标轴
+        信号时间坐标轴
         """
         return (
             np.arange(0, self.N) * self.dt + self.t0
         )  # 时间坐标，t=[t0,t0+dt,t0+2dt,...,t0+(N-1)dt]
 
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     @property
     def f_Axis(self) -> np.ndarray:
         """
-        动态生成频率坐标轴
+        信号频率坐标轴
         """
         return np.linspace(
             0, self.fs, self.N, endpoint=False
         )  # 频率坐标，f=[0,df,2df,...,(N-1)df]
 
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
+    def __repr__(self) -> str:
+        """
+        返回Signal类对象的字符串表示, 用于调试
+        """
+        return f"Signal(data={self.data}, fs={self.fs}, label={self.label})"
+
+    # ----------------------------------------------------------------------------------------#
+    def __str__(self) -> str:
+        """
+        返回Signal类对象的介绍信息, 用于打印
+        """
+        info = self.info(print=False)
+        return f"{self.label}的采样参数: \n" + "\n".join(
+            [f"{k}: {v}" for k, v in info.items()]
+        )
+
+    # ----------------------------------------------------------------------------------------#
+    def __len__(self) -> int:
+        """
+        返回信号长度, 用于在传递给len()函数时自动调用
+        """
+        return self.N
+
+    # ----------------------------------------------------------------------------------------#
+    def __getitem__(self, index):
+        """
+        返回信号数据数组的指定索引值, 使Signal类对象支持切片访问
+        """
+        return self.data[index]
+
+    # ----------------------------------------------------------------------------------------#
+    def __setitem__(self, index, value):
+        """
+        修改信号数据数组的指定索引值, 使Signal类对象支持切片赋值
+        """
+        self.data[index] = value
+
+    # ----------------------------------------------------------------------------------------#
     def __array__(self) -> np.ndarray:
         """
         返回信号数据数组, 用于在传递给NumPy函数时自动调用
         """
-        return self.data
+        return self.data.copy()
 
-    # ---------------------------------------------------------------------------------------#
-    def info(self,print:bool=True) -> dict:
+    # ----------------------------------------------------------------------------------------#
+    def __eq__(self, other):
+        """
+        判断两个Signal类对象是否相等, 使Signal类对象支持==运算符
+        """
+        if isinstance(other, Signal):
+            return (
+                np.array_equal(self.data, other.data)
+                and self.t0 == other.t0
+                and self.fs == other.fs
+            )
+        return False
+
+    # ----------------------------------------------------------------------------------------#
+    def __add__(self, other):
+        """
+        实现Signal对象与Signal/array对象的加法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            if self.N != other.N:
+                raise ValueError("两个信号长度不一致, 无法运算")
+            if self.t0 != other.t0:
+                raise ValueError("两个信号起始时间不一致, 无法运算")
+            return Signal(self.data + other.data, fs=self.fs,t0=self.t0,label=self.label+"与"+other.label+"相加信号")
+        return Signal(self.data + other, fs=self.fs,t0=self.t0,label=self.label)
+
+    # ----------------------------------------------------------------------------------------#
+    def __sub__(self, other):
+        """
+        实现Signal对象与Signal/array对象的减法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            if self.N != other.N:
+                raise ValueError("两个信号长度不一致, 无法运算")
+            if self.t0 != other.t0:
+                raise ValueError("两个信号起始时间不一致, 无法运算")
+            return Signal(self.data - other.data, fs=self.fs, t0=self.t0, label=self.label + "与" + other.label + "相减信号")
+        return Signal(self.data - other, fs=self.fs, t0=self.t0, label=self.label)
+
+    def __mul__(self, other):
+        """
+        实现Signal对象与Signal/array对象的乘法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            if self.N != other.N:
+                raise ValueError("两个信号长度不一致, 无法运算")
+            if self.t0 != other.t0:
+                raise ValueError("两个信号起始时间不一致, 无法运算")
+            return Signal(self.data * other.data, fs=self.fs, t0=self.t0, label=self.label + "与" + other.label + "相乘信号")
+        return Signal(self.data * other, fs=self.fs, t0=self.t0, label=self.label)
+
+    def __truediv__(self, other):
+        """
+        实现Signal对象与Signal/array对象的除法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            if self.N != other.N:
+                raise ValueError("两个信号长度不一致, 无法运算")
+            if self.t0 != other.t0:
+                raise ValueError("两个信号起始时间不一致, 无法运算")
+            return Signal(self.data / other.data, fs=self.fs, t0=self.t0, label=self.label + "与" + other.label + "相除信号")
+        return Signal(self.data / other, fs=self.fs, t0=self.t0, label=self.label)
+
+    # ----------------------------------------------------------------------------------------#
+    def __div__(self, other):
+        """
+        实现Signal对象与Signal/array对象的除法运算
+        """
+        if isinstance(other, Signal):
+            if self.fs != other.fs:
+                raise ValueError("两个信号采样频率不一致, 无法运算")
+            return Signal(self.data / other.data, self.dt, self.t0, self.fs, self.label)
+        return Signal(self.data / other, self.dt, self.t0, self.fs, self.label)
+
+    # ----------------------------------------------------------------------------------------#
+    def copy(self) -> "Signal":
+        """
+        返回Signal对象的深拷贝
+        """
+        return copy.deepcopy(self)
+
+    # ----------------------------------------------------------------------------------------#
+    def info(self, print: bool = True) -> dict:
         """
         输出信号的采样信息
 
@@ -162,12 +311,12 @@ class Signal:
         info = (
             f"N: {self.N}\n"
             f"fs: {self.fs} Hz\n"
-            f"t0: {self.t0:.3f} s\n"
-            f"dt: {self.dt:.6f} s\n"
-            f"T {self.T:.3f} s\n"
-            f"t1: {self.t0+self.T:.3f} s\n"
-            f"df: {self.df:.3f} Hz\n"
-            f"fn: {self.fs / 2:.1f} Hz\n"
+            f"t0: {self.t0:.2g} s\n"
+            f"dt: {self.dt:.2g} s\n"
+            f"T: {self.T:.2f} s\n"
+            f"t1: {self.t0+self.T:.2f} s\n"
+            f"df: {self.df:.2g} Hz\n"
+            f"fn: {self.fs / 2:.2f} Hz\n"
         )
         if print:
             print(f"{self.label}的采样参数: \n", info)
@@ -176,13 +325,14 @@ class Signal:
         info_dict = {i[0]: i[-1] for i in info}
         return info_dict
 
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     def plot(self, **kwargs) -> None:
         """
         绘制信号的时域波形图
         """
         title = kwargs.get("title", f"{self.label}时域波形图")
         kwargs.pop("title", None)
+
         xticks = kwargs.get("xticks", np.arange(self.t0, self.t0 + self.T, self.T / 10))
         plot_spectrum(
             self.t_Axis,
@@ -196,6 +346,37 @@ class Signal:
 
 # --------------------------------------------------------------------------------------------#
 class Analysis:
+    """
+    信号分析基类, 用于创建其他复杂的信号分析、处理方法
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool, 默认为False
+        是否绘制分析结果图
+    plot_save : bool, 默认为False
+        是否保存绘图
+
+    属性：
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_save : bool
+        是否保存绘图
+    plot_kwargs : dict
+        绘图参数
+
+    方法：
+    --------
+    Plot(plot_type, plot_func)
+        绘图装饰器, 用于对分析方法进行绘图
+    Input(*var_checks)
+        输入变量检查装饰器, 用于对分析方法输入变量进行检查
+    """
+
     @staticmethod
     def Plot(plot_type: str, plot_func: callable):
         def plot_decorator(func):
@@ -215,7 +396,7 @@ class Analysis:
 
         return plot_decorator
 
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def Input(*var_checks):
         # 根据json输入生成对应的变量检查装饰器
@@ -225,6 +406,13 @@ class Analysis:
                 # ---------------------------------------------------------------------------#
                 # 获取函数输入变量
                 Vars = inspect.signature(func)
+                # 检查实际输入变量是否在函数参数中
+                if "kwargs" not in Vars.parameters:
+                    for var_name in kwargs:
+                        if var_name not in Vars.parameters:
+                            raise TypeError(
+                                f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"
+                            )
                 bound_args = Vars.bind(self, *args, **kwargs)
                 bound_args.apply_defaults()
                 # 获取变量的类型注解
@@ -323,11 +511,11 @@ class Analysis:
 
         return decorator
 
-    # ---------------------------------------------------------------------------------------#
+    # ----------------------------------------------------------------------------------------#
     def __init__(
         self, Sig: Signal, plot: bool = False, plot_save: bool = False, **kwargs
     ):
-        self.Sig = Sig
+        self.Sig = Sig.copy()  # 防止对原信号进行修改
         # 绘图参数全局设置
         self.plot = plot
         self.plot_save = plot_save
@@ -335,7 +523,7 @@ class Analysis:
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"Sig":{},"down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
+@Check_Vars({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
 def resample(
     Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
 ) -> Signal:
@@ -375,10 +563,23 @@ def resample(
         raise ValueError("重采样时间长度超过信号时间范围")
     else:
         resample_N = int(T / (Sig.dt * ration))  # N = T/(dt*ration)
-    # -----------------------------------------------------------------------------------#
+    # ------------------------------------------------------------------------------------#
     # 对信号进行重采样
     resampled_data = Sig.data[start_n::ration][:resample_N]  # 重采样
     resampled_Sig = Signal(
         resampled_data, label="重采样" + Sig.label, dt=ration * Sig.dt, t0=t0
     )  # 由于离散信号，实际采样率为fs/ration
     return resampled_Sig
+
+# --------------------------------------------------------------------------------------------#
+Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0},"noise": {"CloseLow": 0}})
+def generate_simulated_signal(fs:int,T:float,CosParams:tuple,noise:float=0)->Signal:
+    t_Axis=np.arange(0,T,1/fs)
+    data=np.zeros_like(t_Axis)
+    for i,params in enumerate(CosParams):
+        if len(params)!=3:
+            raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
+        f,A,phi=params
+        data+=A*np.cos(2*np.pi*f*t_Axis+phi)#生成任意频率、幅值、相位的余弦信号
+    data+=random.randn(len(t_Axis))*noise#加入高斯白噪声
+    return Signal(data,fs=fs,label="仿真含噪准周期信号")
