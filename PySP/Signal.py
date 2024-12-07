@@ -10,12 +10,12 @@ PySP库的框架模块, 定义了一些基本的类, 实现PySP库其它模块�
         1. resample: 对信号进行任意时间段的重采样
 """
 
-from .dependencies import Optional
+from .dependencies import Optional, Union
 from .dependencies import np, random
 from .dependencies import inspect
 from .dependencies import copy
 from .dependencies import wraps
-from .dependencies import get_origin, get_args, Union
+from .dependencies import get_origin, get_args
 from .decorators import Check_Vars
 
 from .Plot import plot_spectrum
@@ -229,8 +229,13 @@ class Signal:
                 raise ValueError("两个信号长度不一致, 无法运算")
             if self.t0 != other.t0:
                 raise ValueError("两个信号起始时间不一致, 无法运算")
-            return Signal(self.data + other.data, fs=self.fs,t0=self.t0,label=self.label+"与"+other.label+"相加信号")
-        return Signal(self.data + other, fs=self.fs,t0=self.t0,label=self.label)
+            return Signal(
+                self.data + other.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label + "与" + other.label + "相加信号",
+            )
+        return Signal(self.data + other, fs=self.fs, t0=self.t0, label=self.label)
 
     # ----------------------------------------------------------------------------------------#
     def __sub__(self, other):
@@ -244,7 +249,12 @@ class Signal:
                 raise ValueError("两个信号长度不一致, 无法运算")
             if self.t0 != other.t0:
                 raise ValueError("两个信号起始时间不一致, 无法运算")
-            return Signal(self.data - other.data, fs=self.fs, t0=self.t0, label=self.label + "与" + other.label + "相减信号")
+            return Signal(
+                self.data - other.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label + "与" + other.label + "相减信号",
+            )
         return Signal(self.data - other, fs=self.fs, t0=self.t0, label=self.label)
 
     def __mul__(self, other):
@@ -258,7 +268,12 @@ class Signal:
                 raise ValueError("两个信号长度不一致, 无法运算")
             if self.t0 != other.t0:
                 raise ValueError("两个信号起始时间不一致, 无法运算")
-            return Signal(self.data * other.data, fs=self.fs, t0=self.t0, label=self.label + "与" + other.label + "相乘信号")
+            return Signal(
+                self.data * other.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label + "与" + other.label + "相乘信号",
+            )
         return Signal(self.data * other, fs=self.fs, t0=self.t0, label=self.label)
 
     def __truediv__(self, other):
@@ -272,7 +287,12 @@ class Signal:
                 raise ValueError("两个信号长度不一致, 无法运算")
             if self.t0 != other.t0:
                 raise ValueError("两个信号起始时间不一致, 无法运算")
-            return Signal(self.data / other.data, fs=self.fs, t0=self.t0, label=self.label + "与" + other.label + "相除信号")
+            return Signal(
+                self.data / other.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label + "与" + other.label + "相除信号",
+            )
         return Signal(self.data / other, fs=self.fs, t0=self.t0, label=self.label)
 
     # ----------------------------------------------------------------------------------------#
@@ -571,15 +591,22 @@ def resample(
     )  # 由于离散信号，实际采样率为fs/ration
     return resampled_Sig
 
+
 # --------------------------------------------------------------------------------------------#
-Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0},"noise": {"CloseLow": 0}})
-def generate_simulated_signal(fs:int,T:float,CosParams:tuple,noise:float=0)->Signal:
-    t_Axis=np.arange(0,T,1/fs)
-    data=np.zeros_like(t_Axis)
-    for i,params in enumerate(CosParams):
-        if len(params)!=3:
+Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
+
+
+def generate_simulated_signal(
+    fs: int, T: float, CosParams: tuple, noise: float = 0
+) -> Signal:
+    t_Axis = np.arange(0, T, 1 / fs)
+    data = np.zeros_like(t_Axis)
+    for i, params in enumerate(CosParams):
+        if len(params) != 3:
             raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
-        f,A,phi=params
-        data+=A*np.cos(2*np.pi*f*t_Axis+phi)#生成任意频率、幅值、相位的余弦信号
-    data+=random.randn(len(t_Axis))*noise#加入高斯白噪声
-    return Signal(data,fs=fs,label="仿真含噪准周期信号")
+        f, A, phi = params
+        data += A * np.cos(
+            2 * np.pi * f * t_Axis + phi
+        )  # 生成任意频率、幅值、相位的余弦信号
+    data += random.randn(len(t_Axis)) * noise  # 加入高斯白噪声
+    return Signal(data, fs=fs, label="仿真含噪准周期信号")
