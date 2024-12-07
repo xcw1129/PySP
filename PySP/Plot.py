@@ -269,7 +269,7 @@ def plot_findpeak(
     plt.plot(Axis, data)  # 绘制原始数据
     # 设置标题
     title = kwargs.get("title", None)
-    plt.title(title)
+    plt.title(title, fontproperties=zh_font)
     # 设置图像栅格
     plt.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
     # ----------------------------------------------------------------------------------------#
