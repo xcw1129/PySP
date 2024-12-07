@@ -593,9 +593,7 @@ def resample(
 
 
 # --------------------------------------------------------------------------------------------#
-Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
-
-
+@Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
 def generate_simulated_signal(
     fs: int, T: float, CosParams: tuple, noise: float = 0
 ) -> Signal:
