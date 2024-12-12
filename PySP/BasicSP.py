@@ -279,7 +279,7 @@ class Time_Analysis(Analysis):
         # 计算时域统计特征趋势
         step_idx = range(0, N, int(step * fs))  # 步长索引
         SegNum = int(SegLength * fs)
-        seg_data = np.array(
+        seg_data = np.asarray(
             [data[i : i + SegNum] for i in step_idx if i + SegNum <= N]
         )  # 按步长切分数据成(N%step_idx)*SegNum的二维数组
         t_Axis = t_Axis[:: step_idx[1]][: len(seg_data)]  # 与seg_data对应的时间轴
