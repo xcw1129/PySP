@@ -43,6 +43,7 @@ PLOT_SAVE = False
 IF_TEST_PLOT_SPECTRUM = False
 IF_TEST_PLOT_SPECTROGRAM = False
 IF_TEST_PLOT_FINDPEAK = False
+IF_TEST_PLOT_2DANIM=True
 
 IF_TEST_SIGNAL_SIG = False
 IF_TEST_SIGNAL_SIGINFO = False
@@ -125,6 +126,20 @@ with open(log_file, "w", encoding="utf-8") as f:
         except Exception as e:
             print("\tPlot.plot_findpeak()测试失败:", e)
             f.write(f"\tPlot.plot_findpeak()测试失败: {e}\n")
+    # ----------------------------------------------------------------------------------------#
+    if IF_TEST_PLOT_2DANIM:
+        try:
+            Plot.plot_2DAnim(
+                n,
+                random.randn(len(n), len(n)),
+                title="Plot.plot_2danim()",
+                plot_save=PLOT_SAVE,
+            )
+            print("\tPlot.plot_2danim()测试通过")
+            f.write("\tPlot.plot_2danim()测试通过\n")
+        except Exception as e:
+            print("\tPlot.plot_2danim()测试失败:", e)
+            f.write(f"\tPlot.plot_2danim()测试失败: {e}\n")
 
     print("Plot.py测试完成\n\n")
     f.write("Plot.py测试完成\n\n")
