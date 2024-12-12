@@ -309,7 +309,7 @@ def plot_findpeak(
 
 # --------------------------------------------------------------------------------------------#
 @Check_Vars({"Axis": {"ndim": 1}, "data_Array": {"ndim": 2}})
-def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
+def plot_2D_Anim(Axis: np.ndarray, dataArray: np.ndarray, **Kwargs) -> None:
     """
     根据输入的横轴数据和多个纵轴数据组成的列表, 绘制Plot动图
 
@@ -317,7 +317,7 @@ def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
     --------
     Axis : np.ndarray
         x轴数据
-    data_Array : np.ndarray
+    dataArray : np.ndarray
         y轴数据列表
     (xlabel) : str, 可选
         x轴标签, 默认为None
@@ -339,9 +339,9 @@ def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
         每帧数据标签列表, 默认为[第i帧]
     """
     # 检查输入数据
-    if len(Axis) != data_Array.shape[1]:
+    if len(Axis) != dataArray.shape[1]:
         raise ValueError(
-            f"Axis={len(Axis)}和data={len(data_Array)}的长度不一致"
+            f"Axis={len(Axis)}和data={len(dataArray)}的长度不一致"
         )  # 数据长度检查
     # ----------------------------------------------------------------------------------------#
     # 设置图像界面
@@ -353,7 +353,7 @@ def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
     if xscale == "log":
         Axis = __log(Axis, FLOAT_EPS)
     if yscale == "log":
-        data_Array = 20 * __log(data_Array, FLOAT_EPS)
+        dataArray = 20 * __log(dataArray, FLOAT_EPS)
     # 设置标题
     title = Kwargs.get("title", "2维Plot动图")
     ax.set_title(title, fontproperties=zh_font)
@@ -371,11 +371,11 @@ def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
     # 设置 y 轴参数
     ylabel = Kwargs.get("ylabel", None)
     ax.set_ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
-    ylim = Kwargs.get("ylim", (np.min(data_Array), np.max(data_Array)))
+    ylim = Kwargs.get("ylim", (np.min(dataArray), np.max(dataArray)))
     ax.set_ylim(ylim[0], ylim[1])  # 刻度范围
     # ----------------------------------------------------------------------------------------#
     # 设置动画
-    frameNum = data_Array.shape[0]
+    frameNum = dataArray.shape[0]
     linecolor = Kwargs.get("linecolor", "black")
     frameFps = Kwargs.get("frameFps", 10)
     (line,) = ax.plot([], [], color=linecolor)
@@ -398,7 +398,7 @@ def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
         update,
         init_func=init,
         frames=frameNum,
-        fargs=(Axis, data_Array, line),
+        fargs=(Axis, dataArray, line),
         interval=1000 / frameFps,
         blit=True,
     )
