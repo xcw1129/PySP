@@ -10,10 +10,8 @@
 """
 
 from .dependencies import np
-from .dependencies import plt
-from .dependencies import animation
+from .dependencies import plt,animation,zh_font
 from .dependencies import signal
-from .dependencies import zh_font
 from .dependencies import FLOAT_EPS
 
 from .decorators import Check_Vars

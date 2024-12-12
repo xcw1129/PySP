@@ -182,7 +182,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ----------------------------------------------------------------------------------------#
     if IF_TEST_SIGNAL_GENERATESIM:
         try:
-            res = Signal.generate_simulated_signal(fs=2000,T=2,CosParams=([24,1.2,43],[63,3.2,12],[254,0.5,68]),noise=0.5)
+            res = Signal.Sig_Periodic(fs=2000,T=2,CosParams=([24,1.2,43],[63,3.2,12],[254,0.5,68]),noise=0.5)
             res.plot(title="Signal.generate_simulated_signal()", plot_save=PLOT_SAVE)
             print("\tSignal.generate_simulated_signal()测试通过")
             f.write("\tSignal.generate_simulated_signal()测试通过\n")

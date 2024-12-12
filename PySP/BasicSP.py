@@ -720,7 +720,7 @@ class TimeFre_Analysis(Analysis):
     @staticmethod
     @Plot("1D", plot_spectrum)
     def istft(
-        stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗", **Kwargs
+        stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗", **kwargs
     ) -> np.ndarray:
         """
         根据STFT数据重构时域信号
