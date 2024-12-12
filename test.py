@@ -18,18 +18,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
 # 导入测试数据
+TEST_DATA = {}
 # 测试数据1
-TEST_DATA = {
-    "data1": os.path.join(BASE_DIR, "test", "test_data", "OR007@6_1.mat"),
-}
-try:
-    data = loadmat(TEST_DATA["data1"])
-except FileNotFoundError:
-    raise FileNotFoundError("不存在该测试数据文件：" + TEST_DATA["data1"])
-keys = data.keys()
-DE = [s for s in keys if "DE" in s][0]
-DE = data[DE].flatten()  # 读取驱动端数据
-TEST_DATA["data1"] = DE
+
 # 测试数据2
 t_Axis = np.arange(0, 1, 1 / 10000)
 TEST_DATA["data2"] = np.cos(2 * np.pi * 100 * t_Axis) + 0.5 * np.cos(
@@ -37,7 +28,7 @@ TEST_DATA["data2"] = np.cos(2 * np.pi * 100 * t_Axis) + 0.5 * np.cos(
 )
 # --------------------------------------------------------------------------------------------#
 # 测试设置
-Data = TEST_DATA["data1"]
+Data = TEST_DATA["data2"]
 Fs = 12000
 PLOT_SAVE = False
 IF_TEST_PLOT_SPECTRUM = False
@@ -134,6 +125,7 @@ with open(log_file, "w", encoding="utf-8") as f:
                 random.randn(len(n), len(n)),
                 title="Plot.plot_2danim()",
                 plot_save=PLOT_SAVE,
+                frameFps=24
             )
             print("\tPlot.plot_2danim()测试通过")
             f.write("\tPlot.plot_2danim()测试通过\n")
