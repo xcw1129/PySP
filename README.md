@@ -37,6 +37,7 @@
 - `plot_spectrum()`：根据输入的两个一维数组, 绘制Plot型谱
 - `plot_spectrogram()`：根据输入的两个一维数组和一个二维数组, 绘制imshow型热力谱图
 - `plot_findpeak()`：按要求寻找输入的一维数组中的峰值, 并绘制plot型峰值谱
+- `plot_2DAnim()`: 根据输入的横轴数据和多个纵轴数据组成的列表, 绘制Plot动图
 
 ## BasicSP.py
 
