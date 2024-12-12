@@ -307,9 +307,10 @@ def plot_findpeak(
     plt.tight_layout()
     plt.show()
 
+
 # --------------------------------------------------------------------------------------------#
 @Check_Vars({"Axis": {"ndim": 1}, "data_Array": {"ndim": 2}})
-def plot_2DAnim(Axis: np.ndarray, dataArray: np.ndarray, **Kwargs) -> None:
+def plot_2DAnim(Axis: np.ndarray, dataArray: np.ndarray, **kwargs) -> None:
     """
     根据输入的横轴数据和多个纵轴数据组成的列表, 绘制Plot动图
 
@@ -345,41 +346,41 @@ def plot_2DAnim(Axis: np.ndarray, dataArray: np.ndarray, **Kwargs) -> None:
         )  # 数据长度检查
     # ----------------------------------------------------------------------------------------#
     # 设置图像界面
-    figsize = Kwargs.get("figsize", (12, 5))
+    figsize = kwargs.get("figsize", (12, 5))
     fig, ax = plt.subplots(figsize=figsize)
     # 设置坐标轴尺度
-    xscale = Kwargs.get("xscale", "linear")
-    yscale = Kwargs.get("yscale", "linear")
+    xscale = kwargs.get("xscale", "linear")
+    yscale = kwargs.get("yscale", "linear")
     if xscale == "log":
         Axis = __log(Axis, FLOAT_EPS)
     if yscale == "log":
         dataArray = 20 * __log(dataArray, FLOAT_EPS)
     # 设置标题
-    title = Kwargs.get("title", "2维Plot动图")
+    title = kwargs.get("title", "2维Plot动图")
     ax.set_title(title, fontproperties=zh_font)
     # 设置图像栅格
     ax.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
     # ----------------------------------------------------------------------------------------#
     # 设置坐标轴参数
     # 设置 x 轴参数
-    xlabel = Kwargs.get("xlabel", None)
+    xlabel = kwargs.get("xlabel", None)
     ax.set_xlabel(xlabel, fontproperties=zh_font, labelpad=0.2, loc="right")  # 标签
-    xticks = Kwargs.get("xticks", None)
+    xticks = kwargs.get("xticks", None)
     plt.xticks(xticks)  # 刻度显示
-    xlim = Kwargs.get("xlim", (Axis[0], Axis[-1]))
+    xlim = kwargs.get("xlim", (Axis[0], Axis[-1]))
     ax.set_xlim(xlim[0], xlim[1])  # 刻度范围
     # 设置 y 轴参数
-    ylabel = Kwargs.get("ylabel", None)
+    ylabel = kwargs.get("ylabel", None)
     ax.set_ylabel(ylabel, fontproperties=zh_font, labelpad=0.2, loc="top")  # 标签
-    ylim = Kwargs.get("ylim", (np.min(dataArray), np.max(dataArray)))
+    ylim = kwargs.get("ylim", (np.min(dataArray), np.max(dataArray)))
     ax.set_ylim(ylim[0], ylim[1])  # 刻度范围
     # ----------------------------------------------------------------------------------------#
     # 设置动画
     frameNum = dataArray.shape[0]
-    linecolor = Kwargs.get("linecolor", "black")
-    frameFps = Kwargs.get("frameFps", 10)
+    linecolor = kwargs.get("linecolor", "black")
+    frameFps = kwargs.get("frameFps", 10)
     (line,) = ax.plot([], [], color=linecolor)
-    framelabel = Kwargs.get("framelabel", [f"第{i+1}帧" for i in range(frameNum)])
+    framelabel = kwargs.get("framelabel", [f"第{i+1}帧" for i in range(frameNum)])
 
     # 初始化函数
     def init():
@@ -402,5 +403,5 @@ def plot_2DAnim(Axis: np.ndarray, dataArray: np.ndarray, **Kwargs) -> None:
         interval=1000 / frameFps,
         blit=True,
     )
-    anim.save(title + ".gif",writer='pillow')
-    plt.close(fig)# 默认只保存不显示
+    anim.save(title + ".gif", writer="pillow")
+    plt.close(fig)  # 默认只保存不显示
