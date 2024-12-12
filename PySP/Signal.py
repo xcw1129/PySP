@@ -594,7 +594,7 @@ def resample(
 
 # --------------------------------------------------------------------------------------------#
 @Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
-def generate_simulated_signal(
+def Sig_Periodic(
     fs: int, T: float, CosParams: tuple, noise: float = 0
 ) -> Signal:
     t_Axis = np.arange(0, T, 1 / fs)
