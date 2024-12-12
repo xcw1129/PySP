@@ -309,7 +309,7 @@ def plot_findpeak(
 
 # --------------------------------------------------------------------------------------------#
 @Check_Vars({"Axis": {"ndim": 1}, "data_Array": {"ndim": 2}})
-def plot_2D_Anim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
+def plot_2DAnim(Axis: np.ndarray, data_Array: np.ndarray, **Kwargs) -> None:
     """
     根据输入的横轴数据和多个纵轴数据组成的列表, 绘制Plot动图
 
