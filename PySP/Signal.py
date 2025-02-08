@@ -471,18 +471,13 @@ class Analysis:
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    def Plot(plot_type: str, plot_func: callable):
+    def Plot(plot_func: callable):
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):  # 针对Analysis类的方法进行装饰
                 res = func(self, *args, **kwargs)
                 if self.plot:
                     self.plot_kwargs["plot_save"] = self.plot_save
-                    if plot_type == "1D":  # plot一维连线谱
-                        Axis, data = res[0], res[1]
-                        plot_func(Axis, data, **self.plot_kwargs)
-                    elif plot_type == "2D":  # imshow二维热力谱图
-                        Axis1, Axis2, data = res[0], res[1], res[2]
-                        plot_func(Axis1, Axis2, data, **self.plot_kwargs)
+                    plot_func(*res, **self.plot_kwargs)
                 return res
 
             return wrapper
