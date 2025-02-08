@@ -63,8 +63,8 @@ class Signal:
 
     方法：
     --------
-    info(print:bool=True) -> dict
-        输出信号的采样信息
+    info() -> dict
+        返回信号的采样信息
     plot(**kwargs) -> None
         绘制信号的时域波形图
     """
@@ -164,14 +164,14 @@ class Signal:
         """
         返回Signal类对象的字符串表示, 用于调试
         """
-        return f"Signal(data={self.data}, fs={self.fs}, label={self.label})"
+        return f"Signal(data={self.data}, label={self.label}, fs={self.fs})"
 
     # ----------------------------------------------------------------------------------------#
     def __str__(self) -> str:
         """
         返回Signal类对象的介绍信息, 使Signal类对象支持print()函数调用
         """
-        info = self.info(print=False)
+        info = self.info()
         return f"{self.label}的采样参数: \n" + "\n".join(
             [f"{k}: {v}" for k, v in info.items()]
         )
@@ -257,6 +257,7 @@ class Signal:
             )
         return Signal(self.data - other, fs=self.fs, t0=self.t0, label=self.label)
 
+    # ----------------------------------------------------------------------------------------#
     def __mul__(self, other):
         """
         实现Signal对象与Signal/array对象的乘法运算
@@ -276,6 +277,7 @@ class Signal:
             )
         return Signal(self.data * other, fs=self.fs, t0=self.t0, label=self.label)
 
+    # ----------------------------------------------------------------------------------------#
     def __truediv__(self, other):
         """
         实现Signal对象与Signal/array对象的除法运算
@@ -349,9 +351,95 @@ class Signal:
 
 
 # --------------------------------------------------------------------------------------------#
+@Check_Vars({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
+def resample(
+    Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
+) -> Signal:
+    """
+    对信号进行任意时间段的重采样
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    down_fs : int
+        重采样频率
+    t0 : float
+        重采样起始时间
+    t1 : float
+        重采样时间长度
+
+    返回:
+    --------
+    resampled_Sig : Signal
+        重采样后的信号
+    """
+    # 获取重采样间隔点数
+    if down_fs > Sig.fs:
+        raise ValueError("新采样频率应不大于原采样频率")
+    else:
+        ration = int(Sig.fs / down_fs)
+    # 获取重采样起始点的索引
+    if not Sig.t0 <= t0 < (Sig.T + Sig.t0):
+        raise ValueError("起始时间不在信号时间范围内")
+    else:
+        start_n = int((t0 - Sig.t0) / Sig.dt)
+    # 获取重采样点数
+    if T is None:
+        resample_N = -1
+    elif T + t0 >= Sig.T + Sig.t0:
+        raise ValueError("重采样时间长度超过信号时间范围")
+    else:
+        resample_N = int(T / (Sig.dt * ration))  # N = T/(dt*ration)
+    # ----------------------------------------------------------------------------------------#
+    # 对信号进行重采样
+    resampled_data = Sig.data[start_n::ration][:resample_N]  # 重采样
+    resampled_Sig = Signal(
+        resampled_data, label="重采样" + Sig.label, dt=ration * Sig.dt, t0=t0
+    )  # 由于离散信号，实际采样率为fs/ration
+    return resampled_Sig
+
+
+# --------------------------------------------------------------------------------------------#
+@Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
+def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
+    """
+    生成仿真含噪准周期信号
+
+    参数:
+    --------
+    fs : int
+        仿真信号采样频率
+    T : float
+        仿真信号采样时长
+    CosParams : tuple
+        余弦信号参数元组, 每组参数格式为(f, A, phi)
+    noise : float, 默认为0
+        高斯白噪声方差
+
+    返回:
+    --------
+    Sig : Signal
+        仿真含噪准周期信号
+    """
+    t_Axis = np.arange(0, T, 1 / fs)
+    data = np.zeros_like(t_Axis)
+    for i, params in enumerate(CosParams):
+        if len(params) != 3:
+            raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
+        f, A, phi = params
+        data += A * np.cos(
+            2 * np.pi * f * t_Axis + phi
+        )  # 生成任意频率、幅值、相位的余弦信号
+    data += random.randn(len(t_Axis)) * noise  # 加入高斯白噪声
+    Sig = Signal(data, fs=fs, label="仿真含噪准周期信号")
+    return Sig
+
+
+# --------------------------------------------------------------------------------------------#
 class Analysis:
     """
-    信号分析基类, 用于创建其他复杂的信号分析、处理方法
+    信号处理方法父类, 用于创建其他复杂的信号处理方法
 
     参数:
     --------
@@ -381,6 +469,7 @@ class Analysis:
         输入变量检查装饰器, 用于对分析方法输入变量进行检查
     """
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def Plot(plot_type: str, plot_func: callable):
         def plot_decorator(func):
@@ -524,69 +613,3 @@ class Analysis:
         self.plot = plot
         self.plot_save = plot_save
         self.plot_kwargs = kwargs
-
-
-# --------------------------------------------------------------------------------------------#
-@Check_Vars({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
-def resample(
-    Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
-) -> Signal:
-    """
-    对信号进行任意时间段的重采样
-
-    参数:
-    --------
-    Sig : Signal
-        输入信号
-    down_fs : int
-        重采样频率
-    t0 : float
-        重采样起始时间
-    t1 : float
-        重采样时间长度
-
-    返回:
-    --------
-    resampled_Sig : Signal
-        重采样后的信号
-    """
-    # 获取重采样间隔点数
-    if down_fs > Sig.fs:
-        raise ValueError("新采样频率应不大于原采样频率")
-    else:
-        ration = int(Sig.fs / down_fs)
-    # 获取重采样起始点的索引
-    if not Sig.t0 <= t0 < (Sig.T + Sig.t0):
-        raise ValueError("起始时间不在信号时间范围内")
-    else:
-        start_n = int((t0 - Sig.t0) / Sig.dt)
-    # 获取重采样点数
-    if T is None:
-        resample_N = -1
-    elif T + t0 >= Sig.T + Sig.t0:
-        raise ValueError("重采样时间长度超过信号时间范围")
-    else:
-        resample_N = int(T / (Sig.dt * ration))  # N = T/(dt*ration)
-    # ------------------------------------------------------------------------------------#
-    # 对信号进行重采样
-    resampled_data = Sig.data[start_n::ration][:resample_N]  # 重采样
-    resampled_Sig = Signal(
-        resampled_data, label="重采样" + Sig.label, dt=ration * Sig.dt, t0=t0
-    )  # 由于离散信号，实际采样率为fs/ration
-    return resampled_Sig
-
-
-# --------------------------------------------------------------------------------------------#
-@Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
-def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
-    t_Axis = np.arange(0, T, 1 / fs)
-    data = np.zeros_like(t_Axis)
-    for i, params in enumerate(CosParams):
-        if len(params) != 3:
-            raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
-        f, A, phi = params
-        data += A * np.cos(
-            2 * np.pi * f * t_Axis + phi
-        )  # 生成任意频率、幅值、相位的余弦信号
-    data += random.randn(len(t_Axis)) * noise  # 加入高斯白噪声
-    return Signal(data, fs=fs, label="仿真含噪准周期信号")
