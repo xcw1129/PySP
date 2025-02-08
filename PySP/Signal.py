@@ -87,7 +87,7 @@ class Signal:
         T: Optional[float] = None,
         t0: Optional[float] = 0,
     ):
-        self.data = data.copy()
+        self.data = data.copy()  # 深拷贝，防止对原数据进行修改
         N = len(data)
         # 只允许给出一个采样参数
         if not [dt, fs, T].count(None) == 2:
@@ -169,7 +169,7 @@ class Signal:
     # ----------------------------------------------------------------------------------------#
     def __str__(self) -> str:
         """
-        返回Signal类对象的介绍信息, 用于打印
+        返回Signal类对象的介绍信息, 使Signal类对象支持print()函数调用
         """
         info = self.info(print=False)
         return f"{self.label}的采样参数: \n" + "\n".join(
@@ -179,7 +179,7 @@ class Signal:
     # ----------------------------------------------------------------------------------------#
     def __len__(self) -> int:
         """
-        返回信号长度, 用于在传递给len()函数时自动调用
+        返回信号长度, 使Signal类对象支持len()函数调用
         """
         return self.N
 
@@ -205,7 +205,7 @@ class Signal:
         return self.data.copy()
 
     # ----------------------------------------------------------------------------------------#
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         """
         判断两个Signal类对象是否相等, 使Signal类对象支持==运算符
         """
@@ -296,32 +296,16 @@ class Signal:
         return Signal(self.data / other, fs=self.fs, t0=self.t0, label=self.label)
 
     # ----------------------------------------------------------------------------------------#
-    def __div__(self, other):
-        """
-        实现Signal对象与Signal/array对象的除法运算
-        """
-        if isinstance(other, Signal):
-            if self.fs != other.fs:
-                raise ValueError("两个信号采样频率不一致, 无法运算")
-            return Signal(self.data / other.data, self.dt, self.t0, self.fs, self.label)
-        return Signal(self.data / other, self.dt, self.t0, self.fs, self.label)
-
-    # ----------------------------------------------------------------------------------------#
-    def copy(self) -> "Signal":
+    def copy(self):
         """
         返回Signal对象的深拷贝
         """
         return copy.deepcopy(self)
 
     # ----------------------------------------------------------------------------------------#
-    def info(self, print: bool = True) -> dict:
+    def info(self) -> dict:
         """
-        输出信号的采样信息
-
-        参数:
-        --------
-        print : bool
-            是否打印显示该信号采样信息, 默认为True
+        返回信号的采样信息
 
         返回:
         --------
@@ -338,8 +322,6 @@ class Signal:
             f"df: {self.df:.2g} Hz\n"
             f"fn: {self.fs / 2:.2f} Hz\n"
         )
-        if print:
-            print(f"{self.label}的采样参数: \n", info)
         # 将字符串转为字典
         info = [i.split(": ") for i in info.split("\n") if i]
         info_dict = {i[0]: i[-1] for i in info}
@@ -350,10 +332,12 @@ class Signal:
         """
         绘制信号的时域波形图
         """
+        # 默认绘图参数设置
         title = kwargs.get("title", f"{self.label}时域波形图")
         kwargs.pop("title", None)
-
         xticks = kwargs.get("xticks", np.arange(self.t0, self.t0 + self.T, self.T / 10))
+        kwargs.pop("xticks", None)
+        # 绘制时域波形图
         plot_spectrum(
             self.t_Axis,
             self.data,
@@ -594,9 +578,7 @@ def resample(
 
 # --------------------------------------------------------------------------------------------#
 @Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
-def Sig_Periodic(
-    fs: int, T: float, CosParams: tuple, noise: float = 0
-) -> Signal:
+def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
     t_Axis = np.arange(0, T, 1 / fs)
     data = np.zeros_like(t_Axis)
     for i, params in enumerate(CosParams):
