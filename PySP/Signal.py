@@ -470,6 +470,16 @@ class Analysis:
     """
 
     # ----------------------------------------------------------------------------------------#
+    def __init__(
+        self, Sig: Signal, plot: bool = False, plot_save: bool = False, **kwargs
+    ):
+        self.Sig = Sig.copy()  # 防止对原信号进行修改
+        # 绘图参数全局设置
+        self.plot = plot
+        self.plot_save = plot_save
+        self.plot_kwargs = kwargs
+
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def Plot(plot_func: callable):
         def plot_decorator(func):
@@ -477,7 +487,9 @@ class Analysis:
                 res = func(self, *args, **kwargs)
                 if self.plot:
                     self.plot_kwargs["plot_save"] = self.plot_save
-                    plot_func(*res, **self.plot_kwargs)
+                    plot_func(
+                        *res, **self.plot_kwargs
+                    )  # 要求func返回结果格式符合plot_func的输入要求
                 return res
 
             return wrapper
@@ -598,13 +610,3 @@ class Analysis:
             return wrapper
 
         return decorator
-
-    # ----------------------------------------------------------------------------------------#
-    def __init__(
-        self, Sig: Signal, plot: bool = False, plot_save: bool = False, **kwargs
-    ):
-        self.Sig = Sig.copy()  # 防止对原信号进行修改
-        # 绘图参数全局设置
-        self.plot = plot
-        self.plot_save = plot_save
-        self.plot_kwargs = kwargs
