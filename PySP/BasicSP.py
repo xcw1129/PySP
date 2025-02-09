@@ -1,6 +1,6 @@
 """
-# Basic
-基础信号分析及处理模块
+# BasicSP
+基础信号分析及处理方法模块
 
 ## 内容
     - class:
@@ -27,29 +27,13 @@ from .Plot import plot_spectrum, plot_spectrogram
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
-@Check_Vars(
-    {
-        "type": {
-            "Content": (
-                "矩形窗",
-                "汉宁窗",
-                "海明窗",
-                "巴特利特窗",
-                "布莱克曼窗",
-                "自定义窗",
-            )
-        },
-        "num": {"Low": 1},
-        "padding": {"Low": 1},
-    }
-)
+@Check_Vars({"num": {"Low": 1}, "padding": {"Low": 1}})
 def window(
     type: str,
     num: int,
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
     check: bool = False,
-    **Kwargs,
 ) -> np.ndarray:
     """
     生成各类窗函数整周期采样序列
@@ -119,12 +103,9 @@ def window(
             ax.plot(n, func(n))
             ax.set_title(key, fontproperties=zh_font)
             ax.set_ylim(0, 1.1)
-        title = Kwargs.get("title", "窗函数测试图")
+        title = "窗函数测试图"
         fig.suptitle(title, fontproperties=zh_font, fontsize=16)
         plt.tight_layout(rect=[0, 0, 1, 0.98])
-        plot_save = Kwargs.get("plot_save", False)
-        if plot_save:
-            plt.savefig(title + ".svg", format="svg")
         plt.show()
     # ----------------------------------------------------------------------------------------#
     # 生成窗采样序列
@@ -189,7 +170,7 @@ class Time_Analysis(Analysis):
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Plot(plot_spectrum)
     @Analysis.Input({"samples": {"Low": 20}})
     def Pdf(self, samples: int = 100, AmpRange: Optional[tuple] = None) -> np.ndarray:
         """
@@ -221,31 +202,8 @@ class Time_Analysis(Analysis):
         return amp_Axis, pdf
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_spectrum)
-    @Analysis.Input(
-        {
-            "Feature": {
-                "Content": [
-                    "均值",
-                    "方差",
-                    "标准差",
-                    "均方值",
-                    "方根幅值",
-                    "平均幅值",
-                    "有效值",
-                    "峰值",
-                    "波形指标",
-                    "峰值指标",
-                    "脉冲指标",
-                    "裕度指标",
-                    "偏度指标",
-                    "峭度指标",
-                ]
-            },
-            "step": {"OpenLow": 0},
-            "SegLength": {"OpenLow": 0},
-        }
-    )
+    @Analysis.Plot(plot_spectrum)
+    @Analysis.Input({"step": {"OpenLow": 0}, "SegLength": {"OpenLow": 0}})
     def Trend(self, Feature: str, step: float, SegLength: float) -> np.ndarray:
         """
         计算信号指定统计特征的时间趋势
@@ -253,16 +211,16 @@ class Time_Analysis(Analysis):
         参数:
         --------
         Feature : str
-            统计特征指标, 可选:  
-                                "均值", "方差", "标准差", 
-                                "均方值", "方根幅值", "平均幅值", 
-                                "有效值", "峰值", "波形指标", 
-                                "峰值指标", "脉冲指标", "裕度指标", 
+            统计特征指标, 可选:
+                                "均值", "方差", "标准差",
+                                "均方值", "方根幅值", "平均幅值",
+                                "有效值", "峰值", "波形指标",
+                                "峰值指标", "脉冲指标", "裕度指标",
                                 "偏度指标", "峭度指标"
         step : float
-            时间趋势采样步长
+            趋势图时间采样步长
         SegLength : float
-            时间趋势采样段长
+            趋势图时间采样段长
 
         返回:
         --------
@@ -315,7 +273,7 @@ class Time_Analysis(Analysis):
         return t_Axis, trend
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Plot(plot_spectrum)
     def Autocorr(self, std: bool = False, both: bool = False) -> np.ndarray:
         """
         计算信号自相关
@@ -326,7 +284,7 @@ class Time_Analysis(Analysis):
             是否标准化得自相关系数
         both : bool, 默认为False
             是否返回双边自相关
-        
+
         返回:
         --------
         t_Axis : np.ndarray
@@ -375,13 +333,13 @@ class Frequency_Analysis(Analysis):
         是否保存绘图
     plot_kwargs : dict
         绘图参数
-    
+
     方法:
     --------
     ft() -> np.ndarray
-        计算信号的双边频谱  
+        计算信号的双边频谱
     Cft(WinType: str = "矩形窗") -> np.ndarray
-        计算信号的单边傅里叶级数谱幅值  
+        计算信号的单边傅里叶级数谱幅值
     Psd(WinType: str = "矩形窗", density: bool = False, both: bool = False) -> np.ndarray
         计算信号的功率谱密度
     Psd_corr(density: bool = False, both: bool = False) -> np.ndarray
@@ -427,7 +385,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, ft_data
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Plot(plot_spectrum)
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的单边傅里叶级数谱幅值
@@ -435,11 +393,11 @@ class Frequency_Analysis(Analysis):
         参数:
         --------
         WinType : str, 默认为"矩形窗"
-            加窗类型, 可选: 
-                        "矩形窗", "汉宁窗", "海明窗", 
-                        "巴特利特窗", "布莱克曼窗", 
+            加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
                         "自定义窗"
-        
+
         返回:
         --------
         f_Axis : np.ndarray
@@ -461,7 +419,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, Amp
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Plot(plot_spectrum)
     def Psd(
         self, WinType: str = "矩形窗", density: bool = True, both: bool = False
     ) -> np.ndarray:
@@ -471,9 +429,9 @@ class Frequency_Analysis(Analysis):
         参数:
         --------
         WinType : str, 默认为"矩形窗"
-            加窗类型, 可选: 
-                        "矩形窗", "汉宁窗", "海明窗", 
-                        "巴特利特窗", "布莱克曼窗", 
+            加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
                         "自定义窗"
         density : bool, 默认为True
             是否计算谱密度
@@ -506,7 +464,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Plot(plot_spectrum)
     def Psd_corr(self, density: bool = False, both: bool = False) -> np.ndarray:
         """
         自相关法计算信号的功率谱密度
@@ -517,7 +475,7 @@ class Frequency_Analysis(Analysis):
             是否计算谱密度
         both : bool, 默认为False
             是否返回双边功率谱
-        
+
         返回:
         --------
         f_Axis : np.ndarray
@@ -542,7 +500,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_spectrum)
+    @Analysis.Plot(plot_spectrum)
     def HTenve_spectra(self):
         """
         计算信号的希尔伯特包络谱
@@ -581,7 +539,7 @@ class TimeFre_Analysis(Analysis):
         是否绘制分析结果图
     plot_save : bool
         是否保存绘图
-    
+
     属性:
     --------
     Sig : Signal
@@ -592,7 +550,7 @@ class TimeFre_Analysis(Analysis):
         是否保存绘图
     plot_kwargs : dict
         绘图参数
-    
+
     方法:
     --------
     stft(nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray
@@ -628,9 +586,9 @@ class TimeFre_Analysis(Analysis):
         nhop : int
             段移
         WinType : str, 默认为"矩形窗"
-            加窗类型, 可选: 
-                        "矩形窗", "汉宁窗", "海明窗", 
-                        "巴特利特窗", "布莱克曼窗", 
+            加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
                         "自定义窗"
 
         返回:
@@ -683,7 +641,8 @@ class TimeFre_Analysis(Analysis):
         return t_Axis, f_Axis, ft_data_matrix
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot("2D", plot_spectrogram)
+    @Analysis.Plot(plot_spectrogram)
+    @Analysis.Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
     def st_Cft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的短时单边傅里叶级数谱幅值
@@ -695,11 +654,11 @@ class TimeFre_Analysis(Analysis):
         nhop : int
             段移
         WinType : str, 默认为"矩形窗"
-            加窗类型, 可选: 
-                        "矩形窗", "汉宁窗", "海明窗", 
-                        "巴特利特窗", "布莱克曼窗", 
+            加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
                         "自定义窗"
-        
+
         返回:
         --------
         t_Axis : np.ndarray
@@ -718,7 +677,7 @@ class TimeFre_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    @Plot("1D", plot_spectrum)
+    @Plot(plot_spectrum)
     def istft(
         stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗", **kwargs
     ) -> np.ndarray:
