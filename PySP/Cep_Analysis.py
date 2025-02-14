@@ -18,14 +18,14 @@ from .dependencies import FLOAT_EPS, PI
 from .Signal import Signal, Analysis
 from .Plot import plot_spectrum
 
-from .decorators import Check_Vars, Plot
+from .decorators import Input, Plot
 
 
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
-@Check_Vars({"Axis": {"ndim:1"}, "data": {"ndim": 1}})
+@Input({"Axis": {"ndim:1"}, "data": {"ndim": 1}})
 def plot_withline(
     Axis: np.ndarray,
     data: np.ndarray,
@@ -431,7 +431,7 @@ class Cep_Analysis(Analysis):
 
 # ---------------------------------------------------------------------------------------#
 @Plot("1D", plot_spectrum)
-@Check_Vars({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
+@Input({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
 def zoom_Aft(
     Sig: Signal,
     center_freq: int,

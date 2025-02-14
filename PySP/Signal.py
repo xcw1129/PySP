@@ -16,7 +16,7 @@ from .dependencies import inspect
 from .dependencies import copy
 from .dependencies import wraps
 from .dependencies import get_origin, get_args
-from .decorators import Check_Vars
+from .decorators import Input
 
 from .Plot import plot_spectrum
 
@@ -69,7 +69,7 @@ class Signal:
         绘制信号的时域波形图
     """
 
-    @Check_Vars(
+    @Input(
         {
             "data": {"ndim": 1},
             "label": {},
@@ -351,7 +351,7 @@ class Signal:
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
+@Input({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
 def resample(
     Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
 ) -> Signal:
@@ -401,7 +401,7 @@ def resample(
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
+@Input({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
 def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
     """
     生成仿真含噪准周期信号

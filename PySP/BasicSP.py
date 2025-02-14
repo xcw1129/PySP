@@ -16,7 +16,7 @@ from .dependencies import np
 from .dependencies import plt, zh_font
 from .dependencies import fft, stats, signal
 
-from .decorators import Check_Vars, Plot
+from .decorators import Input, Plot
 
 from .Signal import Signal, Analysis
 
@@ -27,7 +27,7 @@ from .Plot import plot_spectrum, plot_spectrogram
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
-@Check_Vars({"num": {"Low": 1}, "padding": {"Low": 1}})
+@Input({"num": {"Low": 1}, "padding": {"Low": 1}})
 def window(
     type: str,
     num: int,
