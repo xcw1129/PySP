@@ -8,7 +8,7 @@ from .dependencies import get_origin, get_args, Union
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
-def Check_Vars(*var_checks):
+def Input(*var_checks):
     # 根据json输入生成对应的变量检查装饰器
     def decorator(func):
         @wraps(func)  # 保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
@@ -122,22 +122,15 @@ def Check_Vars(*var_checks):
     return decorator
 
 
-def Plot(plot_type: str, plot_func: callable):
+def Plot(plot_func: callable):
     def plot_decorator(func):
         def wrapper(*args, **kwargs):  # 该装饰器一般最外层
             res = func(*args, **kwargs)  # 执行函数取得绘图数据,其他装饰器在此执行
             plot = kwargs.get("plot", False)  # 默认该装饰器不绘图
             if plot:
-                if plot_type == "1D":
-                    Axis, data = res[0], res[1]
-                    kwargs.pop("data", None)  # 防止静态方法的输入参数data干扰
-                    plot_func(Axis, data, **kwargs)
-                elif plot_type == "2D":
-                    Axis1, Axis2, data = res[0], res[1], res[2]
-                    kwargs.pop("data", None)
-                    plot_func(
-                        Axis1, Axis2, data, **kwargs
-                    )  # 所有绘图设置参数均通过kwargs传递,包括plot_save
+                plot_func(
+                    *res, **kwargs
+                )  # 所有绘图设置参数均通过kwargs传递,包括plot_save
             return res
 
         return wrapper
