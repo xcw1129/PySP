@@ -147,7 +147,7 @@ class Cep_Analysis(Analysis):
         self.plot_kwargs["lineinterval"] = plot_lineinterval
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
+    @Analysis.Plot(plot_withline)
     def Cep_Real(self) -> np.ndarray:
         """
         计算信号的单边实数倒谱
@@ -173,7 +173,7 @@ class Cep_Analysis(Analysis):
         return q_Axis, real_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
+    @Analysis.Plot(plot_withline)
     def Cep_Power(self) -> np.ndarray:
         """
         计算信号的单边功率倒谱
@@ -200,7 +200,7 @@ class Cep_Analysis(Analysis):
         return q_Axis, power_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
+    @Analysis.Plot(plot_withline)
     def Cep_Complex(self) -> np.ndarray:
         """
         计算信号的复数倒谱
@@ -227,7 +227,7 @@ class Cep_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @staticmethod
-    @Plot("1D", plot_spectrum)
+    @Plot(plot_spectrum)
     def Cep_Reconstruct(
         q_Axis: np.ndarray, complex_cep: np.ndarray, **Kwargs
     ) -> np.ndarray:
@@ -266,7 +266,7 @@ class Cep_Analysis(Analysis):
         return t_Axis, reconstruct_data
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
+    @Analysis.Plot(plot_withline)
     def Cep_Analytic(self) -> np.ndarray:
         """
         计算信号的单边解析倒谱
@@ -297,7 +297,7 @@ class Cep_Analysis(Analysis):
         return q_Axis, analytic_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
+    @Analysis.Plot(plot_withline)
     @Analysis.Input({"fc": {"Low": 1}, "bw": {"Low": 1}})
     def Cep_Zoom(self, fc: int, bw: int) -> np.ndarray:
         """
@@ -337,7 +337,7 @@ class Cep_Analysis(Analysis):
         return q_Axis, zoom_cep
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Plot("1D", plot_withline)
+    @Analysis.Plot(plot_withline)
     @Analysis.Input({"Q": {"OpenLow": 0}, "width": {"OpenLow": 0}, "num": {"Low": 1}})
     def Cep_Lift(
         self, Q: float, width: float, num: int, type: str = "Type1"
@@ -430,7 +430,7 @@ class Cep_Analysis(Analysis):
 
 
 # ---------------------------------------------------------------------------------------#
-@Plot("1D", plot_spectrum)
+@Plot(plot_spectrum)
 @Input({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
 def zoom_Aft(
     Sig: Signal,
