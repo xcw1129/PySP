@@ -1,6 +1,6 @@
 """
 # Plot 
-信号处理中, 常用可视化绘图方法模块
+常用可视化绘图方法模块
 
 ## 内容
     - function:
@@ -14,7 +14,7 @@ from .dependencies import plt,animation,zh_font
 from .dependencies import signal
 from .dependencies import FLOAT_EPS
 
-from .decorators import Check_Vars
+from .decorators import Input
 
 
 # --------------------------------------------------------------------------------------------#
@@ -43,7 +43,7 @@ def __log(data: np.ndarray, eps: float) -> np.ndarray:
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
+@Input({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
 def plot_spectrum(
     Axis: np.ndarray,
     data: np.ndarray,
@@ -118,7 +118,7 @@ def plot_spectrum(
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"Axis1": {"ndim": 1}, "Axis2": {"ndim": 1}, "data": {"ndim": 2}})
+@Input({"Axis1": {"ndim": 1}, "Axis2": {"ndim": 1}, "data": {"ndim": 2}})
 def plot_spectrogram(
     Axis1: np.ndarray,
     Axis2: np.ndarray,
@@ -206,7 +206,7 @@ def plot_spectrogram(
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
+@Input({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
 def plot_findpeak(
     Axis: np.ndarray,
     data: np.ndarray,
@@ -307,7 +307,7 @@ def plot_findpeak(
 
 
 # --------------------------------------------------------------------------------------------#
-@Check_Vars({"Axis": {"ndim": 1}, "data_Array": {"ndim": 2}})
+@Input({"Axis": {"ndim": 1}, "data_Array": {"ndim": 2}})
 def plot_2DAnim(Axis: np.ndarray, dataArray: np.ndarray, **kwargs) -> None:
     """
     根据输入的横轴数据和多个纵轴数据组成的列表, 绘制Plot动图

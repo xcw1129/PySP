@@ -1,0 +1,2 @@
+测试Signal.py
+	Signal.Signal()测试通过
