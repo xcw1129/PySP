@@ -165,7 +165,7 @@ class Signal:
         """
         返回Signal类对象的字符串表示, 用于调试
         """
-        return f"Signal(data={self.data}, label={self.label}, fs={self.fs})"
+        return f"Signal(data={self.data}, fs={self.fs}, label={self.label})"
 
     # ----------------------------------------------------------------------------------------#
     def __str__(self) -> str:
@@ -343,6 +343,72 @@ class Signal:
         elif np.isscalar(other):  # 检查是否为标量
             return Signal(
                 self.data / other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+        
+    # ----------------------------------------------------------------------------------------#    
+    def __radd__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右加法运算
+        """
+        return self.__add__(other)
+
+    # ----------------------------------------------------------------------------------------#
+    def __rsub__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右减法运算
+        """
+        if isinstance(other, Signal):
+            return other.__sub__(self)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                other - self.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                other - self.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+
+    # ----------------------------------------------------------------------------------------#
+    def __rmul__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右乘法运算
+        """
+        return self.__mul__(other)
+
+    # ----------------------------------------------------------------------------------------#
+    def __rtruediv__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右除法运算
+        """
+        if isinstance(other, Signal):
+            return other.__truediv__(self)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                other / self.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                other / self.data,
                 fs=self.fs,
                 t0=self.t0,
                 label=self.label,
