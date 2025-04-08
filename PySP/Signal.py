@@ -18,7 +18,7 @@ from .dependencies import wraps
 from .dependencies import get_origin, get_args
 from .decorators import Input
 
-from .Plot import plot_spectrum
+from .Plot import plot
 
 
 # --------------------------------------------------------------------------------------------#
@@ -459,7 +459,7 @@ class Signal:
         )
         kwargs.pop("title", None)
         # 绘制时域波形图
-        plot_spectrum(
+        plot(
             self.t_Axis,
             self.data,
             xlabel="时间t/s",

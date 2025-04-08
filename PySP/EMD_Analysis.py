@@ -5,7 +5,7 @@ from .dependencies import np
 from .dependencies import plt
 from .dependencies import fft, signal, stats, interpolate
 
-from .Plot import plot_spectrum
+from .Plot import plot
 
 
 class EMD_Analysis:
@@ -98,14 +98,14 @@ class EMD_Analysis:
         if plot:
             t_Axis = np.arange(0, len(data)) / fs
             for i, IMF in enumerate(IMFs):
-                plot_spectrum(
+                plot(
                     t_Axis,
                     IMF,
                     title=f"EMD分解结果-IMF{i+1}",
                     ylim=[-np.max(np.abs(data)), np.max(np.abs(data))],
                     **kwargs,
                 )
-            plot_spectrum(
+            plot(
                 t_Axis,
                 Residue,
                 title="EMD分解结果-Residue",
@@ -182,14 +182,14 @@ class EMD_Analysis:
         if plot:
             t_Axis = np.arange(0, len(data)) / fs
             for i, IMF in enumerate(enIMFs):
-                plot_spectrum(
+                plot(
                     t_Axis,
                     IMF,
                     title=f"EEMD分解结果-IMF{i+1}",
                     ylim=[-np.max(np.abs(data)), np.max(np.abs(data))],
                     **kwargs,
                 )
-            plot_spectrum(
+            plot(
                 t_Axis,
                 Residue,
                 title="EEMD分解结果-Residue",
@@ -318,13 +318,13 @@ class EMD_Analysis:
 
         if plot:
             for f, imf in zip(fc, u):
-                plot_spectrum(
+                plot(
                     t_Axis,
                     imf,
                     title=f"VMD分解结果-中心频率{f:.2f}Hz",
                     **kwargs,
                 )
-            plot_spectrum(
+            plot(
                 t_Axis,
                 data - u.sum(axis=0),
                 title="VMD分解结果-残余分量",
@@ -467,7 +467,7 @@ class EMD_Analysis:
             res = self.isIMF(DatatoSift)
             if res[0] == True:
                 if plot:
-                    plot_spectrum(t_Axis, DatatoSift, title="提取结果", **kwargs)
+                    plot(t_Axis, DatatoSift, title="提取结果", **kwargs)
                 return DatatoSift
             else:
                 if res[2] == "极值点不足，无法提取IMF分量":
@@ -485,7 +485,7 @@ class EMD_Analysis:
                         print("不满足条件：" + res[2])
                     DatatoSift = DatatoSift - res[1][2]  # 减去平均线作为下一次迭代结果
         if plot:
-            plot_spectrum(t_Axis, DatatoSift, title="提取结果", **kwargs)
+            plot(t_Axis, DatatoSift, title="提取结果", **kwargs)
 
         return DatatoSift  # 最大迭代次数后仍未提取到IMF分量
 
