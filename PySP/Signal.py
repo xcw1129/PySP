@@ -349,8 +349,8 @@ class Signal:
             )
         else:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
-        
-    # ----------------------------------------------------------------------------------------#    
+
+    # ----------------------------------------------------------------------------------------#
     def __radd__(self, other):
         """
         实现Signal对象与Signal/array/标量对象的右加法运算
@@ -470,7 +470,7 @@ class Signal:
 
 # --------------------------------------------------------------------------------------------#
 @Input({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
-def resample(
+def Resample(
     Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
 ) -> Signal:
     """
@@ -484,8 +484,8 @@ def resample(
         重采样频率
     t0 : float
         重采样起始时间
-    t1 : float
-        重采样时间长度
+    T : float
+        重采样时间长度, 默认为None, 表示重采样到信号结束
 
     返回:
     --------
@@ -520,7 +520,7 @@ def resample(
 
 # --------------------------------------------------------------------------------------------#
 @Input({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
-def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
+def Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
     """
     生成仿真含噪准周期信号
 
@@ -532,8 +532,8 @@ def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signa
         仿真信号采样时长
     CosParams : tuple
         余弦信号参数元组, 每组参数格式为(f, A, phi)
-    noise : float, 默认为0
-        高斯白噪声方差
+    noise : float
+        高斯白噪声方差, 默认为0, 表示无噪声
 
     返回:
     --------

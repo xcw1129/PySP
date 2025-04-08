@@ -22,8 +22,8 @@ from matplotlib import font_manager  # 字体管理
 plt.rcParams["font.family"] = "sans-serif"  # 默认字体类型
 plt.rcParams["font.sans-serif"] = ["Times New Roman"]  # 默认字体
 plt.rcParams["axes.unicode_minus"] = False  # 正常显示负号
-plt.rcParams["font.size"] = 16  # 设置全局字体大小
-zh_font = font_manager.FontProperties(fname=r"C:\Windows\Fonts\simhei.ttf")  # 中文字体
+plt.rcParams["font.size"] = 18  # 设置全局字体大小
+zh_font = font_manager.FontProperties(fname=r"C:\Windows\Fonts\simsun.ttc")  # 中文字体
 en_font = font_manager.FontProperties(
     fname=r"C:\Windows\Fonts\Times New Roman.ttf"
 )  # 英文字体

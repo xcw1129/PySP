@@ -171,7 +171,7 @@ with open(log_file, "w", encoding="utf-8") as f:
     # ----------------------------------------------------------------------------------------#
     if IF_TEST_SIGNAL_RESAMPLE:
         try:
-            res = Signal.resample(Sig=Sig_test, down_fs=5000, t0=0.1, T=1).plot(
+            res = Signal.Resample(Sig=Sig_test, down_fs=5000, t0=0.1, T=1).plot(
                 title="Signal.resample()", plot_save=PLOT_SAVE
             )
             print("\tSignal.resample()测试通过")
