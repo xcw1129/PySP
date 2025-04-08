@@ -20,7 +20,7 @@ from matplotlib import animation  # 动画绘图
 from matplotlib import font_manager  # 字体管理
 
 plt.rcParams["font.family"] = "sans-serif"  # 默认字体类型
-plt.rcParams["font.sans-serif"] = ["Times New Roman"]  # 默认字体
+plt.rcParams["font.sans-serif"] = ["SimHei"]  # 默认字体
 plt.rcParams["axes.unicode_minus"] = False  # 正常显示负号
 plt.rcParams["font.size"] = 18  # 设置全局字体大小
 zh_font = font_manager.FontProperties(fname=r"C:\Windows\Fonts\simsun.ttc")  # 中文字体

@@ -557,7 +557,7 @@ def Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
 # --------------------------------------------------------------------------------------------#
 class Analysis:
     """
-    信号处理方法父类, 用于创建其他复杂的信号处理方法
+    信号分析处理方法类, 用于创建其他复杂的分析处理方法
 
     参数:
     --------
@@ -581,7 +581,7 @@ class Analysis:
 
     方法：
     --------
-    Plot(plot_type, plot_func)
+    Plot(plot_func)
         绘图装饰器, 用于对分析方法进行绘图
     Input(*var_checks)
         输入变量检查装饰器, 用于对分析方法输入变量进行检查
@@ -602,8 +602,8 @@ class Analysis:
     def Plot(plot_func: callable):
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):  # 针对Analysis类的方法进行装饰
-                res = func(self, *args, **kwargs)
-                if self.plot:
+                res = func(self, *args, **kwargs)# 针对Analysis类的方法进行装饰
+                if self.plot:# 针对Analysis类的方法进行装饰
                     self.plot_kwargs["plot_save"] = self.plot_save
                     plot_func(
                         *res, **self.plot_kwargs
@@ -631,7 +631,7 @@ class Analysis:
                             raise TypeError(
                                 f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"
                             )
-                bound_args = Vars.bind(self, *args, **kwargs)
+                bound_args = Vars.bind(self, *args, **kwargs)# 针对Analysis类的方法进行装饰
                 bound_args.apply_defaults()
                 # 获取变量的类型注解
                 annotations = func.__annotations__
@@ -723,7 +723,7 @@ class Analysis:
                         if isinstance(var_value, Signal):
                             pass
                 # ---------------------------------------------------------------------------#
-                return func(self, *args, **kwargs)  # 检查通过，执行类方法
+                return func(self, *args, **kwargs)  # 检查通过，执行类方法# 针对Analysis类的方法进行装饰
 
             return wrapper
 
