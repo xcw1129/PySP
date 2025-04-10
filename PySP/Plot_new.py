@@ -140,7 +140,7 @@ class Plot:
             else:
                 raise ValueError(f"不支持的图片格式: {self.plot_format}")
 
-    def _custom_setup(self, *args, **kwargs):
+    def _custom_setup(self, **kwargs):
         """具体绘图实现，由子类重写"""
         raise NotImplementedError("子类必须实现_custom_setup方法")
 
@@ -149,7 +149,7 @@ class Plot:
         # 创建图形和坐标轴
         self.setup_figure()
         # 设置绘图数据和自定义绘图实现
-        self._custom_setup(**kwargs)  # 自定义绘图实现
+        self._custom_setup(**kwargs)  # 将输入参数传递给具体绘图实现
         # 设置标签和标题
         self.setup_labels()
         # 运行所有插件
@@ -170,7 +170,7 @@ class Plot:
 class PlotPlugin:
     """绘图插件基类，提供扩展绘图功能的接口"""
 
-    def apply(self, plot_obj, *args, **kwargs):
+    def apply(self, plot_obj, **kwargs):
         """应用插件，由子类实现"""
         raise NotImplementedError("子类必须实现apply方法")
 
@@ -187,6 +187,7 @@ class LinePlot(Plot):
         self.axes.plot(Axis, Data)
 
 
+# --------------------------------------------------------------------------------------------#
 class HeatmapPlot(Plot):
     """热力图绘制类"""
 
@@ -215,6 +216,7 @@ class HeatmapPlot(Plot):
             colorbar.set_label(colorbarlabel, fontproperties=zh_font)
 
 
+# --------------------------------------------------------------------------------------------#
 class PeakFinderPlugin(PlotPlugin):
     """峰值查找插件"""
 
@@ -243,38 +245,3 @@ class PeakFinderPlugin(PlotPlugin):
                 color="red",
                 fontsize=10,
             )
-
-
-# --------------------------------------------------------------------------------------------#
-@Input({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
-def plot(Axis: np.ndarray, data: np.ndarray, **kwargs):
-    if len(Axis) != len(data):
-        raise ValueError(f"Axis={len(Axis)}和data={len(data)}的长度不一致, 无法绘图")
-
-    plotter = LinePlot(**kwargs)
-    plotter.plot(Axis, data)
-
-
-# --------------------------------------------------------------------------------------------#
-@Input({"Axis1": {"ndim": 1}, "Axis2": {"ndim": 1}, "data": {"ndim": 2}})
-def imshow(Axis1: np.ndarray, Axis2: np.ndarray, data: np.ndarray, **kwargs):
-    """兼容原有API的热力图函数"""
-    if (len(Axis1) != data.shape[0]) or (len(Axis2) != data.shape[1]):
-        raise ValueError("Axis1、Axis2与data的对应轴长度不一致")
-
-    plotter = HeatmapPlot(**kwargs)
-    plotter.plot(Axis1, Axis2, data)
-
-
-@Input({"Axis": {"ndim": 1}, "data": {"ndim": 1}})
-def plot_findpeaks(
-    Axis: np.ndarray, data: np.ndarray, height: float, distance: int = 1, **kwargs
-):
-    """兼容原有API的峰值查找绘图函数"""
-    if len(Axis) != len(data):
-        raise ValueError(f"Axis={len(Axis)}和data={len(data)}的长度不一致, 无法绘图")
-
-    plotter = LinePlot(**kwargs)
-    peak_plugin = PeakFinderPlugin(height=height, distance=distance)
-    plotter.add_plugin(peak_plugin)
-    plotter.plot(Axis, data)
