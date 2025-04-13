@@ -18,7 +18,7 @@ from .dependencies import wraps
 from .dependencies import get_origin, get_args
 from .decorators import Input
 
-from .Plot import plot
+from .Plot import LinePlot
 
 
 # --------------------------------------------------------------------------------------------#
@@ -459,12 +459,8 @@ class Signal:
         )
         kwargs.pop("title", None)
         # 绘制时域波形图
-        plot(
-            self.t_Axis,
-            self.data,
-            xlabel="时间t/s",
-            title=title,
-            **kwargs,
+        LinePlot(xlabel="时间(s)", ylabel="幅值", title=title, **kwargs).plot(
+            Axis=self.t_Axis, Data=self.data
         )
 
 
@@ -602,8 +598,8 @@ class Analysis:
     def Plot(plot_func: callable):
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):  # 针对Analysis类的方法进行装饰
-                res = func(self, *args, **kwargs)# 针对Analysis类的方法进行装饰
-                if self.plot:# 针对Analysis类的方法进行装饰
+                res = func(self, *args, **kwargs)  # 针对Analysis类的方法进行装饰
+                if self.plot:  # 针对Analysis类的方法进行装饰
                     self.plot_kwargs["plot_save"] = self.plot_save
                     plot_func(
                         *res, **self.plot_kwargs
@@ -631,7 +627,9 @@ class Analysis:
                             raise TypeError(
                                 f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"
                             )
-                bound_args = Vars.bind(self, *args, **kwargs)# 针对Analysis类的方法进行装饰
+                bound_args = Vars.bind(
+                    self, *args, **kwargs
+                )  # 针对Analysis类的方法进行装饰
                 bound_args.apply_defaults()
                 # 获取变量的类型注解
                 annotations = func.__annotations__
@@ -723,7 +721,9 @@ class Analysis:
                         if isinstance(var_value, Signal):
                             pass
                 # ---------------------------------------------------------------------------#
-                return func(self, *args, **kwargs)  # 检查通过，执行类方法# 针对Analysis类的方法进行装饰
+                return func(
+                    self, *args, **kwargs
+                )  # 检查通过，执行类方法# 针对Analysis类的方法进行装饰
 
             return wrapper
 
