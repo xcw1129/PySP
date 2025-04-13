@@ -22,6 +22,15 @@ from .decorators import Input
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
+class PlotPlugin:
+    """绘图插件基类，提供扩展绘图功能的接口"""
+
+    def apply(self, plot_obj, **kwargs):
+        """应用插件，由子类实现"""
+        raise NotImplementedError("子类必须实现apply方法")
+
+
+# --------------------------------------------------------------------------------------------#
 class Plot:
     """
     绘图基类，提供基础绘图功能和通用设置
@@ -42,16 +51,12 @@ class Plot:
         x轴刻度, 默认为None
     (xlim) : tuple, 可选
         x轴刻度范围, 默认为None
-    (xscale) : str, 可选
-        x轴尺度, 默认为linear, 可选linear或log
     (ylabel) : str, 可选
         y轴标签, 默认为None
     (yticks) : list, 可选
         y轴刻度, 默认为None
     (ylim) : tuple, 可选
         y轴刻度范围, 默认为None
-    (yscale) : str, 可选
-        y轴尺度, 默认为linear, 可选linear或log
     (title) : str, 可选
         图像标题, 默认为None
 
@@ -61,10 +66,26 @@ class Plot:
         图形对象
     axes : matplotlib.axes.Axes
         坐标轴对象
+    pattern : str
+        执行模式
+    plot_save : bool
+        是否保存绘图结果
+    plot_format : str
+        保存图片格式
     kwargs : dict
         绘图参数字典
     plugins : list
         绘图插件列表
+
+    方法：
+    --------
+    setup_figure: 设置图形和坐标轴
+    setup_labels: 设置标签和标题
+    add_plugin: 添加绘图插件
+    save_figure: 保存图形
+    plot: 执行绘图
+    _custom_setup: 具体绘图实现，由子类重写
+
     """
 
     def __init__(
@@ -80,7 +101,7 @@ class Plot:
         self.pattern = pattern
         self.plot_save = plot_save
         self.plot_format = plot_format
-        self.kwargs = kwargs
+        self.kwargs = kwargs  # 存储所有plt已有绘图参数
         self.plugins = []
 
     def setup_figure(self):
@@ -89,42 +110,51 @@ class Plot:
         self.figure = plt.figure(figsize=figsize)
         self.axes = self.figure.add_subplot(111)
 
-    def setup_labels(self):
-        """设置标签和标题"""
-        # 设置标题
+    def _setup_title(self):
+        """设置标题"""
         title = self.kwargs.get("title", None)
         if title:
             self.axes.set_title(title, fontproperties=zh_font)
-        # ------------------------------------------------------------------------------------#
-        # 设置X轴
+
+    def _setup_x_axis(self):
+        """设置X轴"""
         xlabel = self.kwargs.get("xlabel", None)
         if xlabel:
             self.axes.set_xlabel(
-                xlabel, fontproperties=en_font, labelpad=0.2
+                xlabel, fontproperties=zh_font, labelpad=0.2
             )  # x轴标签
         xticks = self.kwargs.get("xticks", None)
         if xticks is not None:
             self.axes.set_xticks(xticks)  # x轴刻度
         xlim = self.kwargs.get("xlim", (None, None))
         self.axes.set_xlim(xlim[0], xlim[1])  # x轴范围
-        # ------------------------------------------------------------------------------------#
-        # 设置Y轴
+
+    def _setup_y_axis(self):
+        """设置Y轴"""
         ylabel = self.kwargs.get("ylabel", None)
         if ylabel:
             self.axes.set_ylabel(
-                ylabel, fontproperties=en_font, labelpad=0.2
+                ylabel, fontproperties=zh_font, labelpad=0.2
             )  # y轴标签
         yticks = self.kwargs.get("yticks", None)
         if yticks is not None:
             self.axes.set_yticks(yticks)  # y轴刻度
         ylim = self.kwargs.get("ylim", (None, None))
         self.axes.set_ylim(ylim[0], ylim[1])  # y轴范围
-        # ------------------------------------------------------------------------------------#
-        # 设置坐标轴刻度字体
+
+    def _setup_tick_fonts(self):
+        """设置坐标轴刻度字体"""
         for label in self.axes.get_xticklabels() + self.axes.get_yticklabels():
             label.set_fontfamily(en_font)
 
-    def add_plugin(self, plugin):
+    def setup_labels(self):
+        """设置标签和标题"""
+        self._setup_title()
+        self._setup_x_axis()
+        self._setup_y_axis()
+        self._setup_tick_fonts()
+
+    def add_plugin(self, plugin: PlotPlugin) -> "Plot":
         """添加绘图插件"""
         self.plugins.append(plugin)
         return self
@@ -167,24 +197,28 @@ class Plot:
 
 
 # --------------------------------------------------------------------------------------------#
-class PlotPlugin:
-    """绘图插件基类，提供扩展绘图功能的接口"""
-
-    def apply(self, plot_obj, **kwargs):
-        """应用插件，由子类实现"""
-        raise NotImplementedError("子类必须实现apply方法")
-
-
-# --------------------------------------------------------------------------------------------#
 class LinePlot(Plot):
     """线图绘制类"""
 
-    def _custom_setup(self, Axis, Data, **kwargs):
+    @Input({"Axis": {"ndim": 1}, "Data": {}})
+    def _custom_setup(self, Axis: np.ndarray, Data: np.ndarray, **kwargs):
         """实现线图绘制"""
+        # 检查数据
+        if Data.ndim > 2:
+            raise ValueError("Data数据维度超过2维, 无法绘图")
+        elif len(Axis) != Data.shape[-1]:
+            raise ValueError(
+                f"Axis={len(Axis)}和Data={Data.shape[1]}的长度不一致, 无法绘图"
+            )  # 数据长度检查
         self.axes.grid(
             axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
         )
-        self.axes.plot(Axis, Data)
+        # 绘制线图
+        if Data.ndim == 1:
+            self.axes.plot(Axis, Data)
+        elif Data.ndim == 2:
+            for i in range(Data.shape[0]):
+                self.axes.plot(Axis, Data[i], label=f"Data {i+1}")
 
 
 # --------------------------------------------------------------------------------------------#
