@@ -3,7 +3,7 @@
 PySP库的框架模块, 定义了其他模块使用的基础类, 以及一些信号预处理函数
 
 ## 内容
-    - class: 
+    - class:
         1. Signal: 自带采样信息的信号类, 可进行简单预处理操作
         2. Analysis: 信号分析基类, 用于创建其他复杂的信号分析、处理方法
     - function:
@@ -18,7 +18,7 @@ from .dependencies import wraps
 from .dependencies import get_origin, get_args
 from .decorators import Input
 
-from .Plot import plot_spectrum
+from .Plot import LinePlot
 
 
 # --------------------------------------------------------------------------------------------#
@@ -33,12 +33,12 @@ class Signal:
     --------
     data : np.ndarray
         输入数据数组，用于构建信号
-    label : str
-        信号标签
     dt/fs/T : float/int/float
         采样时间间隔/采样频率/信号采样时长, 输入其中一个即可
     t0 : float, 可选
         信号起始时间, 默认为0
+    label : str
+        信号标签, 用于标识信号, 可选
 
     属性：
     --------
@@ -46,6 +46,8 @@ class Signal:
         输入信号的时序数据
     N : int
         信号长度
+    label : str
+        信号标签
     dt : float
         采样时间间隔
     fs : int
@@ -72,7 +74,6 @@ class Signal:
     @Input(
         {
             "data": {"ndim": 1},
-            "label": {},
             "dt": {"OpenLow": 0},
             "fs": {"Low": 1},
             "T": {"OpenLow": 0},
@@ -81,11 +82,11 @@ class Signal:
     def __init__(
         self,
         data: np.ndarray,
-        label: str,
         dt: Optional[float] = None,
         fs: Optional[int] = None,
         T: Optional[float] = None,
         t0: Optional[float] = 0,
+        label: Optional[str] = None,
     ):
         self.data = data.copy()  # 深拷贝，防止对原数据进行修改
         N = len(data)
@@ -164,7 +165,7 @@ class Signal:
         """
         返回Signal类对象的字符串表示, 用于调试
         """
-        return f"Signal(data={self.data}, label={self.label}, fs={self.fs})"
+        return f"Signal(data={self.data}, fs={self.fs}, label={self.label})"
 
     # ----------------------------------------------------------------------------------------#
     def __str__(self) -> str:
@@ -220,82 +221,200 @@ class Signal:
     # ----------------------------------------------------------------------------------------#
     def __add__(self, other):
         """
-        实现Signal对象与Signal/array对象的加法运算
+        实现Signal对象与Signal/array/标量对象的加法运算
         """
         if isinstance(other, Signal):
-            if self.fs != other.fs:
-                raise ValueError("两个信号采样频率不一致, 无法运算")
-            if self.N != other.N:
-                raise ValueError("两个信号长度不一致, 无法运算")
-            if self.t0 != other.t0:
-                raise ValueError("两个信号起始时间不一致, 无法运算")
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法运算")
             return Signal(
                 self.data + other.data,
                 fs=self.fs,
                 t0=self.t0,
-                label=self.label + "与" + other.label + "相加信号",
+                label=self.label,
             )
-        return Signal(self.data + other, fs=self.fs, t0=self.t0, label=self.label)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                self.data + other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                self.data + other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
     def __sub__(self, other):
         """
-        实现Signal对象与Signal/array对象的减法运算
+        实现Signal对象与Signal/array/标量对象的减法运算
         """
         if isinstance(other, Signal):
-            if self.fs != other.fs:
-                raise ValueError("两个信号采样频率不一致, 无法运算")
-            if self.N != other.N:
-                raise ValueError("两个信号长度不一致, 无法运算")
-            if self.t0 != other.t0:
-                raise ValueError("两个信号起始时间不一致, 无法运算")
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法运算")
             return Signal(
                 self.data - other.data,
                 fs=self.fs,
                 t0=self.t0,
-                label=self.label + "与" + other.label + "相减信号",
+                label=self.label,
             )
-        return Signal(self.data - other, fs=self.fs, t0=self.t0, label=self.label)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                self.data - other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                self.data - other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
     def __mul__(self, other):
         """
-        实现Signal对象与Signal/array对象的乘法运算
+        实现Signal对象与Signal/array/标量对象的乘法运算
         """
         if isinstance(other, Signal):
-            if self.fs != other.fs:
-                raise ValueError("两个信号采样频率不一致, 无法运算")
-            if self.N != other.N:
-                raise ValueError("两个信号长度不一致, 无法运算")
-            if self.t0 != other.t0:
-                raise ValueError("两个信号起始时间不一致, 无法运算")
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法运算")
             return Signal(
                 self.data * other.data,
                 fs=self.fs,
                 t0=self.t0,
-                label=self.label + "与" + other.label + "相乘信号",
+                label=self.label,
             )
-        return Signal(self.data * other, fs=self.fs, t0=self.t0, label=self.label)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                self.data * other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                self.data * other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
     def __truediv__(self, other):
         """
-        实现Signal对象与Signal/array对象的除法运算
+        实现Signal对象与Signal/array/标量对象的除法运算
         """
         if isinstance(other, Signal):
-            if self.fs != other.fs:
-                raise ValueError("两个信号采样频率不一致, 无法运算")
-            if self.N != other.N:
-                raise ValueError("两个信号长度不一致, 无法运算")
-            if self.t0 != other.t0:
-                raise ValueError("两个信号起始时间不一致, 无法运算")
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法运算")
             return Signal(
                 self.data / other.data,
                 fs=self.fs,
                 t0=self.t0,
-                label=self.label + "与" + other.label + "相除信号",
+                label=self.label,
             )
-        return Signal(self.data / other, fs=self.fs, t0=self.t0, label=self.label)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                self.data / other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                self.data / other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+
+    # ----------------------------------------------------------------------------------------#
+    def __radd__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右加法运算
+        """
+        return self.__add__(other)
+
+    # ----------------------------------------------------------------------------------------#
+    def __rsub__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右减法运算
+        """
+        if isinstance(other, Signal):
+            return other.__sub__(self)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                other - self.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                other - self.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+
+    # ----------------------------------------------------------------------------------------#
+    def __rmul__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右乘法运算
+        """
+        return self.__mul__(other)
+
+    # ----------------------------------------------------------------------------------------#
+    def __rtruediv__(self, other):
+        """
+        实现Signal对象与Signal/array/标量对象的右除法运算
+        """
+        if isinstance(other, Signal):
+            return other.__truediv__(self)
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                other / self.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif np.isscalar(other):  # 检查是否为标量
+            return Signal(
+                other / self.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
     def copy(self):
@@ -335,24 +454,19 @@ class Signal:
         绘制信号的时域波形图
         """
         # 默认绘图参数设置
-        title = kwargs.get("title", f"{self.label}时域波形图")
+        title = kwargs.get(
+            "title", f"{self.label}时域波形图" if self.label else "时域波形图"
+        )
         kwargs.pop("title", None)
-        xticks = kwargs.get("xticks", np.arange(self.t0, self.t0 + self.T, self.T / 10))
-        kwargs.pop("xticks", None)
         # 绘制时域波形图
-        plot_spectrum(
-            self.t_Axis,
-            self.data,
-            xlabel="时间t/s",
-            xticks=xticks,
-            title=title,
-            **kwargs,
+        LinePlot(xlabel="时间(s)", ylabel="幅值", title=title, **kwargs).plot(
+            Axis=self.t_Axis, Data=self.data
         )
 
 
 # --------------------------------------------------------------------------------------------#
 @Input({"Sig": {}, "down_fs": {"Low": 1}, "T": {"OpenLow": 0}})
-def resample(
+def Resample(
     Sig: Signal, down_fs: int, t0: float = 0, T: Optional[float] = None
 ) -> Signal:
     """
@@ -366,8 +480,8 @@ def resample(
         重采样频率
     t0 : float
         重采样起始时间
-    t1 : float
-        重采样时间长度
+    T : float
+        重采样时间长度, 默认为None, 表示重采样到信号结束
 
     返回:
     --------
@@ -402,7 +516,7 @@ def resample(
 
 # --------------------------------------------------------------------------------------------#
 @Input({"fs": {"Low": 1}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
-def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
+def Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signal:
     """
     生成仿真含噪准周期信号
 
@@ -414,8 +528,8 @@ def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signa
         仿真信号采样时长
     CosParams : tuple
         余弦信号参数元组, 每组参数格式为(f, A, phi)
-    noise : float, 默认为0
-        高斯白噪声方差
+    noise : float
+        高斯白噪声方差, 默认为0, 表示无噪声
 
     返回:
     --------
@@ -439,7 +553,7 @@ def Sig_Periodic(fs: int, T: float, CosParams: tuple, noise: float = 0) -> Signa
 # --------------------------------------------------------------------------------------------#
 class Analysis:
     """
-    信号处理方法父类, 用于创建其他复杂的信号处理方法
+    信号分析处理方法类, 用于创建其他复杂的分析处理方法
 
     参数:
     --------
@@ -463,7 +577,7 @@ class Analysis:
 
     方法：
     --------
-    Plot(plot_type, plot_func)
+    Plot(plot_func)
         绘图装饰器, 用于对分析方法进行绘图
     Input(*var_checks)
         输入变量检查装饰器, 用于对分析方法输入变量进行检查
@@ -484,8 +598,8 @@ class Analysis:
     def Plot(plot_func: callable):
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):  # 针对Analysis类的方法进行装饰
-                res = func(self, *args, **kwargs)
-                if self.plot:
+                res = func(self, *args, **kwargs)  # 针对Analysis类的方法进行装饰
+                if self.plot:  # 针对Analysis类的方法进行装饰
                     self.plot_kwargs["plot_save"] = self.plot_save
                     plot_func(
                         *res, **self.plot_kwargs
@@ -513,7 +627,9 @@ class Analysis:
                             raise TypeError(
                                 f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"
                             )
-                bound_args = Vars.bind(self, *args, **kwargs)
+                bound_args = Vars.bind(
+                    self, *args, **kwargs
+                )  # 针对Analysis类的方法进行装饰
                 bound_args.apply_defaults()
                 # 获取变量的类型注解
                 annotations = func.__annotations__
@@ -605,7 +721,9 @@ class Analysis:
                         if isinstance(var_value, Signal):
                             pass
                 # ---------------------------------------------------------------------------#
-                return func(self, *args, **kwargs)  # 检查通过，执行类方法
+                return func(
+                    self, *args, **kwargs
+                )  # 检查通过，执行类方法# 针对Analysis类的方法进行装饰
 
             return wrapper
 

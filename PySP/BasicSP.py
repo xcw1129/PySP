@@ -20,7 +20,7 @@ from .decorators import Input, Plot
 
 from .Signal import Signal, Analysis
 
-from .Plot import plot_spectrum, plot_spectrogram
+from .Plot import plot, imshow
 
 
 # --------------------------------------------------------------------------------------------#
@@ -170,7 +170,7 @@ class Time_Analysis(Analysis):
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrum)
+    @Analysis.Plot(plot)
     @Analysis.Input({"samples": {"Low": 20}})
     def Pdf(self, samples: int = 100, AmpRange: Optional[tuple] = None) -> np.ndarray:
         """
@@ -202,7 +202,7 @@ class Time_Analysis(Analysis):
         return amp_Axis, pdf
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrum)
+    @Analysis.Plot(plot)
     @Analysis.Input({"step": {"OpenLow": 0}, "SegLength": {"OpenLow": 0}})
     def Trend(self, Feature: str, step: float, SegLength: float) -> np.ndarray:
         """
@@ -273,7 +273,7 @@ class Time_Analysis(Analysis):
         return t_Axis, trend
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrum)
+    @Analysis.Plot(plot)
     def Autocorr(self, std: bool = False, both: bool = False) -> np.ndarray:
         """
         计算信号自相关
@@ -385,7 +385,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, ft_data
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrum)
+    @Analysis.Plot(plot)
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的单边傅里叶级数谱幅值
@@ -419,7 +419,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, Amp
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrum)
+    @Analysis.Plot(plot)
     def Psd(
         self, WinType: str = "矩形窗", density: bool = True, both: bool = False
     ) -> np.ndarray:
@@ -464,7 +464,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrum)
+    @Analysis.Plot(plot)
     def Psd_corr(self, density: bool = False, both: bool = False) -> np.ndarray:
         """
         自相关法计算信号的功率谱密度
@@ -500,7 +500,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrum)
+    @Analysis.Plot(plot)
     def HTenve_spectra(self):
         """
         计算信号的希尔伯特包络谱
@@ -641,7 +641,7 @@ class TimeFre_Analysis(Analysis):
         return t_Axis, f_Axis, ft_data_matrix
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot_spectrogram)
+    @Analysis.Plot(imshow)
     @Analysis.Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
     def st_Cft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
         """
@@ -677,7 +677,7 @@ class TimeFre_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    @Plot(plot_spectrum)
+    @Plot(plot)
     def istft(
         stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗", **kwargs
     ) -> np.ndarray:

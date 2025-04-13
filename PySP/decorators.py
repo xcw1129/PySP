@@ -1,7 +1,8 @@
 from .dependencies import np
+from .dependencies import Union
 from .dependencies import inspect
 from .dependencies import wraps
-from .dependencies import get_origin, get_args, Union
+from .dependencies import get_origin, get_args
 
 
 # --------------------------------------------------------------------------------------------#
