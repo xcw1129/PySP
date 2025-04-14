@@ -2,6 +2,6 @@ from setuptools import setup, find_packages
 
 setup(
     name="PySP",
-    version="v4.2.6",
+    version="v7.0.0",
     packages=find_packages(),
 )

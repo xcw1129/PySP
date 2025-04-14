@@ -18,9 +18,9 @@ from .dependencies import fft, stats, signal
 
 from .decorators import Input, Plot
 
-from .Signal import Signal, Analysis
-
+from .Signal import Signal
 from .Plot import plot, imshow
+from .Analysis import Analysis
 
 
 # --------------------------------------------------------------------------------------------#
