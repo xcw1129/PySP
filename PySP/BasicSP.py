@@ -13,14 +13,12 @@
 
 from .dependencies import Optional, Callable
 from .dependencies import np
-from .dependencies import plt, zh_font
 from .dependencies import fft, stats, signal
 
 from .decorators import Input, Plot
-
 from .Signal import Signal
-from .Plot import plot, imshow
 from .Analysis import Analysis
+from .Plot import LinePlotFunc, HeatmapPlotFunc
 
 
 # --------------------------------------------------------------------------------------------#
@@ -33,7 +31,6 @@ def window(
     num: int,
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
-    check: bool = False,
 ) -> np.ndarray:
     """
     生成各类窗函数整周期采样序列
@@ -48,12 +45,6 @@ def window(
         自定义窗函数, 默认不使用
     padding : int, 可选
         窗序列双边各零填充点数, 默认不填充
-    check : bool, 可选
-        是否绘制所有窗函数图像以检查, 默认不检查
-    (title) : str, 可选
-        绘图标题, 默认"窗函数测试图"
-    (plot_save) : bool, 可选
-        是否保存绘图, 默认不保存
 
     返回:
     --------
@@ -89,25 +80,6 @@ def window(
     if N % 2 == 0:
         N += 1  # 保证window[N//2]采样点幅值为1, 此时窗函数非对称
     # ----------------------------------------------------------------------------------------#
-    # 检查所有窗函数,如需要
-    if check:
-        window_num = len(window_func) - 1
-        # 2列多行显示
-        rows = window_num // 2 if len(window_func) % 2 == 0 else window_num // 2 + 1
-        cols = 2
-        fig, ax = plt.subplots(rows, cols, figsize=(10, 5 * rows))
-        ax = ax.flatten() if isinstance(ax, np.ndarray) else [ax]
-        for ax, (key, func) in zip(ax, window_func.items()):
-            if key == "自定义窗":
-                continue
-            ax.plot(n, func(n))
-            ax.set_title(key, fontproperties=zh_font)
-            ax.set_ylim(0, 1.1)
-        title = "窗函数测试图"
-        fig.suptitle(title, fontproperties=zh_font, fontsize=16)
-        plt.tight_layout(rect=[0, 0, 1, 0.98])
-        plt.show()
-    # ----------------------------------------------------------------------------------------#
     # 生成窗采样序列
     if type not in window_func.keys():
         raise ValueError("不支持的窗函数类型")
@@ -133,8 +105,6 @@ class Time_Analysis(Analysis):
         输入信号
     plot : bool, 默认为False
         是否绘制分析结果图
-    plot_save : bool, 默认为False
-        是否保存绘图
 
     属性:
     --------
@@ -142,8 +112,6 @@ class Time_Analysis(Analysis):
         输入信号
     plot : bool
         是否绘制分析结果图
-    plot_save : bool
-        是否保存绘图
     plot_kwargs : dict
         绘图参数
 
@@ -157,21 +125,20 @@ class Time_Analysis(Analysis):
         计算信号自相关
     """
 
-    @Analysis.Input({"Sig": {}})
+    @Input({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
         plot: bool = False,
-        plot_save: bool = False,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        super().__init__(Sig=Sig, plot=plot, **kwargs)
         # 该分析类的特有参数
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot)
-    @Analysis.Input({"samples": {"Low": 20}})
+    @Analysis.Plot(LinePlotFunc)
+    @Input({"samples": {"Low": 20}})
     def Pdf(self, samples: int = 100, AmpRange: Optional[tuple] = None) -> np.ndarray:
         """
         估计信号的概率密度函数(PDF)
@@ -202,8 +169,8 @@ class Time_Analysis(Analysis):
         return amp_Axis, pdf
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot)
-    @Analysis.Input({"step": {"OpenLow": 0}, "SegLength": {"OpenLow": 0}})
+    @Analysis.Plot(LinePlotFunc)
+    @Input({"step": {"OpenLow": 0}, "SegLength": {"OpenLow": 0}})
     def Trend(self, Feature: str, step: float, SegLength: float) -> np.ndarray:
         """
         计算信号指定统计特征的时间趋势
@@ -273,7 +240,7 @@ class Time_Analysis(Analysis):
         return t_Axis, trend
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot)
+    @Analysis.Plot(LinePlotFunc)
     def Autocorr(self, std: bool = False, both: bool = False) -> np.ndarray:
         """
         计算信号自相关
@@ -320,8 +287,6 @@ class Frequency_Analysis(Analysis):
         输入信号
     plot : bool
         是否绘制分析结果图
-    plot_save : bool
-        是否保存绘图
 
     属性:
     --------
@@ -329,8 +294,6 @@ class Frequency_Analysis(Analysis):
         输入信号
     plot : bool
         是否绘制分析结果图
-    plot_save : bool
-        是否保存绘图
     plot_kwargs : dict
         绘图参数
 
@@ -348,15 +311,14 @@ class Frequency_Analysis(Analysis):
         计算信号的希尔伯特包络谱
     """
 
-    @Analysis.Input({"Sig": {}})
+    @Input({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
         plot: bool = False,
-        plot_save: bool = False,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        super().__init__(Sig=Sig, plot=plot, **kwargs)
         # 该分析类的特有参数
         # ------------------------------------------------------------------------------------#
 
@@ -385,7 +347,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, ft_data
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot)
+    @Analysis.Plot(LinePlotFunc)
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的单边傅里叶级数谱幅值
@@ -419,7 +381,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, Amp
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot)
+    @Analysis.Plot(LinePlotFunc)
     def Psd(
         self, WinType: str = "矩形窗", density: bool = True, both: bool = False
     ) -> np.ndarray:
@@ -464,7 +426,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot)
+    @Analysis.Plot(LinePlotFunc)
     def Psd_corr(self, density: bool = False, both: bool = False) -> np.ndarray:
         """
         自相关法计算信号的功率谱密度
@@ -500,7 +462,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(plot)
+    @Analysis.Plot(LinePlotFunc)
     def HTenve_spectra(self):
         """
         计算信号的希尔伯特包络谱
@@ -537,8 +499,6 @@ class TimeFre_Analysis(Analysis):
         输入信号
     plot : bool
         是否绘制分析结果图
-    plot_save : bool
-        是否保存绘图
 
     属性:
     --------
@@ -546,8 +506,6 @@ class TimeFre_Analysis(Analysis):
         输入信号
     plot : bool
         是否绘制分析结果图
-    plot_save : bool
-        是否保存绘图
     plot_kwargs : dict
         绘图参数
 
@@ -561,20 +519,19 @@ class TimeFre_Analysis(Analysis):
         根据STFT数据重构时域信号
     """
 
-    @Analysis.Input({"Sig": {}})
+    @Input({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
         plot: bool = False,
-        plot_save: bool = False,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        super().__init__(Sig=Sig, plot=plot, **kwargs)
         # 该分析类的特有参数
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
+    @Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
     def stft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的短时傅里叶变换频谱
@@ -641,8 +598,8 @@ class TimeFre_Analysis(Analysis):
         return t_Axis, f_Axis, ft_data_matrix
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(imshow)
-    @Analysis.Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
+    @Analysis.Plot(HeatmapPlotFunc)
+    @Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
     def st_Cft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的短时单边傅里叶级数谱幅值
@@ -677,7 +634,7 @@ class TimeFre_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    @Plot(plot)
+    @Plot(LinePlotFunc)
     def istft(
         stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗", **kwargs
     ) -> np.ndarray:
