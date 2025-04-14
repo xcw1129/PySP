@@ -1,176 +1,134 @@
-# PySP - Python信号处理库
+# PySP - Python信号处理工具包
 
-PySP（Python Signal Processing）是一个面向信号处理与分析的Python库，基于NumPy、SciPy和Matplotlib构建，提供了简单易用的信号分析与处理工具。
+PySP是一个专为信号处理设计的Python工具库，它在NumPy、SciPy和Matplotlib等强大库的基础上构建，提供了简化信号处理工作流程的高级接口和工具。
 
-## 特性
+## 核心特性
 
-- 全面的信号处理与分析功能
-- 面向对象的信号分析框架
-- 强大的可视化工具
-- 灵活的输入检查机制
-- 丰富的时域、频域和时频域分析方法
+- **面向对象的信号处理** - 通过专用的Signal类封装信号数据及其采样信息
+- **简化的分析流程** - 使用Analysis基类规范化信号处理分析过程
+- **增强的可视化能力** - 通过Plot类体系提供针对信号处理的专用绘图功能
+- **可扩展的插件系统** - 支持通过插件机制扩展绘图和分析功能
+
+## 主要组件
+
+### Signal 类
+
+Signal类是PySP的核心，它封装了信号数据及其采样信息，使信号处理更加直观：
+
+```python
+from PySP.Signal import Signal, Periodic
+
+# 创建一个模拟周期信号
+cos_params = [(10, 1, 0), (20, 0.5, np.pi/4)]  # [(频率, 幅值, 相位), ...]
+sig = Periodic(fs=1000, T=1, CosParams=cos_params, noise=0.1)
+
+# 信号属性一目了然
+print(f"采样频率: {sig.fs} Hz")
+print(f"信号长度: {sig.N} 点")
+print(f"信号时长: {sig.T} 秒")
+
+# 支持算术运算
+sig2 = sig * 2 + 1
+```
+
+主要特性：
+- 自动管理采样频率、时间轴、频率轴等信息
+- 支持切片、数学运算和NumPy函数操作
+- 内置信号可视化方法
+- 包含信号重采样、周期信号生成等实用功能
+
+### Analysis 类
+
+Analysis类提供了信号处理分析的基础框架：
+
+```python
+from PySP.Analysis import Analysis
+from PySP.Plot import LinePlotFunc
+
+class FrequencyAnalysis(Analysis):
+    @Analysis.Plot(LinePlotFunc)
+    def spectrum(self):
+        # 计算频谱
+        spec = np.abs(np.fft.fft(self.Sig.data))
+        return self.Sig.f_Axis, spec  # 返回适合绘图的结果
+```
+
+主要特性：
+- 提供统一的分析接口结构
+- 集成绘图功能的装饰器
+- 自动处理信号复制以防止意外修改源数据
+
+### Plot 类体系
+
+Plot类体系提供了专为信号处理设计的可视化工具：
+
+```python
+from PySP.Plot import LinePlot, PeakFinderPlugin
+
+# 创建绘图对象
+plot = LinePlot(title="带峰值检测的信号", xlabel="时间(s)", ylabel="幅值")
+
+# 添加峰值检测插件
+plot.add_plugin(PeakFinderPlugin(height=0.5, distance=50))
+
+# 执行绘图
+plot.plot(Axis=sig.t_Axis, Data=sig.data)
+```
+
+主要特性：
+- 支持线图、热力图等常用信号处理图表
+- 可扩展的插件系统（如峰值检测）
+- 统一的样式和配置管理
+- 支持中文标签和注释
 
 ## 安装
 
 ```bash
-# 直接安装
 pip install pysp
-
-# 或从源码安装
-git clone https://github.com/username/PySP.git
-cd PySP
-pip install -e .
-```
-
-## 功能模块
-
-PySP包含以下主要模块：
-
-### 1. Signal - 信号基础模块
-
-提供了信号类`Signal`和分析基类`Analysis`，用于创建、操作信号和开发分析方法。
-
-```python
-from PySP.Signal import Signal, Analysis, Resample, Periodic
-
-# 创建信号实例
-sig = Signal(data, fs=1000)
-print(sig.info())  # 显示信号信息
-
-# 生成仿真周期信号
-cos_params = [(50, 1, 0), (100, 0.5, np.pi/4)]  # (频率, 幅值, 相位)
-sim_sig = Periodic(fs=1000, T=2, CosParams=cos_params, noise=0.1)
-
-# 信号重采样
-rs_sig = Resample(sig, down_fs=500)
-```
-
-### 2. BasicSP - 基础信号处理模块
-
-提供了时域、频域和时频域的基础信号分析与处理方法。
-
-```python
-from PySP.BasicSP import Time_Analysis, Frequency_Analysis, TimeFre_Analysis, window
-
-# 时域分析
-ta = Time_Analysis(sig, plot=True)
-amp_axis, pdf = ta.Pdf(samples=100)  # 概率密度函数
-t_axis, trend = ta.Trend(Feature="均值", step=0.1, SegLength=0.5)  # 统计特征趋势
-
-# 频域分析
-fa = Frequency_Analysis(sig, plot=True)
-f_axis, amp = fa.Cft(WinType="汉宁窗")  # 傅里叶级数谱幅值
-f_axis, power = fa.Psd(WinType="汉宁窗", density=True)  # 功率谱密度
-
-# 时频域分析
-tfa = TimeFre_Analysis(sig, plot=True)
-t_axis, f_axis, stft_data = tfa.stft(nperseg=256, nhop=128, WinType="汉宁窗")
-```
-
-### 3. Cep_Analysis - 倒谱分析模块
-
-提供了各类倒谱分析与基于倒谱的信号处理方法。
-
-```python
-from PySP.Cep_Analysis import Cep_Analysis, zoom_Aft
-
-# 倒谱分析
-ca = Cep_Analysis(sig, plot=True)
-q_axis, real_cep = ca.Cep_Real()  # 实数倒谱
-q_axis, power_cep = ca.Cep_Power()  # 功率倒谱
-q_axis, complex_cep = ca.Cep_Complex()  # 复数倒谱
-
-# 倒谱提升
-t_axis, rc_data = ca.Cep_Lift(Q=0.01, width=0.005, num=3)
-
-# Zoom-FFT分析
-f_axis, zoom_amp = zoom_Aft(sig, center_freq=100, bandwidth=20, plot=True)
-```
-
-### 4. Homo_Analysis - 全息谱分析模块
-
-提供了全息谱分析方法，支持对复杂信号的倍频结构分析。
-
-```python
-from PySP.Homo_Analysis import Homo_Analysis
-
-# 全息谱分析
-ha = Homo_Analysis(sig1, sig2)
-f_array, amp_array, phase_array = Homo_Analysis.SpectraLines(sig, BaseFreq=100, num=4)
-```
-
-### 5. Plot - 可视化模块
-
-提供了丰富的可视化工具，支持多种图表类型和自定义插件。
-
-```python
-from PySP.Plot import LinePlot, HeatmapPlot, PeakFinderPlugin
-
-# 线图绘制
-lp = LinePlot(title="信号波形", xlabel="时间(s)", ylabel="幅值")
-lp.add_plugin(PeakFinderPlugin(height=0.8, distance=10))
-lp.plot(Axis=t_axis, Data=data)
-
-# 热力图绘制
-hp = HeatmapPlot(title="时频图", xlabel="时间(s)", ylabel="频率(Hz)")
-hp.plot(Axis1=t_axis, Axis2=f_axis, Data=stft_data)
 ```
 
 ## 使用示例
 
-### 基本信号分析
-
 ```python
+from PySP.Signal import Signal, Periodic
+from PySP.Plot import LinePlotFunc_with_PeakFinder
 import numpy as np
-from PySP.Signal import Signal
-from PySP.BasicSP import Frequency_Analysis
 
-# 创建信号
-t = np.linspace(0, 1, 1000)
-data = np.sin(2*np.pi*10*t) + 0.5*np.sin(2*np.pi*20*t)
-sig = Signal(data, fs=1000, label="测试信号")
+# 创建模拟信号
+fs = 1000  # 采样频率
+T = 1      # 信号时长
+t = np.arange(0, T, 1/fs)
+signal_data = np.sin(2*np.pi*10*t) + 0.5*np.sin(2*np.pi*20*t)
+sig = Signal(signal_data, fs=fs, label="测试信号")
 
-# 显示信号信息
-print(sig.info())
+# 信号操作示例
+print(sig)  # 显示信号信息
+sig_filtered = sig * np.hanning(len(sig))  # 应用窗函数
 
-# 绘制信号波形
-sig.plot()
-
-# 频谱分析
-fa = Frequency_Analysis(sig, plot=True)
-f_axis, amp = fa.Cft(WinType="汉宁窗")
+# 绘制带峰值检测的信号
+LinePlotFunc_with_PeakFinder(
+    sig.t_Axis, 
+    sig.data,
+    height=0.8,
+    distance=50,
+    title="带峰值检测的正弦信号",
+    xlabel="时间(s)",
+    ylabel="幅值"
+)
 ```
 
-### 倒谱分析检测回波
+## 为什么选择PySP？
 
-```python
-import numpy as np
-from PySP.Signal import Signal
-from PySP.Cep_Analysis import Cep_Analysis
+- **简化工作流程** - 不再需要手动跟踪采样率和坐标轴
+- **代码更清晰** - 面向对象结构让信号处理代码更易读、更易维护
+- **减少重复代码** - 常用操作已内置，无需重复编写
+- **可视化增强** - 专为信号处理优化的绘图功能
+- **易于扩展** - 基于类的设计使其易于扩展和自定义
 
-# 创建含回波信号
-t = np.linspace(0, 1, 1000)
-data = np.sin(2*np.pi*10*t)
-echo = np.zeros_like(data)
-echo[100:] = data[:-100] * 0.6  # 延迟100点，幅值0.6的回波
-data = data + echo
-sig = Signal(data, fs=1000, label="含回波信号")
+## 许可证
 
-# 倒谱分析检测回波
-ca = Cep_Analysis(sig, plot=True)
-q_axis, real_cep = ca.Cep_Real()
-enco_tau = ca.Enco_detect(height=0.3, distance=10)
-print(f"检测到的回波时延: {enco_tau} 秒")
-```
-
-## 文档
-
-完整文档可在[文档站点](https://example.com/PySP)上获取。
+MIT
 
 ## 贡献
 
-欢迎贡献代码、报告问题或提出改进建议。请参阅[贡献指南](CONTRIBUTING.md)了解详情。
-
-## 许可
-
-本项目基于MIT许可证开源，详见[LICENSE](LICENSE)文件。
+欢迎提交问题和拉取请求。
