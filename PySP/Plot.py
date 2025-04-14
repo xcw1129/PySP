@@ -286,6 +286,26 @@ class PeakFinderPlugin(PlotPlugin):
 
 
 # --------------------------------------------------------------------------------------------#
+# 绘图类的实例化函数接口
+def LinePlotFunc(Axis, Data, **kwargs):
+    """
+    线图绘制函数, 使用LinePlot类
+
+    参数:
+    ---------
+    Axis : np.ndarray
+        x轴数据
+    Data : np.ndarray
+        y轴数据
+    **kwargs : dict, 可选
+        其他绘图参数
+    """
+    # 创建绘图对象
+    fig = LinePlot(**kwargs)
+    # 执行绘图
+    fig.plot(Axis, Data)
+
+
 def LinePlotFunc_with_PeakFinder(Axis, Data, **kwargs):
     """
     线图绘制函数, 使用LinePlot类和PeakFinderPlugin插件
@@ -300,13 +320,34 @@ def LinePlotFunc_with_PeakFinder(Axis, Data, **kwargs):
         其他绘图参数
     """
     # 创建绘图对象
-    plot = LinePlot(**kwargs)
+    fig = LinePlot(**kwargs)
     # 峰值插值: 插件参数
     height = kwargs.get("height", None)
     distance = kwargs.get("distance", None)
     # 添加插件到绘图对象
-    plot.add_plugin(
+    fig.add_plugin(
         PeakFinderPlugin(height, distance),
     )
     # 执行绘图
-    plot.plot(Axis, Data)
+    fig.plot(Axis, Data)
+
+
+def HeatmapPlotFunc(Axis1, Axis2, Data, **kwargs):
+    """
+    热力图绘制函数, 使用HeatmapPlot类
+
+    参数:
+    ---------
+    Axis1 : np.ndarray
+        x轴数据
+    Axis2 : np.ndarray
+        y轴数据
+    Data : np.ndarray
+        热力图数据
+    **kwargs : dict, 可选
+        其他绘图参数
+    """
+    # 创建绘图对象
+    fig = HeatmapPlot(**kwargs)
+    # 执行绘图
+    fig.plot(Axis1, Axis2, Data)
