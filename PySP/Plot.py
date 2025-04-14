@@ -1,15 +1,16 @@
 """
 # Plot
-常用可视化绘图方法模块
+信号处理常用可视化绘图方法模块
 
 ## 内容
-    - 基础绘图类 BasePlot
-    - 派生绘图类 (LinePlot, HeatmapPlot等)
-    - 绘图插件 (PeakFinderPlugin等)
-    - 实用绘图函数 (plot, imshow, plot_findpeaks等作为兼容性API)
+    - class:
+        1. PlotPlugin: 绘图插件基类, 提供扩展绘图功能的接口
+        2. Plot: 绘图方法基类, 提供基础绘图功能和通用设置
+        3. LinePlot: 线图绘制类, 继承自Plot类, 提供线图绘制功能
+        4. HeatmapPlot: 热力图绘制类, 继承自Plot类, 提供热力图绘制功能
+        5. PeakFinderPlugin: 峰值查找插件, 继承自PlotPlugin类, 提供峰值查找功能
 """
 
-from .dependencies import Optional, Union
 from .dependencies import np
 from .dependencies import plt, animation, zh_font, en_font
 from .dependencies import signal
@@ -39,10 +40,6 @@ class Plot:
     ---------
     pattern : str, 可选
         执行模式, 默认为"plot", 可选"plot"或"return"
-    plot_save : bool, 可选
-        是否将绘图结果保存为图片, 默认不保存
-    plot_format : str, 可选
-        保存图片格式, 默认为svg
     (figsize) : tuple, 可选
         图像大小, 默认为(12, 5)
     (xlabel) : str, 可选
@@ -68,10 +65,6 @@ class Plot:
         坐标轴对象
     pattern : str
         执行模式
-    plot_save : bool
-        是否保存绘图结果
-    plot_format : str
-        保存图片格式
     kwargs : dict
         绘图参数字典
     FIGSIZE : tuple
@@ -102,23 +95,17 @@ class Plot:
     @Input(
         {
             "pattern": {"Content": ("plot", "return")},
-            "plot_save": {},
-            "plot_format": {"Content": ("svg", "png")},
         }
     )
     def __init__(
         self,
         pattern: str = "plot",
-        plot_save: bool = False,
-        plot_format: str = "svg",
         **kwargs,
     ):
         """初始化绘图参数"""
         self.figure = None
         self.axes = None
-        self.pattern = pattern
-        self.plot_save = plot_save
-        self.plot_format = plot_format
+        self.pattern = pattern  # 执行模式
         self.kwargs = kwargs  # 存储所有plt已有绘图参数
         self.FIGSIZE = (12, 5)  # 默认图像大小
         self.plugins = []
@@ -174,27 +161,16 @@ class Plot:
         self.plugins.append(plugin)
         return self
 
-    def _save_figure(self):
-        """保存图形"""
-        if self.plot_save:
-            title = self.kwargs.get("title", "plot")
-            if self.plot_format == "svg":
-                plt.savefig(title + ".svg", format="svg")
-            elif self.plot_format == "png":
-                plt.savefig(title + ".png", format="png")
-            else:
-                raise ValueError(f"不支持的图片格式: {self.plot_format}")
-
     def _custom_setup(self, **kwargs):
         """具体绘图实现，由子类重写"""
         raise NotImplementedError("子类必须实现_custom_setup方法")
 
-    def plot(self, **kwargs):
+    def plot(self, *args, **kwargs):
         """执行绘图"""
         # 创建图形和坐标轴
         self._setup_figure()
         # 设置绘图数据和自定义绘图实现
-        self._custom_setup(**kwargs)  # 将输入参数传递给具体绘图实现
+        self._custom_setup(*args, **kwargs)  # 将输入参数传递给具体绘图实现
         # 设置标题
         self._setup_title()
         # 设置x轴
@@ -203,9 +179,7 @@ class Plot:
         self._setup_y_axis()
         # 运行所有插件
         for plugin in self.plugins:
-            plugin.apply(self, **kwargs)  # 将当前绘图对象和输入参数传递给插件
-        # 保存图形
-        self._save_figure()
+            plugin.apply(self, *args, **kwargs)  # 将当前绘图对象和输入参数传递给插件
         # 显示或返回图形
         if self.pattern == "plot":
             plt.show()
@@ -309,3 +283,30 @@ class PeakFinderPlugin(PlotPlugin):
                 color="red",
                 fontsize=10,
             )
+
+
+# --------------------------------------------------------------------------------------------#
+def LinePlotFunc_with_PeakFinder(Axis, Data, **kwargs):
+    """
+    线图绘制函数, 使用LinePlot类和PeakFinderPlugin插件
+
+    参数:
+    ---------
+    Axis : np.ndarray
+        x轴数据
+    Data : np.ndarray
+        y轴数据
+    **kwargs : dict, 可选
+        其他绘图参数
+    """
+    # 创建绘图对象
+    plot = LinePlot(**kwargs)
+    # 峰值插值: 插件参数
+    height = kwargs.get("height", None)
+    distance = kwargs.get("distance", None)
+    # 添加插件到绘图对象
+    plot.add_plugin(
+        PeakFinderPlugin(height, distance),
+    )
+    # 执行绘图
+    plot.plot(Axis, Data)
