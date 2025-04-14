@@ -161,7 +161,7 @@ class Plot:
         self.plugins.append(plugin)
         return self
 
-    def _custom_setup(self, **kwargs):
+    def _custom_setup(self):
         """具体绘图实现，由子类重写"""
         raise NotImplementedError("子类必须实现_custom_setup方法")
 
