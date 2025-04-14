@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="PySP",  # 包名
+    name="PySP_xcw",  # 包名
     version="7.0.0",      # 版本号
     author="Xiong Chengwen",   # 作者
     author_email="xcw1824@outlook.com",  # 作者邮箱
