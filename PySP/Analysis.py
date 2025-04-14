@@ -7,14 +7,11 @@
         1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
 """
 
-from .dependencies import Union
-from .dependencies import np
-from .dependencies import inspect
-from .dependencies import wraps
-from .dependencies import get_origin, get_args
-
 from .decorators import Input
 from .Signal import Signal
+
+PLOT = False  # 全局绘图开关
+
 
 # --------------------------------------------------------------------------------------------#
 # -## ----------------------------------------------------------------------------------------#
@@ -40,19 +37,15 @@ class Analysis:
     plot_kwargs : dict
         绘图参数
 
-    方法：
+    方法:
     --------
     Plot(plot_func)
-        绘图装饰器, 用于对分析方法进行绘图
-    Input(*var_checks)
-        输入变量检查装饰器, 用于对分析方法输入变量进行检查
+        Analysis类专用绘图装饰器, 对方法运行结果进行绘图
     """
 
     # ----------------------------------------------------------------------------------------#
     @Input({"Sig": {}, "plot": {}})
-    def __init__(
-        self, Sig: Signal, plot: bool = False, **kwargs
-    ):
+    def __init__(self, Sig: Signal, plot: bool = PLOT, **kwargs):
         self.Sig = Sig.copy()  # 防止对原信号进行修改
         # 绘图参数全局设置
         self.plot = plot
@@ -62,10 +55,12 @@ class Analysis:
     @staticmethod
     def Plot(plot_func: callable):
         def plot_decorator(func):
-            def wrapper(self, *args, **kwargs):  
-                res = func(self, *args, **kwargs)  
-                if self.plot:  
-                    plot_func(*res, **self.plot_kwargs)  # 要求func返回结果格式符合plot_func的输入要求
+            def wrapper(self, *args, **kwargs):
+                res = func(self, *args, **kwargs)
+                if self.plot:
+                    plot_func(
+                        *res, **self.plot_kwargs
+                    )  # 要求func返回结果格式符合plot_func的输入要求
                 return res
 
             return wrapper
