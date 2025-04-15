@@ -11,4 +11,4 @@ from .BasicSP import window
 from .Cep_Analysis import Cep_Analysis
 from .Homo_Analysis import Homo_Analysis
 
-__version__ = "7.0.1"
+__version__ = "7.0.2"
