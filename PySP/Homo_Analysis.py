@@ -1,7 +1,17 @@
-from .dependencies import Optional
+"""
+# Homo_Analysis
+    全息谱分析模块
+## 内容
+    - class
+        1. Homo_Analysis: 全息谱分析类
+"""
+
 from .dependencies import np
 from .dependencies import fft, signal
-from .Signal import Signal, Analysis
+
+
+from .Signal import Signal
+from .Analysis import Analysis
 
 
 # --------------------------------------------------------------------------------------------#

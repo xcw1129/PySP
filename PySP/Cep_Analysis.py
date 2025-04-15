@@ -15,8 +15,9 @@ from .dependencies import fft, signal
 from .dependencies import plt, zh_font
 from .dependencies import FLOAT_EPS, PI
 
-from .Signal import Signal, Analysis
-from .Plot import plot
+from .Signal import Signal
+from .Analysis import Analysis
+from .Plot import LinePlotFunc
 
 from .decorators import Input, Plot
 
@@ -227,7 +228,7 @@ class Cep_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @staticmethod
-    @Plot(plot)
+    @Plot(LinePlotFunc)
     def Cep_Reconstruct(
         q_Axis: np.ndarray, complex_cep: np.ndarray, **Kwargs
     ) -> np.ndarray:
@@ -430,7 +431,7 @@ class Cep_Analysis(Analysis):
 
 
 # ---------------------------------------------------------------------------------------#
-@Plot(plot)
+@Plot(LinePlotFunc)
 @Input({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
 def zoom_Aft(
     Sig: Signal,
