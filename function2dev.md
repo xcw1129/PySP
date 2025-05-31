@@ -8,8 +8,11 @@
 1. 优化不同Analysis方法在顺序处理同一Signal对象时的连贯性
 
 ## Plot模块
-1. 按照学术论文的标准格式绘制图像
-2. 添加更多绘图方法
+1. `LinePlot`类添加支持多曲线对比绘图
+
+2. `Plot`类添加字体字号管理，fontszie与figsize成比例设置
+
+   
 
 ## BasicSP模块
 1. 添加TimeAnalysis类的分析方法
