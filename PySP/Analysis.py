@@ -1,6 +1,6 @@
 """
 # Analysis
-分析处理方法模块, 定义了PySP库中其他分析处理方法模块的基本类结构
+分析处理方法模块, 定义了PySP库中高级分析处理方法模块的基本类结构Analysis
 
 ## 内容
     - class:
@@ -26,14 +26,14 @@ class Analysis:
     --------
     Sig : Signal
         输入信号
-    plot : bool, 默认为False
+    isPlot : bool, 默认为False
         是否绘制分析结果图
 
     属性：
     --------
     Sig : Signal
         输入信号
-    plot : bool
+    isPlot : bool
         是否绘制分析结果图
     plot_kwargs : dict
         绘图参数

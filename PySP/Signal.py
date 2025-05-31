@@ -1,6 +1,6 @@
 """
 # Signal
-信号数据模块, 定义了PySP库中的核心信号处理对象的基本结构, 以及一些信号预处理函数
+信号数据模块, 定义了PySP库中的核心信号处理对象Signal的基本结构, 以及一些信号预处理函数
 
 ## 内容
     - class:
@@ -11,12 +11,11 @@
 """
 
 
-
 from .dependencies import Optional
 from .dependencies import np, random
 from .dependencies import copy
-from .decorators import InputCheck
 
+from .decorators import InputCheck
 from .Plot import LinePlot
 
 
@@ -255,8 +254,8 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的减法运算
         """
-        return self.__add__(other*(-1))
-    
+        return self.__add__(other * (-1))
+
     # ----------------------------------------------------------------------------------------#
     def __radd__(self, other):
         """
@@ -269,7 +268,7 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的右减法运算
         """
-        return self.__sub__(other)*(-1)
+        return self.__sub__(other) * (-1)
 
     # ----------------------------------------------------------------------------------------#
     def __mul__(self, other):
@@ -375,7 +374,9 @@ class Signal:
                 label=self.label,
             )
         else:
-            raise TypeError(f"不支持{type(other).__name__}类型与Signal对象进行右除法运算")
+            raise TypeError(
+                f"不支持{type(other).__name__}类型与Signal对象进行右除法运算"
+            )
 
     # ----------------------------------------------------------------------------------------#
     def copy(self):
@@ -420,7 +421,7 @@ class Signal:
         )
         kwargs.pop("title", None)
         # 绘制时域波形图
-        LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).plot(
+        LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).show(
             Axis=self.t_Axis, Data=self.data
         )
 
@@ -462,14 +463,14 @@ def Resample(
     else:
         N_resampled = int(T / (Sig.dt))  # N = T/dt
     # 取出待重采样信号片段
-    data_resampled = Sig.data[start_idx:start_idx+N_resampled]
+    data_resampled = Sig.data[start_idx : start_idx + N_resampled]
     # ----------------------------------------------------------------------------------------#
     # 对信号片段进行重采样
     if T is None:
         T = Sig.T + Sig.t0 - t0
     N_in = int(T / Sig.dt)
     N_out = int(T * fs_resampled)
-    data_in = Sig.data[start_idx:start_idx+N_in]
+    data_in = Sig.data[start_idx : start_idx + N_in]
     F_x = np.fft.fft(data_in)
     if Sig.fs > fs_resampled:
         # 频谱裁剪
@@ -481,14 +482,14 @@ def Resample(
     elif Sig.fs < fs_resampled:
         # 频谱填充
         F_x_pad = np.zeros(N_out, dtype=complex)
-        F_x_pad[:N_in//2] = F_x[:N_in//2]
-        F_x_pad[-N_in//2:] = F_x[-N_in//2:]
+        F_x_pad[: N_in // 2] = F_x[: N_in // 2]
+        F_x_pad[-N_in // 2 :] = F_x[-N_in // 2 :]
         data_resampled = np.fft.ifft(F_x_pad).real
     else:
         data_resampled = data_in
-    ratio= fs_resampled / Sig.fs
-    data_resampled*= ratio  # 调整幅值
-    return Signal(data_resampled, fs=fs_resampled, t0=t0, label="重采样"+Sig.label)
+    ratio = fs_resampled / Sig.fs
+    data_resampled *= ratio  # 调整幅值
+    return Signal(data_resampled, fs=fs_resampled, t0=t0, label="重采样" + Sig.label)
 
 
 # --------------------------------------------------------------------------------------------#
