@@ -13,7 +13,7 @@ from .dependencies import fft, signal
 from .Signal import Signal
 from .Analysis import Analysis
 
-from .decorators import Input
+from .decorators import InputCheck
 
 
 # --------------------------------------------------------------------------------------------#
@@ -21,7 +21,7 @@ from .decorators import Input
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
 class Homo_Analysis(Analysis):
-    @Input({"Sig1": {}, "Sig2": {}})
+    @InputCheck({"Sig1": {}, "Sig2": {}})
     def __init__(
         self,
         Sig1: Signal,
