@@ -16,7 +16,7 @@ from .dependencies import plt, animation, zh_font, en_font
 from .dependencies import signal
 from .dependencies import FLOAT_EPS
 
-from .decorators import Input
+from .decorators import InputCheck
 
 
 # --------------------------------------------------------------------------------------------#
@@ -92,7 +92,7 @@ class Plot:
         执行绘图
     """
 
-    @Input(
+    @InputCheck(
         {
             "pattern": {"Content": ("plot", "return")},
         }
@@ -193,7 +193,7 @@ class Plot:
 class LinePlot(Plot):
     """线图绘制类"""
 
-    @Input({"Axis": {"ndim": 1}, "Data": {}})
+    @InputCheck({"Axis": {"ndim": 1}, "Data": {}})
     def _custom_setup(self, Axis: np.ndarray, Data: np.ndarray):
         """实现线图绘制"""
         # 检查数据
@@ -221,7 +221,7 @@ class LinePlot(Plot):
 class HeatmapPlot(Plot):
     """热力图绘制类"""
 
-    @Input({"Axis1": {"ndim": 1}, "Axis2": {"ndim": 1}, "Data": {"ndim": 2}})
+    @InputCheck({"Axis1": {"ndim": 1}, "Axis2": {"ndim": 1}, "Data": {"ndim": 2}})
     def _custom_setup(self, Axis1, Axis2, Data):
         """实现热力图绘制"""
         # 检查数据

@@ -7,7 +7,7 @@
         1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
 """
 
-from .decorators import Input
+from .decorators import InputCheck
 from .Signal import Signal
 
 PLOT = False  # 全局绘图开关
@@ -44,7 +44,7 @@ class Analysis:
     """
 
     # ----------------------------------------------------------------------------------------#
-    @Input({"Sig": {}, "plot": {}})
+    @InputCheck({"Sig": {}, "plot": {}})
     def __init__(self, Sig: Signal, plot: bool = PLOT, **kwargs):
         self.Sig = Sig.copy()  # 防止对原信号进行修改
         # 绘图参数全局设置
