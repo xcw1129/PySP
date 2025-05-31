@@ -10,7 +10,7 @@
 from .decorators import InputCheck
 from .Signal import Signal
 
-PLOT = False  # 全局绘图开关
+PLOT = False  # 全局默认绘图开关
 
 
 # --------------------------------------------------------------------------------------------#
@@ -45,10 +45,10 @@ class Analysis:
 
     # ----------------------------------------------------------------------------------------#
     @InputCheck({"Sig": {}, "plot": {}})
-    def __init__(self, Sig: Signal, plot: bool = PLOT, **kwargs):
+    def __init__(self, Sig: Signal, isPlot: bool = PLOT, **kwargs):
         self.Sig = Sig.copy()  # 防止对原信号进行修改
         # 绘图参数全局设置
-        self.plot = plot
+        self.isPlot = isPlot
         self.plot_kwargs = kwargs
 
     # ----------------------------------------------------------------------------------------#
@@ -57,7 +57,7 @@ class Analysis:
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):
                 res = func(self, *args, **kwargs)
-                if self.plot:
+                if self.isPlot:
                     plot_func(
                         *res, **self.plot_kwargs
                     )  # 要求func返回结果格式符合plot_func的输入要求

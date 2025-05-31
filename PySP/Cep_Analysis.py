@@ -141,7 +141,7 @@ class Cep_Analysis(Analysis):
         plot_lineinterval: Optional[float] = None,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, plot_save=plot_save, **kwargs)
+        super().__init__(Sig=Sig, isPlot=plot, plot_save=plot_save, **kwargs)
         # 该分析类的特有参数
         # -----------------------------------------------------------------------------------#
         # 绘图参数

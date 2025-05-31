@@ -30,7 +30,7 @@ class Homo_Analysis(Analysis):
         plot_save: bool = False,
         **kwargs,
     ):
-        super().__init__(Sig=None, plot=plot, plot_save=plot_save, **kwargs)
+        super().__init__(Sig=None, isPlot=plot, plot_save=plot_save, **kwargs)
         # 该分析类的特有参数
         # ------------------------------------------------------------------------------------#
         # 全息谱分析正交方向信号

@@ -484,6 +484,8 @@ def Resample(
         data_resampled = np.fft.ifft(F_x_pad).real
     else:
         data_resampled = data_in
+    ratio= fs_resampled / Sig.fs
+    data_resampled*= ratio  # 调整幅值
     return Signal(data_resampled, fs=fs_resampled, t0=t0, label="重采样"+Sig.label)
 
 

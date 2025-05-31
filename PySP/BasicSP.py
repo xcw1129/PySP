@@ -132,7 +132,7 @@ class Time_Analysis(Analysis):
         plot: bool = False,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, **kwargs)
+        super().__init__(Sig=Sig, isPlot=plot, **kwargs)
         # 该分析类的特有参数
         # ------------------------------------------------------------------------------------#
 
@@ -318,7 +318,7 @@ class Frequency_Analysis(Analysis):
         plot: bool = False,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, **kwargs)
+        super().__init__(Sig=Sig, isPlot=plot, **kwargs)
         # 该分析类的特有参数
         # ------------------------------------------------------------------------------------#
 
@@ -526,7 +526,7 @@ class TimeFre_Analysis(Analysis):
         plot: bool = False,
         **kwargs,
     ):
-        super().__init__(Sig=Sig, plot=plot, **kwargs)
+        super().__init__(Sig=Sig, isPlot=plot, **kwargs)
         # 该分析类的特有参数
         # ------------------------------------------------------------------------------------#
 
