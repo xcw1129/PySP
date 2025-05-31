@@ -15,7 +15,7 @@ from .dependencies import Optional, Callable
 from .dependencies import np
 from .dependencies import fft, stats, signal
 
-from .decorators import Input, Plot
+from .decorators import InputCheck, Plot
 from .Signal import Signal
 from .Analysis import Analysis
 from .Plot import LinePlotFunc, HeatmapPlotFunc
@@ -25,7 +25,7 @@ from .Plot import LinePlotFunc, HeatmapPlotFunc
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
-@Input({"num": {"Low": 1}, "padding": {"Low": 1}})
+@InputCheck({"num": {"Low": 1}, "padding": {"Low": 1}})
 def window(
     type: str,
     num: int,
@@ -125,7 +125,7 @@ class Time_Analysis(Analysis):
         计算信号自相关
     """
 
-    @Input({"Sig": {}})
+    @InputCheck({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
@@ -138,7 +138,7 @@ class Time_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(LinePlotFunc)
-    @Input({"samples": {"Low": 20}})
+    @InputCheck({"samples": {"Low": 20}})
     def Pdf(self, samples: int = 100, AmpRange: Optional[tuple] = None) -> np.ndarray:
         """
         估计信号的概率密度函数(PDF)
@@ -170,7 +170,7 @@ class Time_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(LinePlotFunc)
-    @Input({"step": {"OpenLow": 0}, "SegLength": {"OpenLow": 0}})
+    @InputCheck({"step": {"OpenLow": 0}, "SegLength": {"OpenLow": 0}})
     def Trend(self, Feature: str, step: float, SegLength: float) -> np.ndarray:
         """
         计算信号指定统计特征的时间趋势
@@ -204,7 +204,7 @@ class Time_Analysis(Analysis):
         # 计算时域统计特征趋势
         step_idx = range(0, N, int(step * fs))  # 步长索引
         SegNum = int(SegLength * fs)
-        seg_data = np.array(
+        seg_data = np.asarray(
             [data[i : i + SegNum] for i in step_idx if i + SegNum <= N]
         )  # 按步长切分数据成(N%step_idx)*SegNum的二维数组
         t_Axis = t_Axis[:: step_idx[1]][: len(seg_data)]  # 与seg_data对应的时间轴
@@ -311,7 +311,7 @@ class Frequency_Analysis(Analysis):
         计算信号的希尔伯特包络谱
     """
 
-    @Input({"Sig": {}})
+    @InputCheck({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
@@ -519,7 +519,7 @@ class TimeFre_Analysis(Analysis):
         根据STFT数据重构时域信号
     """
 
-    @Input({"Sig": {}})
+    @InputCheck({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
@@ -531,7 +531,7 @@ class TimeFre_Analysis(Analysis):
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
-    @Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
+    @InputCheck({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
     def stft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的短时傅里叶变换频谱
@@ -599,7 +599,7 @@ class TimeFre_Analysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(HeatmapPlotFunc)
-    @Input({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
+    @InputCheck({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
     def st_Cft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的短时单边傅里叶级数谱幅值

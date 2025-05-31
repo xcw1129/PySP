@@ -15,17 +15,18 @@ from .dependencies import fft, signal
 from .dependencies import plt, zh_font
 from .dependencies import FLOAT_EPS, PI
 
-from .Signal import Signal, Analysis
-from .Plot import plot
+from .Signal import Signal
+from .Analysis import Analysis
+from .Plot import LinePlotFunc
 
-from .decorators import Input, Plot
+from .decorators import InputCheck, Plot
 
 
 # --------------------------------------------------------------------------------------------#
 # --## ---------------------------------------------------------------------------------------#
 # ------## -----------------------------------------------------------------------------------#
 # ----------## -------------------------------------------------------------------------------#
-@Input({"Axis": {"ndim:1"}, "data": {"ndim": 1}})
+@InputCheck({"Axis": {"ndim:1"}, "data": {"ndim": 1}})
 def plot_withline(
     Axis: np.ndarray,
     data: np.ndarray,
@@ -131,7 +132,7 @@ class Cep_Analysis(Analysis):
 
     """
 
-    @Analysis.Input({"Sig": {}, "plot_lineinterval": {"OpenLow": 0}})
+    @InputCheck({"Sig": {}, "plot_lineinterval": {"OpenLow": 0}})
     def __init__(
         self,
         Sig: Signal,
@@ -227,7 +228,7 @@ class Cep_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @staticmethod
-    @Plot(plot)
+    @Plot(LinePlotFunc)
     def Cep_Reconstruct(
         q_Axis: np.ndarray, complex_cep: np.ndarray, **Kwargs
     ) -> np.ndarray:
@@ -298,7 +299,7 @@ class Cep_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot(plot_withline)
-    @Analysis.Input({"fc": {"Low": 1}, "bw": {"Low": 1}})
+    @InputCheck({"fc": {"Low": 1}, "bw": {"Low": 1}})
     def Cep_Zoom(self, fc: int, bw: int) -> np.ndarray:
         """
         计算信号指定频带内的解析倒谱
@@ -338,7 +339,7 @@ class Cep_Analysis(Analysis):
 
     # ---------------------------------------------------------------------------------------#
     @Analysis.Plot(plot_withline)
-    @Analysis.Input({"Q": {"OpenLow": 0}, "width": {"OpenLow": 0}, "num": {"Low": 1}})
+    @InputCheck({"Q": {"OpenLow": 0}, "width": {"OpenLow": 0}, "num": {"Low": 1}})
     def Cep_Lift(
         self, Q: float, width: float, num: int, type: str = "Type1"
     ) -> np.ndarray:
@@ -389,7 +390,7 @@ class Cep_Analysis(Analysis):
         return t_Axis, rc_data
 
     # ---------------------------------------------------------------------------------------#
-    @Analysis.Input({"height": {"OpenLow": 0}, "distance": {"Low": 1}})
+    @InputCheck({"height": {"OpenLow": 0}, "distance": {"Low": 1}})
     def Enco_detect(
         self, height: Optional[float] = None, distance: int = 10
     ) -> np.ndarray:
@@ -430,8 +431,8 @@ class Cep_Analysis(Analysis):
 
 
 # ---------------------------------------------------------------------------------------#
-@Plot(plot)
-@Input({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
+@Plot(LinePlotFunc)
+@InputCheck({"Sig": {}, "center_freq": {"Low": 1}, "bandwidth": {"Low": 1}})
 def zoom_Aft(
     Sig: Signal,
     center_freq: int,

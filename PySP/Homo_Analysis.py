@@ -1,7 +1,19 @@
-from .dependencies import Optional
+"""
+# Homo_Analysis
+    全息谱分析模块
+## 内容
+    - class
+        1. Homo_Analysis: 全息谱分析类
+"""
+
 from .dependencies import np
 from .dependencies import fft, signal
-from .Signal import Signal, Analysis
+
+
+from .Signal import Signal
+from .Analysis import Analysis
+
+from .decorators import InputCheck
 
 
 # --------------------------------------------------------------------------------------------#
@@ -9,7 +21,7 @@ from .Signal import Signal, Analysis
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
 class Homo_Analysis(Analysis):
-    @Analysis.Input({"Sig1": {}, "Sig2": {}})
+    @InputCheck({"Sig1": {}, "Sig2": {}})
     def __init__(
         self,
         Sig1: Signal,
