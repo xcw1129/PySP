@@ -6,9 +6,11 @@
     - class:
         1. Signal: 自带采样信息的信号类, 支持print、len、基本运算、数组切片和numpy函数调用
     - function:
-        1. resample: 对Signal对象进行任意时间段的重采样
-        2. Periodic: 生成仿真含噪准周期信号的Signal对象
+        1. Resample: 对信号进行任意时间段的重采样
+        2. Periodic: 生成仿真含噪准周期信号
 """
+
+
 
 from .dependencies import Optional
 from .dependencies import np, random

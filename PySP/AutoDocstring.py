@@ -1,21 +1,33 @@
 """
 # AutoDocstring
-自动模块注释生成工具，扫描Python文件中的类和函数，自动生成模块级注释文档
+自动文档字符串生成器模块, 用于扫描Python文件并生成模块级注释文档
 
 ## 内容
     - class:
-        1. DocstringGenerator: 自动文档字符串生成器类
+        1. DocstringGenerator: 自动文档字符串生成器类，用于扫描Python文件并生成模块级注释文档
     - function:
         1. extract_docstring: 提取函数或类的首段注释文档
-        2. generate_module_docstring: 生成模块级注释文档
-        3. update_file_docstring: 更新文件开头的模块注释
+        2. generate_module_docstring: 生成指定文件的模块级注释文档
+        3. update_file_docstring: 更新文件内容中的模块注释
+        4. auto_update_target_module: 自动更新本文件开头指定的目标模块文件的模块注释（支持多个文件）
 """
+
+
 
 import ast
 import os
 import re
 from typing import Dict, List, Tuple, Optional
 
+# ----------- 需操作的目标模块文件名及描述（字典形式，键为文件名，值为描述） -----------
+TARGET_MODULES = {
+    "AutoDocstring.py": "自动文档字符串生成器模块, 用于扫描Python文件并生成模块级注释文档",
+    "Signal.py": "信号数据模块, 定义了PySP库中的核心信号处理对象的基本结构, 以及一些信号预处理函数",
+    "Analysis.py": "分析处理方法模块, 定义了PySP库中其他分析处理方法模块的基本类结构",
+    "BasicSP.py": "基础信号分析及处理方法模块",
+    "Plot.py": "绘图工具模块, 提供针对信号处理的专用绘图功能",
+}
+# ---------------------------------------------------------------
 
 class DocstringGenerator:
     """
@@ -316,33 +328,22 @@ def update_file_docstring(content: str, new_docstring: str) -> str:
         else:
             return new_docstring + '\n\n' + content
 
+def auto_update_target_module():
+    """
+    自动更新本文件开头指定的目标模块文件的模块注释（支持多个文件）
+    """
+    current_dir = os.path.dirname(__file__)
+    for filename, module_desc in TARGET_MODULES.items():
+        target_path = os.path.join(current_dir, filename)
+        if not os.path.exists(target_path):
+            print(f"目标模块文件不存在: {target_path}")
+            continue
+
+        module_name = os.path.splitext(os.path.basename(target_path))[0]
+        generator = DocstringGenerator(target_path)
+        generator.update_file(module_name, module_desc)
 
 # 使用示例
 if __name__ == "__main__":
-    # 示例：为当前目录下的所有Python文件生成模块注释
-    import glob
-    
-    current_dir = os.path.dirname(__file__)
-    python_files = glob.glob(os.path.join(current_dir, "*.py"))
-    
-    for file_path in python_files:
-        if os.path.basename(file_path) != "AutoDocstring.py":  # 跳过自身
-            print(f"\n处理文件: {file_path}")
-            generator = DocstringGenerator(file_path)
-            
-            # 可以自定义模块描述
-            module_name = os.path.splitext(os.path.basename(file_path))[0]
-            
-            # 根据文件名提供一些默认描述
-            descriptions = {
-                "Signal": "信号数据模块, 定义了PySP库中的核心信号处理对象的基本结构, 以及一些信号预处理函数",
-                "Analysis": "分析处理方法模块, 定义了PySP库中其他分析处理方法模块的基本类结构",
-                "BasicSP": "基础信号分析及处理方法模块",
-                "Plot": "绘图工具模块, 提供针对信号处理的专用绘图功能",
-            }
-            
-            module_desc = descriptions.get(module_name, f"{module_name}模块的相关功能和方法")
-            
-            # 生成并显示docstring（不直接更新文件）
-            docstring = generate_module_docstring(file_path, module_name, module_desc)
-            print(f"生成的模块注释:\n{docstring}")
+    # 自动更新本文件开头指定的目标模块文件
+    auto_update_target_module()

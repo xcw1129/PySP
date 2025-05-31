@@ -5,11 +5,12 @@
 ## 内容
     - class:
         1. Time_Analysis: 时域信号分析、处理方法
-        2. Frequency_Analysis: 频域信号分析、处理方法
+        2. Frequency_Analysis: 信号频域分析、处理方法
         3. TimeFre_Analysis: 时频域信号分析、处理方法
-    - function: 
+    - function:
         1. window: 生成各类窗函数整周期采样序列
 """
+
 
 from .dependencies import Optional, Callable
 from .dependencies import np

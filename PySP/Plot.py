@@ -1,15 +1,20 @@
 """
 # Plot
-信号处理常用可视化绘图方法模块
+绘图工具模块, 提供针对信号处理的专用绘图功能
 
 ## 内容
     - class:
-        1. PlotPlugin: 绘图插件基类, 提供扩展绘图功能的接口
-        2. Plot: 绘图方法基类, 提供基础绘图功能和通用设置
-        3. LinePlot: 线图绘制类, 继承自Plot类, 提供线图绘制功能
-        4. HeatmapPlot: 热力图绘制类, 继承自Plot类, 提供热力图绘制功能
-        5. PeakFinderPlugin: 峰值查找插件, 继承自PlotPlugin类, 提供峰值查找功能
+        1. PlotPlugin: 绘图插件基类，提供扩展绘图功能的接口
+        2. Plot: 绘图基类，提供基础绘图功能和通用设置
+        3. LinePlot: 线图绘制类
+        4. HeatmapPlot: 热力图绘制类
+        5. PeakFinderPlugin: 峰值查找插件
+    - function:
+        1. LinePlotFunc: 线图绘制函数, 使用LinePlot类
+        2. LinePlotFunc_with_PeakFinder: 线图绘制函数, 使用LinePlot类和PeakFinderPlugin插件
+        3. HeatmapPlotFunc: 热力图绘制函数, 使用HeatmapPlot类
 """
+
 
 from .dependencies import np
 from .dependencies import plt, animation, zh_font, en_font
