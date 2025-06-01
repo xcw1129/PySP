@@ -1,31 +1,34 @@
 import pytest
 import numpy as np
-import tempfile
-import wave
-from pathlib import Path
-from PySP.Signal import Signal, Periodic
+from PySP.Signal import Signal
 
 @pytest.fixture(scope="session")
-def base_sample_rate():
-    """全局基础采样率 fixture."""
-    return 2000 # 修改采样率为 2000 Hz
-
+def set_test_data_fs() -> float:
+    """全局基础采样率 fixture"""
+    return 2000
 
 @pytest.fixture
-def harmonic_noise_signal(base_sample_rate):
+def set_test_data_T() -> float:
+    """全局基础信号时长 fixture"""
+    return 1.0
+
+@pytest.fixture
+def get_test_data_array(set_test_data_fs,set_test_data_T) -> np.ndarray:
     """
-    创建一个1秒2000Hz含噪多倍谐波信号的 Signal 对象 fixture。
-    基频 50 Hz，包含 2 倍和 3 倍谐波，并添加高斯白噪声。
+    创建一个测试用仿真数据 fixture
+    返回一个包含随机频率和幅度的正弦波信号数组
     """
-    duration = 1.0  # 信号时长 1 秒
-    fs = base_sample_rate # 采样率 2000 Hz
-    
-    # 定义谐波分量
-    frequencies = [50, 100, 150]  # 基频 50 Hz, 2倍谐波 100 Hz, 3倍谐波 150 Hz
-    amplitudes = [1.0, 0.7, 0.5]  # 对应频率的振幅
-    
-    # 生成含噪多倍谐波信号
-    # PySP.Signal.Periodic 函数签名: Periodic(frequencies, amplitudes, duration, fs, noise_amplitude=0.1)
-    signal_data = Periodic(frequencies, amplitudes, duration, fs, noise_amplitude=0.05) # 添加适量噪声
-    
-    return Signal(signal_data, fs=fs)
+    t= np.arange(0,set_test_data_T,1/set_test_data_fs)
+    fr=50
+    data= np.zeros_like(t)
+    for i in range(3):
+        data+=np.cos(2*np.pi*fr*t+np.random.rand()*np.pi/2)*np.random.rand()
+    return data
+
+@pytest.fixture
+def get_test_Signal(set_test_data_fs,get_test_data_array)-> "Signal":
+    """
+    创建一个测试用 Signal 对象 fixture
+    返回一个包含测试数据的 Signal 对象
+    """
+    return Signal(data=get_test_data_array, fs=set_test_data_fs,label="Test Signal")
