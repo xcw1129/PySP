@@ -461,10 +461,10 @@ class TestSignalMethods:
 class TestResampleFunction:
     """Resample 函数相关测试"""
 
-    def test_resample_downsample(self, get_test_Signal, set_test_data_fs):
+    def test_resample_downsample(self, get_test_Signal, fs):
         """测试重采样到较低频率（降采样）"""
         original_sig = get_test_Signal
-        new_fs = set_test_data_fs / 2
+        new_fs = fs / 2
 
         resampled_sig = Resample(original_sig, fs_resampled=new_fs)
 
@@ -476,10 +476,11 @@ class TestResampleFunction:
         assert resampled_sig.t0 == original_sig.t0
         assert "重采样" in resampled_sig.label
 
-    def test_resample_upsample(self, get_test_Signal, set_test_data_fs):
+    def test_resample_upsample(self, get_test_Signal):
         """测试重采样到较高频率（升采样）"""
         original_sig = get_test_Signal
-        new_fs = set_test_data_fs * 2
+        fs = original_sig.fs
+        new_fs = fs * 2
 
         resampled_sig = Resample(original_sig, fs_resampled=new_fs)
 
@@ -540,9 +541,10 @@ class TestResampleFunction:
 class TestPeriodicFunction:
     """Periodic 函数相关测试"""
     
-    def test_periodic_valid_input(self, set_test_data_fs):
+    def test_periodic_valid_input(self):
         """测试生成多个余弦分量和噪声的信号"""
         T_val = 0.25
+        fs = 1000
         f1, A1, phi1 = 50, 1.0, 0
         f2, A2, phi2 = 120, 0.5, np.pi / 2
         cos_params = ((f1, A1, phi1), (f2, A2, phi2))
@@ -550,29 +552,30 @@ class TestPeriodicFunction:
 
         # 为了噪声的可重复性（如果需要的话），但通常不在一般测试中
         Sig = Periodic(
-            fs=set_test_data_fs, T=T_val, CosParams=cos_params, noise=noise_var
+            fs=fs, T=T_val, CosParams=cos_params, noise=noise_var
         )
         assert isinstance(Sig, Signal)
-        assert Sig.fs == set_test_data_fs
+        assert Sig.fs == fs
         assert Sig.T == pytest.approx(T_val)
-        assert Sig.N == pytest.approx(int(T_val * set_test_data_fs), abs=1)
+        assert Sig.N == pytest.approx(int(T_val * fs), abs=1)
 
-    def test_periodic_invalid_cos_params_format(self, set_test_data_fs):
+    def test_periodic_invalid_cos_params_format(self):
         """测试 Periodic 的无效 CosParams 格式"""
         T_val = 0.1
+        fs = 1000
         # 元组中元素数量不正确
         invalid_cos_params1 = ((50, 1.0),)
         with pytest.raises(ValueError, match="余弦系数格式错误"):
-            Periodic(fs=set_test_data_fs, T=T_val, CosParams=invalid_cos_params1)
+            Periodic(fs=fs, T=T_val, CosParams=invalid_cos_params1)
 
         # 不是元组的元组
         invalid_cos_params2 = (50, 1.0, 0)
         with pytest.raises(TypeError):  # 遍历浮点数/整数时出错
-            Periodic(fs=set_test_data_fs, T=T_val, CosParams=invalid_cos_params2)
+            Periodic(fs=fs, T=T_val, CosParams=invalid_cos_params2)
 
         # 空元组
         empty_cos_params = tuple()
         sig_empty = Periodic(
-            fs=set_test_data_fs, T=T_val, CosParams=empty_cos_params, noise=0
+            fs=fs, T=T_val, CosParams=empty_cos_params, noise=0
         )
         assert np.all(sig_empty.data == 0)  # 如果没有余弦分量，则应全为零
