@@ -13,11 +13,11 @@
 
 
 
-from .dependencies import Optional, Callable
-from .dependencies import np
-from .dependencies import fft, stats, signal
+from .Assist_Module.Dependencies import Optional, Callable
+from .Assist_Module.Dependencies import np
+from .Assist_Module.Dependencies import fft, stats, signal
 
-from .decorators import InputCheck, Plot
+from .Assist_Module.Decorators import InputCheck, Plot
 from .Signal import Signal
 from .Analysis import Analysis
 from .Plot import LinePlotFunc, HeatmapPlotFunc

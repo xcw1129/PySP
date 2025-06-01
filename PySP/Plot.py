@@ -15,11 +15,11 @@
 """
 
 
-from .dependencies import np
-from .dependencies import plt, font_manager, ticker
-from .dependencies import signal
+from .Assist_Module.Dependencies import np
+from .Assist_Module.Dependencies import plt, font_manager, ticker
+from .Assist_Module.Dependencies import signal
 
-from .decorators import InputCheck
+from .Assist_Module.Decorators import InputCheck
 
 plt.rcParams["font.family"] = "sans-serif"  # 默认字体类型
 plt.rcParams["font.sans-serif"] = ["simhei"]  # 默认字体设置为黑体

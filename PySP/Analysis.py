@@ -8,7 +8,7 @@
 """
 
 
-from .decorators import InputCheck
+from .Assist_Module.Decorators import InputCheck
 from .Signal import Signal
 
 PLOT = False  # 全局默认绘图开关

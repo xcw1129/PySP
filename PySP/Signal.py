@@ -11,11 +11,11 @@
 """
 
 
-from .dependencies import Optional
-from .dependencies import np, random
-from .dependencies import copy
+from .Assist_Module.Dependencies import Optional
+from .Assist_Module.Dependencies import np, random
+from .Assist_Module.Dependencies import copy
 
-from .decorators import InputCheck
+from .Assist_Module.Decorators import InputCheck
 from .Plot import LinePlot
 
 
