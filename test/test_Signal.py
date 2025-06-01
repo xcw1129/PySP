@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 
 from PySP.Signal import Signal, Resample, Periodic
 # Fixtures from conftest.py will be automatically available
-# e.g., base_sample_rate, short_sine_wave_signal, temp_wav_file_factory, create_dummy_wav_file
+# e.g., base_sample_rate, short_sine_wave_signal
 
 # Helper for comparing float values
 FLOAT_COMPARISON_REL_TOL = 1e-6
