@@ -13,14 +13,14 @@
 
 
 
-from .Assist_Module.Dependencies import Optional, Callable
-from .Assist_Module.Dependencies import np
-from .Assist_Module.Dependencies import fft, stats, signal
+from PySP.Assist_Module.Dependencies import Optional, Callable
+from PySP.Assist_Module.Dependencies import np
+from PySP.Assist_Module.Dependencies import fft, stats, signal
 
-from .Assist_Module.Decorators import InputCheck, Plot
-from .Signal import Signal
-from .Analysis import Analysis
-from .Plot import LinePlotFunc, HeatmapPlotFunc
+from PySP.Assist_Module.Decorators import InputCheck, Plot
+from PySP.Signal import Signal
+from PySP.Analysis import Analysis
+from PySP.Plot import LinePlotFunc, HeatmapPlotFunc
 
 
 # --------------------------------------------------------------------------------------------#

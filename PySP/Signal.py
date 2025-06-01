@@ -11,12 +11,12 @@
 """
 
 
-from .Assist_Module.Dependencies import Optional
-from .Assist_Module.Dependencies import np, random
-from .Assist_Module.Dependencies import copy
+from PySP.Assist_Module.Dependencies import Optional
+from PySP.Assist_Module.Dependencies import np, random
+from PySP.Assist_Module.Dependencies import copy
 
-from .Assist_Module.Decorators import InputCheck
-from .Plot import LinePlot
+from PySP.Assist_Module.Decorators import InputCheck
+from PySP.Plot import LinePlot
 
 
 # --------------------------------------------------------------------------------------------#
@@ -197,11 +197,38 @@ class Signal:
         self.data[index] = value
 
     # ----------------------------------------------------------------------------------------#
-    def __array__(self) -> np.ndarray:
+    def __array__(self, dtype=None, copy=None) -> np.ndarray:
         """
-        返回信号数据数组, 用于在传递给NumPy函数时自动调用
+        返回信号数据数组, 用于在传递给NumPy函数时自动调用.
+        支持 copy 和 dtype 参数以符合 NumPy 接口.
         """
-        return self.data.copy()
+        # The `copy` argument in __array__ is tricky.
+        # If copy is False, we MUST return the original array, not a view or copy.
+        # If copy is True, we MUST return a copy.
+        # If copy is None (default), we can return a copy or the original.
+        # For simplicity and safety, we'll usually return a copy unless copy=False.
+        # However, the original code always returned a copy. Let's stick to that for now
+        # if copy is not explicitly False.
+        # NumPy's default for np.array(obj, copy=True) is to make a copy.
+        # If np.array(obj, copy=False) is called, then our `copy` will be False.
+
+        data_to_return = self.data
+        if dtype is not None:
+            data_to_return = data_to_return.astype(dtype)
+
+        if copy is True:
+            return data_to_return.copy()
+        elif copy is False:
+            # If a dtype conversion happened, data_to_return is already a copy.
+            # If not, and copy is False, we should return the original self.data
+            # if no dtype conversion, otherwise the dtype-converted array (which is a copy).
+            if dtype is None:
+                return self.data # Return the direct internal array
+            else:
+                return data_to_return # Already a copy due to astype
+        else: # copy is None or any other value, make a copy by default
+            return data_to_return.copy()
+
 
     # ----------------------------------------------------------------------------------------#
     def __eq__(self, other) -> bool:
@@ -221,6 +248,9 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的加法运算
         """
+        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
@@ -241,20 +271,29 @@ class Signal:
             )
         elif np.isscalar(other):  # 检查是否为标量
             return Signal(
-                self.data + other,
+                self.data + other, # This might still raise UFuncError if other is incompatible with data
                 fs=self.fs,
                 t0=self.t0,
                 label=self.label,
             )
-        else:
+        # This else should ideally not be reached if the first check is comprehensive
+        else: # Should be caught by the initial type check
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+
 
     # ----------------------------------------------------------------------------------------#
     def __sub__(self, other):
         """
         实现Signal对象与Signal/array/标量对象的减法运算
         """
-        return self.__add__(other * (-1))
+        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+        # Let __add__ handle the rest after negating 'other' if possible
+        try:
+            neg_other = other * (-1)
+        except TypeError: # e.g., string * -1
+            raise TypeError(f"不支持对{type(other).__name__}类型执行取反操作以进行减法") from None
+        return self.__add__(neg_other)
 
     # ----------------------------------------------------------------------------------------#
     def __radd__(self, other):
@@ -275,6 +314,9 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的乘法运算
         """
+        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
@@ -300,7 +342,7 @@ class Signal:
                 t0=self.t0,
                 label=self.label,
             )
-        else:
+        else: # Should be caught by the initial type check
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
@@ -308,11 +350,23 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的除法运算
         """
+        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
+        if np.isscalar(other) and other == 0:
+            raise ZeroDivisionError("标量除数为零")
+        if isinstance(other, np.ndarray) and np.any(other == 0):
+            # NumPy will handle this and may issue a RuntimeWarning, returning inf/nan.
+            # This is standard NumPy behavior, so we allow it.
+            pass
+        if isinstance(other, Signal) and np.any(other.data == 0):
+            pass
+
+
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
             return Signal(
-                self.data / other.data,
+                self.data / other.data, # Let numpy handle potential division by zero in array
                 fs=self.fs,
                 t0=self.t0,
                 label=self.label,
@@ -326,14 +380,14 @@ class Signal:
                 t0=self.t0,
                 label=self.label,
             )
-        elif np.isscalar(other):
+        elif np.isscalar(other): # Already checked for other == 0
             return Signal(
                 self.data / other,
                 fs=self.fs,
                 t0=self.t0,
                 label=self.label,
             )
-        else:
+        else: # Should be caught by the initial type check
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
@@ -348,14 +402,24 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的右除法运算
         """
+        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
+            raise TypeError(f"不支持{type(other).__name__}类型与Signal对象进行右除法运算")
+
+        if np.any(self.data == 0):
+            # NumPy will handle this and may issue a RuntimeWarning, returning inf/nan.
+            pass
+
         if isinstance(other, Signal):
+            # This case should ideally not happen if Python's dispatch works as expected,
+            # as other.__truediv__(self) would be tried first.
+            # However, if it does, ensure compatibility.
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
             return Signal(
                 other.data / self.data,
-                fs=self.fs,
-                t0=self.t0,
-                label=self.label,
+                fs=self.fs, # or other.fs, should be same
+                t0=self.t0, # or other.t0
+                label=other.label, # Or some combination
             )
         elif isinstance(other, np.ndarray):
             if other.ndim != 1 or len(other) != self.N:
@@ -364,16 +428,16 @@ class Signal:
                 other / self.data,
                 fs=self.fs,
                 t0=self.t0,
-                label=self.label,
+                label=self.label, # Label might need thought here
             )
         elif np.isscalar(other):
             return Signal(
                 other / self.data,
                 fs=self.fs,
                 t0=self.t0,
-                label=self.label,
+                label=self.label, # Label might need thought here
             )
-        else:
+        else: # Should be caught by the initial type check
             raise TypeError(
                 f"不支持{type(other).__name__}类型与Signal对象进行右除法运算"
             )
@@ -489,7 +553,8 @@ def Resample(
         data_resampled = data_in
     ratio = fs_resampled / Sig.fs
     data_resampled *= ratio  # 调整幅值
-    return Signal(data_resampled, fs=fs_resampled, t0=t0, label="重采样" + Sig.label)
+    new_label = "重采样" + (Sig.label or "")
+    return Signal(data_resampled, fs=fs_resampled, t0=t0, label=new_label)
 
 
 # --------------------------------------------------------------------------------------------#

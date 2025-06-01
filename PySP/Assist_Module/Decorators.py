@@ -1,8 +1,8 @@
-from .dependencies import np
-from .dependencies import Union
-from .dependencies import inspect
-from .dependencies import wraps
-from .dependencies import get_origin, get_args
+from .Dependencies import np
+from .Dependencies import Union
+from .Dependencies import inspect
+from .Dependencies import wraps
+from .Dependencies import get_origin, get_args
 
 
 # --------------------------------------------------------------------------------------------#
@@ -14,7 +14,7 @@ def InputCheck(*var_checks):
     def decorator(func):
         @wraps(func)  # 保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
         def wrapper(*args, **kwargs):
-            from .Signal import Signal
+            from PySP.Signal import Signal
 
             # --------------------------------------------------------------------------------#
             # 获取函数输入变量
