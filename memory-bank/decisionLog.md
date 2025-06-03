@@ -32,3 +32,12 @@ This file records architectural and implementation decisions using a list format
     *   `Plot.py` 测试将通过模拟 `matplotlib` 调用来验证绘图函数的行为，而不是进行图像比较。
 4.  **覆盖率:** 目标是使用 `pytest-cov` 实现高测试覆盖率。
 5.  **依赖:** 测试将依赖 `numpy` 进行数据操作和验证。
+---
+### Decision (Debug)
+[2025-06-03 16:55:58] - 修复 `test/test_Signal.py` 中 `test_modify_non_fs_properties` 测试失败。
+
+**Rationale:**
+`Signal` 类中的 `dt`, `T`, `N`, `df`, `t_Axis`, `f_Axis` 属性被定义为只读 `@property`，没有对应的 `setter` 方法。尝试修改这些属性时，Python 会抛出 `AttributeError`。`test_modify_non_fs_properties` 测试旨在验证此行为，但其 `pytest.raises` 中的 `match` 参数可能与实际的 `AttributeError` 消息不完全匹配，导致测试失败。
+
+**Details:**
+将 `test/test_Signal.py` 中 `test_modify_non_fs_properties` 测试函数内所有 `pytest.raises(AttributeError, match="can't set attribute")` 的 `match` 参数修改为 `match="has no setter"`，以更准确地匹配 Python 抛出的 `AttributeError` 消息。

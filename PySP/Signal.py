@@ -73,6 +73,7 @@ class Signal:
 
     @InputCheck(
         {
+            "data" : {"ndim":1},
             "N": {"Low": 1},
             "fs": {"OpenLow": 0},
             "dt": {"OpenLow": 0},
@@ -410,7 +411,7 @@ class Signal:
         实现Signal对象与Signal/array/标量对象的右除法运算
         """
         # 默认Signal和array对象调用 __truediv__ 方法, 此处仅处理标量情况
-        if np.isscalar(other):
+        if isinstance(other, (int, float, complex)):
             return Signal(
                 other / self.data,
                 fs=self.fs,
