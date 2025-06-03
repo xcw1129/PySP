@@ -15,11 +15,11 @@
 """
 
 
-from .dependencies import np
-from .dependencies import plt, font_manager, ticker
-from .dependencies import signal
+from PySP.Assist_Module.Dependencies import np
+from PySP.Assist_Module.Dependencies import plt, font_manager, ticker
+from PySP.Assist_Module.Dependencies import signal
 
-from .decorators import InputCheck
+from PySP.Assist_Module.Decorators import InputCheck
 
 plt.rcParams["font.family"] = "sans-serif"  # 默认字体类型
 plt.rcParams["font.sans-serif"] = ["simhei"]  # 默认字体设置为黑体
@@ -235,7 +235,8 @@ class Plot:
 
                 display(self.figure)  # 在Jupyter Notebook中显示图形
             except ImportError:
-                self.figure.show()  # 非IPython环境下直接显示图形
+                if self.figure: # Ensure figure exists before calling show
+                    self.figure.show()  # 非IPython环境下直接显示图形
         elif self.pattern == "return":
             result = (self.figure, self.axes)
             plt.close(self.figure)  # 防止自动显示
@@ -350,21 +351,23 @@ class PeakfinderPlugin(PlotPlugin):
             peak_idx, peak_params = signal.find_peaks(
                 np.abs(Data_i), height=self.height, distance=self.distance
             )  # 绝对峰值
-            peak_Data = Data_i[peak_idx]
-            peak_Axis = Axis[peak_idx]
-            # 标注峰值
-            plot_obj.axes.plot(peak_Axis, peak_Data, "o", color="red", markersize=5)
-            # 添加标注
-            for axis, data in zip(peak_Axis, peak_Data):
-                plot_obj.axes.annotate(
-                    f"({axis:.2f}, {data:.2f})@{i+1}",
-                    (axis, data),
-                    textcoords="offset points",
-                    xytext=(0, 10),
-                    ha="center",
-                    color="red",
-                    fontproperties=en_font,
-                )
+            if peak_idx.size > 0: # 仅当找到峰值时才进行索引和绘图
+                peak_idx = peak_idx.astype(int) # 确保索引是整数类型
+                peak_Data = Data_i[peak_idx]
+                peak_Axis = Axis[peak_idx]
+                # 标注峰值
+                plot_obj.axes.plot(peak_Axis, peak_Data, "o", color="red", markersize=5)
+                # 添加标注
+                for axis, data in zip(peak_Axis, peak_Data):
+                    plot_obj.axes.annotate(
+                        f"({axis:.2f}, {data:.2f})@{i+1}",
+                        (axis, data),
+                        textcoords="offset points",
+                        xytext=(0, 10),
+                        ha="center",
+                        color="red",
+                        fontproperties=en_font,
+                    )
 
 
 # --------------------------------------------------------------------------------------------#

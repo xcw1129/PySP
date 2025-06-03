@@ -8,8 +8,8 @@
 """
 
 
-from .decorators import InputCheck
-from .Signal import Signal
+from PySP.Assist_Module.Decorators import InputCheck
+from PySP.Signal import Signal
 
 PLOT = False  # 全局默认绘图开关
 
@@ -45,7 +45,7 @@ class Analysis:
     """
 
     # ----------------------------------------------------------------------------------------#
-    @InputCheck({"Sig": {}, "plot": {}})
+    @InputCheck({"Sig": {}, "isPlot": {}})
     def __init__(self, Sig: Signal, isPlot: bool = PLOT, **kwargs):
         self.Sig = Sig.copy()  # 防止对原信号进行修改
         # 绘图参数全局设置
@@ -59,9 +59,10 @@ class Analysis:
             def wrapper(self, *args, **kwargs):
                 res = func(self, *args, **kwargs)
                 if self.isPlot:
-                    plot_func(
-                        *res, **self.plot_kwargs
-                    )  # 要求func返回结果格式符合plot_func的输入要求
+                    if isinstance(res, tuple):
+                        plot_func(*res, **self.plot_kwargs)
+                    else:
+                        plot_func(res, **self.plot_kwargs)
                 return res
 
             return wrapper
