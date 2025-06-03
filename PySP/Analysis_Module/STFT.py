@@ -234,3 +234,214 @@ def IStft(
         plot_spectrum(t, reconstructed_signal, xlabel="时间t/s", **Kwargs)
 
     return reconstructed_signal
+
+
+
+# --------------------------------------------------------------------------------------------#
+class TimeFre_Analysis(Analysis):
+    """
+    时频域信号分析、处理方法
+
+    参数:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+
+    属性:
+    --------
+    Sig : Signal
+        输入信号
+    plot : bool
+        是否绘制分析结果图
+    plot_kwargs : dict
+        绘图参数
+
+    方法:
+    --------
+    stft(nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray
+        计算信号的短时傅里叶变换频谱
+    st_Cft(nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray
+        计算信号的短时单边傅里叶级数谱幅值
+    istft(stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray
+        根据STFT数据重构时域信号
+    """
+
+    @InputCheck({"Sig": {}})
+    def __init__(
+        self,
+        Sig: Signal,
+        plot: bool = False,
+        **kwargs,
+    ):
+        super().__init__(Sig=Sig, isPlot=plot, **kwargs)
+        # 该分析类的特有参数
+        # ------------------------------------------------------------------------------------#
+
+    # ----------------------------------------------------------------------------------------#
+    @InputCheck({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
+    def stft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
+        """
+        计算信号的短时傅里叶变换频谱
+
+        参数:
+        --------
+        nperseg : int
+            段长
+        nhop : int
+            段移
+        WinType : str, 默认为"矩形窗"
+            加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
+                        "自定义窗"
+
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        f_Axis : np.ndarray
+            频率轴
+        ft_data_matrix : np.ndarray
+            短时傅里叶变换结果
+        """
+        # 初始化
+        data = self.Sig.data
+        N = self.Sig.N
+        dt = self.Sig.dt
+        fs = self.Sig.fs
+        # 检查输入参数
+        if nperseg > N // 2:
+            raise ValueError(f"段长{nperseg}过长")
+        if nhop > nperseg + 1:
+            raise ValueError(
+                f"段移nhop{nhop}不能大于段长nperseg{nperseg}, 会造成信息缺失"
+            )
+        seg_index = np.arange(0, N, nhop)  # 分段中长索引
+        # ------------------------------------------------------------------------------------#
+        # 分段计算STFT
+        ft_data_matrix = np.zeros((len(seg_index), nperseg), dtype=complex)
+        _, _, win = window(type=WinType, num=nperseg)
+        for i in seg_index:  # i=0,nhop,2*nhop,...
+            # 截取窗口数据并补零以适应窗口长度
+            if i - nperseg // 2 < 0:
+                data_seg = data[: nperseg // 2 + i + 1]
+                data_seg = np.pad(data_seg, (nperseg // 2 - i, 0), mode="constant")
+            elif i + nperseg // 2 >= N:
+                data_seg = data[i - nperseg // 2 :]
+                data_seg = np.pad(
+                    data_seg, (0, i + nperseg // 2 - N + 1), mode="constant"
+                )
+            else:
+                data_seg = data[i - nperseg // 2 : i + nperseg // 2 + 1]
+            # 加窗
+            data_seg = data_seg * win
+            # 计算S(t=i*dt,f)
+            ft_data_seg = (fft.fft(data_seg)) / nperseg
+            ft_data_matrix[i // nhop, :] = ft_data_seg
+        # ------------------------------------------------------------------------------------#
+        # 后处理
+        t_Axis = seg_index * dt
+        f_Axis = np.linspace(0, fs, nperseg, endpoint=False)
+        return t_Axis, f_Axis, ft_data_matrix
+
+    # ----------------------------------------------------------------------------------------#
+    @Analysis.Plot(HeatmapPlotFunc)
+    @InputCheck({"nperseg": {"Low": 20}, "nhop": {"Low": 1}})
+    def st_Cft(self, nperseg: int, nhop: int, WinType: str = "矩形窗") -> np.ndarray:
+        """
+        计算信号的短时单边傅里叶级数谱幅值
+
+        参数:
+        --------
+        nperseg : int
+            段长
+        nhop : int
+            段移
+        WinType : str, 默认为"矩形窗"
+            加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
+                        "自定义窗"
+
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        f_Axis : np.ndarray
+            频率轴
+        Amp : np.ndarray
+            单边傅里叶级数谱幅值
+        """
+        t_Axis, f_Axis, ft_data_matrix = self.stft(nperseg, nhop, WinType)
+        # 计算短时单边傅里叶级数谱
+        Amp = np.abs(ft_data_matrix) * 2
+        f_Axis = f_Axis[: nperseg // 2]
+        Amp = Amp[:, : len(f_Axis)]
+        return t_Axis, f_Axis, Amp
+
+    # ----------------------------------------------------------------------------------------#
+    @staticmethod
+    @Plot(LinePlotFunc)
+    def istft(
+        stft_data: np.ndarray, fs: int, nhop: int, WinType: str = "矩形窗", **kwargs
+    ) -> np.ndarray:
+        """
+        根据STFT数据重构时域信号
+
+        参数:
+        --------
+        stft_data : np.ndarray
+            STFT数据
+        fs : int
+            原始信号采样频率
+        nhop : int
+            STFT的段移
+        WinType : str, 默认为"矩形窗"
+            STFT的加窗类型, 可选:
+                        "矩形窗", "汉宁窗", "海明窗",
+                        "巴特利特窗", "布莱克曼窗",
+                        "自定义窗"
+
+        返回:
+        --------
+        t_Axis : np.ndarray
+            时间轴
+        RC_data : np.ndarray
+            重构后的时域信号
+        """
+        # 获取STFT数据
+        num_frames, nperseg = stft_data.shape
+        # 获取窗函数序列
+        _, _, win = window(type=WinType, num=nperseg)
+        # 检查窗口是否满足 NOLA 条件。因为默认ISTFT后归一化，所以不检查COLA条件
+        if not signal.check_NOLA(win, nperseg, nperseg - nhop):
+            raise ValueError(
+                f"输入的stft参数nhop={nhop}不满足非零重叠加 (NOLA) 条件，无法完整重构"
+            )
+        # 初始化重构信号的长度
+        N = nhop * (num_frames - 1) + nperseg  # 长度一般大于原始信号
+        RC_data = np.zeros(N)
+        win_overlap = np.zeros(N)
+        # ------------------------------------------------------------------------------------#
+        # 按帧顺序进行IDFT并叠加
+        for i in range(num_frames):
+            # 对单帧数据进行重构
+            RC_data_seg = np.real(fft.ifft(stft_data[i])) * nperseg
+            # ISTFT过程与STFT过程进行相同加窗操作
+            RC_data_seg *= win
+            # 计算当前帧时间，保证正确叠加
+            start_idx = i * nhop
+            end_idx = start_idx + nperseg
+            RC_data[start_idx:end_idx] += RC_data_seg  # 重构信号叠加
+            win_overlap[start_idx:end_idx] += win**2
+        # ------------------------------------------------------------------------------------#
+        # 后处理
+        # 归一化，去除STFT和ISFT过程加窗的影响
+        RC_data = RC_data[
+            nperseg // 2 : -(nperseg // 2)
+        ]  # 排除端点效应,可能导致重构信号尾部减少最多nhop个点
+        RC_data /= win_overlap[nperseg // 2 : -(nperseg // 2)]
+        t_Axis = np.arange(len(RC_data)) / fs
+        return t_Axis, RC_data
