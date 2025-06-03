@@ -31,6 +31,8 @@ class Signal:
     --------
     data : np.ndarray
         输入数据数组, 用于构建信号
+    N : int
+        信号长度, 默认为None, 由data长度自动推断
     dt/fs/T : float/float/float
         采样时间间隔/采样频率/信号采样时长, 输入其中一个即可. 二次修改仅支持fs
     t0 : float, 可选
@@ -41,7 +43,7 @@ class Signal:
     属性：
     --------
     data : np.ndarray
-        输入信号的时序数据
+        输入信号的时序数据, 允许初始化时不指定, 默认为零数组
     N : int
         信号长度
     label : str
@@ -71,36 +73,58 @@ class Signal:
 
     @InputCheck(
         {
-            "data": {"ndim": 1},
-            "dt": {"OpenLow": 0},
+            "N": {"Low": 1},
             "fs": {"OpenLow": 0},
+            "dt": {"OpenLow": 0},
             "T": {"OpenLow": 0},
         }
     )
     def __init__(
         self,
-        data: np.ndarray,
-        dt: Optional[float] = None,
+        data: Optional[np.ndarray]= None,
+        N: Optional[int] = None,
         fs: Optional[float] = None,
+        dt: Optional[float] = None,
         T: Optional[float] = None,
         t0: Optional[float] = 0,
         label: Optional[str] = None,
     ):
-        self.data = data.copy()  # 深拷贝，防止对原数据进行修改
-        N = len(data)
-        # 只允许给出一个采样参数
-        if not [dt, fs, T].count(None) == 2:
-            raise ValueError("采样参数错误, 请只给出一个采样参数且符合格式要求")
+        if data is not None:# 1, 2, 3
+            self.data = data.copy()  # 深拷贝，防止对原数据进行修改
+            N = len(data)
+            # 当给出data时, 只允许给出一个采样参数
+            if not [dt, fs, T].count(None) == 2:# 1, 2, 3
+                raise ValueError("采样参数错误: 当给定数据时, 请只指定fs, dt, T其中一个.")
+        else:
+            if (T is not None) and (N is not None):# 1, x
+                if (fs is not None) or (dt is not None):# x
+                    raise ValueError("采样参数错误: 当给定T和N时, 请不要指定fs或dt.")
+                else:# 1
+                    fs= N / T
+            elif (fs is None) and (dt is None):# x
+                raise ValueError("采样参数错误: 请指定fs或dt其中一个.")
+            elif (T is None) and (N is not None):# 1, 2
+                pass
+            elif (T is not None) and (N is None):# 1, 2
+                if fs is not None:# 1
+                    N = int(T * fs)
+                else:# 2
+                    N = int(T / dt)
+            else:# x
+                raise ValueError("采样参数错误: 当未给定数据时, 请至少指定T或N其中一个.")
+            self.data = np.zeros(N)  # 如果没有数据, 初始化为零数组   
+            
         # ------------------------------------------------------------------------------------#
-        # 采样参数初始化, dt, fs, T三者知一得三
-        if dt is not None:
-            self.fs = 1 / dt
-        elif fs is not None:
+        # 采样参数初始化, fs为核心参数
+        if fs is not None:#1
             self.fs = fs
-        elif T is not None:
+        elif dt is not None:#2
+            self.fs = 1 / dt
+        elif T is not None:#3
             self.fs = N / T
-        self.t0 = t0
         # ------------------------------------------------------------------------------------#
+        # 设置初始采样时间
+        self.t0 = t0
         # 设置信号标签
         self.label = label
 
@@ -205,16 +229,12 @@ class Signal:
         if copy is True:
             return data_to_return.copy()
         elif copy is False:
-            # 如果发生了 dtype 转换，data_to_return 已经是副本。
-            # 如果没有，并且 copy 为 False，我们应该返回原始的 self.data
-            # 如果没有 dtype 转换，否则返回 dtype 转换后的数组（这是一个副本）。
             if dtype is None:
                 return self.data # 返回直接的内部数组
             else:
                 return data_to_return # 由于 astype 已是副本
         else: # copy 为 None 或其他值，默认创建副本
             return data_to_return.copy()
-
 
     # ----------------------------------------------------------------------------------------#
     def __eq__(self, other) -> bool:
@@ -234,9 +254,6 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的加法运算
         """
-        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
-            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
-
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
@@ -255,13 +272,15 @@ class Signal:
                 t0=self.t0,
                 label=self.label,
             )
-        elif np.isscalar(other):  # 检查是否为标量
+        elif isinstance(other,(int,float,complex)):  # 检查是否为标量
             return Signal(
                 self.data + other,
                 fs=self.fs,
                 t0=self.t0,
                 label=self.label,
             )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
 
     # ----------------------------------------------------------------------------------------#
@@ -269,11 +288,33 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的减法运算
         """
-        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
+        if isinstance(other, Signal):
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法运算")
+            return Signal(
+                self.data - other.data,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组维度或长度与信号不匹配, 无法运算")
+            return Signal(
+                self.data - other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        elif isinstance(other,(int,float,complex)):  # 检查是否为标量
+            return Signal(
+                self.data - other,
+                fs=self.fs,
+                t0=self.t0,
+                label=self.label,
+            )
+        else:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
-        # 如果可能，让 __add__ 在对 'other' 取反后处理其余部分
-        neg_other = other * (-1)
-        return self.__add__(neg_other)
 
     # ----------------------------------------------------------------------------------------#
     def __radd__(self, other):
@@ -294,9 +335,6 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的乘法运算
         """
-        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
-            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
-
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
@@ -315,23 +353,22 @@ class Signal:
                 t0=self.t0,
                 label=self.label,
             )
-        elif np.isscalar(other):  # 检查是否为标量
+        elif isinstance(other,(int, float,complex)):  # 检查是否为标量
             return Signal(
                 self.data * other,
                 fs=self.fs,
                 t0=self.t0,
                 label=self.label,
             )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
     def __truediv__(self, other):
         """
         实现Signal对象与Signal/array/标量对象的除法运算
         """
-        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
-            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
-
-        # 统一交由 numpy 处理除零等情况，遵循 numpy 的行为（返回 inf/nan 并发出 RuntimeWarning）
+        # 统一交由 numpy 处理除零等情况，返回 inf/nan 并发出 RuntimeWarning
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
@@ -350,13 +387,15 @@ class Signal:
             t0=self.t0,
             label=self.label,
             )
-        elif np.isscalar(other):
+        elif isinstance(other, (int, float, complex)):  # 检查是否为标量
             return Signal(
             self.data / other,
             fs=self.fs,
             t0=self.t0,
             label=self.label,
             )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
     def __rmul__(self, other):
@@ -370,9 +409,6 @@ class Signal:
         """
         实现Signal对象与Signal/array/标量对象的右除法运算
         """
-        if not isinstance(other, (Signal, np.ndarray, int, float, complex)):
-            raise TypeError(f"不支持{type(other).__name__}类型与Signal对象进行右除法运算")
-
         # 默认Signal和array对象调用 __truediv__ 方法, 此处仅处理标量情况
         if np.isscalar(other):
             return Signal(
@@ -381,6 +417,8 @@ class Signal:
                 t0=self.t0,
                 label=self.label, # 标签此处可能需要考虑
             )
+        else:
+            raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
     def copy(self):
@@ -498,7 +536,7 @@ def Resample(
 
 
 # --------------------------------------------------------------------------------------------#
-@InputCheck({"fs": {"OpenLow": 0}, "T": {"OpenLow": 0}, "noise": {"CloseLow": 0}})
+@InputCheck({"fs": {"OpenLow": 0}, "T": {"OpenLow": 0},"CosParams":{}, "noise": {"CloseLow": 0}})
 def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0) -> Signal:
     """
     生成仿真含噪准周期信号
