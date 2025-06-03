@@ -1,17 +1,13 @@
-
-# This workflow will upload a Python Package to PyPI when a release is created
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
-
 name: Upload Python Package
 
 on:
   release:
     types: [published]
-  # 添加手动触发选项以便测试
   workflow_dispatch:
 
 permissions:
   contents: read
+  id-token: write  # 允许 OIDC 认证
 
 jobs:
   release-build:
@@ -50,7 +46,6 @@ jobs:
     needs:
       - release-build
 
-    # 改为使用API令牌环境
     environment:
       name: pypi
       url: https://pypi.org/project/pysp-xcw/
@@ -70,6 +65,5 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-          password: ${{ secrets.PYPI_API_TOKEN }}
           verbose: true
           print-hash: true
