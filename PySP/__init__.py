@@ -2,4 +2,6 @@ from . import Signal
 from . import Analysis
 from . import Plot
 
-__version__ = "7.2.0"
+from .Analysis_Module import SST
+
+__version__ = "7.2.1"
