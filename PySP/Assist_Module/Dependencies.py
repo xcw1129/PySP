@@ -1,5 +1,5 @@
 # PYTHON基础库
-from typing import Optional, Callable, Union# 类型提示
+from typing import Optional, Callable, Union,Dict, List,Tuple, Any# 类型提示
 from typing import get_origin, get_args # 输入检查
 from functools import wraps  # 函数装饰器
 import inspect  # 函数检查
