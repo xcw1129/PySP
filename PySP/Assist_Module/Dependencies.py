@@ -4,6 +4,7 @@ from typing import get_origin, get_args # 输入检查
 from functools import wraps  # 函数装饰器
 import inspect  # 函数检查
 import copy  # 对象复制
+from importlib import resources  # 资源管理
 
 # 向量数值计算库
 import numpy as np

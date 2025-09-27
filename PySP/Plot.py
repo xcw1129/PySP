@@ -1,11 +1,11 @@
 """
 # Plot
-绘图方法模块, 定义了PySP库中绘图方法模块的基本类结构Plot. 提供了常用绘图方法的类和函数接口, 以及辅助插件
+绘图方法模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类和函数接口, 以及辅助插件
 
 ## 内容
     - class:
-        1. PlotPlugin: 绘图插件基类，提供扩展绘图功能的接口
-        2. Plot: 绘图基类, 实现通用绘图框架, 供高级绘图类方法继承并实现具体绘图逻辑.
+        1. PlotPlugin: 绘图插件类，提供扩展绘图功能的接口
+        2. Plot: 绘图类, 实现通用绘图框架, 供绘图方法继承并实现具体绘图逻辑.
         3. LinePlot: 波形图, 谱图等线条图绘制类方法. 输入Axis和Data数据(一维或二维), 可绘制多线条图
         4. HeatmapPlot: 时频图等热力图绘制类方法. 输入Axis1, Axis2和Data, 额外绘图设置为aspect, origin, cmap, vmin, vmax, colorbarlabel
         5. PeakfinderPlugin: 峰值查找类插件, 适用于LinePlot类, 用于查找并标注峰值对应的坐标
@@ -15,30 +15,64 @@
 """
 
 
+from cProfile import label
+from PySP.Assist_Module.Dependencies import resources
+from PySP.Assist_Module.Dependencies import Union
 from PySP.Assist_Module.Dependencies import np
-from PySP.Assist_Module.Dependencies import plt, font_manager, ticker
+from PySP.Assist_Module.Dependencies import plt, font_manager, ticker,cycler
 from PySP.Assist_Module.Dependencies import signal
+
+from PySP.Signal import Signal
 
 from PySP.Assist_Module.Decorators import InputCheck
 
-plt.rcParams["font.family"] = "sans-serif"  # 默认字体类型
-plt.rcParams["font.sans-serif"] = ["simhei"]  # 默认字体设置为黑体
-plt.rcParams["font.size"] = 20  # 设置全局字体大小
-plt.rcParams["axes.unicode_minus"] = False  # 设置正常显示符号
-FONT_SIZE = 20
-FIG_SIZE = (12, 5)  # 默认图像大小
-zh_font = font_manager.FontProperties(family="simsun", size=FONT_SIZE)  # 中文字体
-en_font = font_manager.FontProperties(
-    family="Times New Roman", size=FONT_SIZE - 2
-)  # 英文字体, 一般用于刻度显示
-
+# 全局绘图设置
+font_path = resources.files("PySP.Assist_Module").joinpath("times+simsun.ttf")
+font_manager.fontManager.addfont(font_path)  # 添加字体
+prop = font_manager.FontProperties(fname=font_path)  # 设置字体属性
+config = {
+    "font.family": 'sans-serif',  # 设置全局字体
+    "font.sans-serif": prop.get_name(),
+    "font.size": 18,  # 设置全局字体大小
+    # 设置各元素字体大小统一
+    "axes.titlesize": 20,  # 标题字体大小
+    "axes.labelsize": 18,  # 轴标签字体大小
+    "xtick.labelsize": 16,  # x轴刻度标签字体大小
+    "ytick.labelsize": 16,  # y轴刻度标签字体大小
+    "legend.fontsize": 14,  # 图例字体大小
+    # 设置正常显示负号
+    "figure.figsize": (12,5),  # 默认图形大小，12cm x 5cm
+    "figure.dpi": 100,  # 显示分辨率
+    "savefig.dpi": 600,  # 保存分辨率
+    "axes.prop_cycle": cycler(color=[
+        "#1f77b4",  # 蓝
+        "#ff7f0e",  # 橙
+        "#2ca02c",  # 绿
+        "#d62728",  # 红
+        "#a77ece",  # 紫
+        "#8c564b",  # 棕
+        "#520e8e",  # 粉
+        "#7f7f7f",  # 灰
+        "#bcbd22",  # 橄榄
+        "#17becf"   # 青
+    ]),  # 设置颜色循环
+    "axes.grid": True,  # 显示网格
+    "axes.grid.axis": "y",  # 只显示y轴网格
+    "grid.linestyle": (0, (8, 6)),  # 网格线为虚线
+    "xtick.direction": "in",  # x轴刻度线朝内
+    "ytick.direction": "in",  # y轴刻度线朝内
+    "mathtext.fontset": "custom",  # 公式字体设置
+    "mathtext.rm": "Times New Roman",  # 数学公式字体 - 正常
+    "mathtext.it": "Times New Roman:italic",  # 数学公式字体 - 斜体
+    "mathtext.bf": "Times New Roman:bold"  # 数学公式字体 - 粗体
+}
 
 # --------------------------------------------------------------------------------------------#
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
 class PlotPlugin:
-    """绘图插件基类，提供扩展绘图功能的接口"""
+    """绘图插件类，提供扩展绘图功能的接口"""
 
     def apply(self, plot_obj, **kwargs):
         """应用插件，由子类实现"""
@@ -48,7 +82,7 @@ class PlotPlugin:
 # --------------------------------------------------------------------------------------------#
 class Plot:
     """
-    绘图基类, 实现通用绘图框架, 供高级绘图类方法继承并实现具体绘图逻辑.
+    绘图类, 实现通用绘图框架, 供绘图方法继承并实现具体绘图逻辑.
 
     参数:
     ---------
@@ -102,7 +136,6 @@ class Plot:
         设置X轴
     _setup_y_axis()
         设置Y轴
-
     _save_figure()
         保存图形
     _custom_setup(**kwargs)
@@ -127,10 +160,12 @@ class Plot:
         self.pattern = pattern  # 执行模式
         self.kwargs = kwargs  # 存储所有plt已有绘图参数
         self.plugins = []
+        # 更新rcParams
+        plt.rcParams.update(config)
 
     def _setup_figure(self):
         """设置图形"""
-        figsize = self.kwargs.get("figsize", FIG_SIZE)
+        figsize = self.kwargs.get("figsize", None)
         self.figure = plt.figure(figsize=figsize)
         self.axes = self.figure.add_subplot(111)
 
@@ -138,14 +173,14 @@ class Plot:
         """设置标题"""
         title = self.kwargs.get("title", None)
         if title:
-            self.axes.set_title(title, fontproperties=zh_font, pad=10)
+            self.axes.set_title(title)
 
     def _setup_x_axis(self):
         """设置X轴"""
         # 设置x轴标签
         xlabel = self.kwargs.get("xlabel", None)
         if xlabel:
-            self.axes.set_xlabel(xlabel, fontproperties=zh_font, labelpad=10)
+            self.axes.set_xlabel(xlabel)
         # 设置x轴显示范围
         self.axes.margins(x=0)  # 设置x轴刻度占满
         xlim = self.kwargs.get("xlim", (None, None))
@@ -160,16 +195,13 @@ class Plot:
         self.axes.xaxis.set_major_formatter(
             ticker.FormatStrFormatter("%.2f")
         )  # 避免显示过多小数位
-        # 设置x轴刻度字体
-        for label in self.axes.get_xticklabels():
-            label.set_fontproperties(en_font)
 
     def _setup_y_axis(self):
         """设置Y轴"""
         # 设置y轴标签
         ylabel = self.kwargs.get("ylabel", None)
         if ylabel:
-            self.axes.set_ylabel(ylabel, fontproperties=zh_font, labelpad=10)
+            self.axes.set_ylabel(ylabel)
         # 设置y轴显示范围
         ylim = self.kwargs.get("ylim", (None, None))
         self.axes.set_ylim(ylim[0], ylim[1])
@@ -188,9 +220,6 @@ class Plot:
                 )
             )
         self.axes.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
-        # 设置y轴刻度字体
-        for label in self.axes.get_yticklabels():
-            label.set_fontproperties(en_font)
 
     @InputCheck({"plugin": {}})
     def add_plugin(self, plugin: PlotPlugin) -> "Plot":
@@ -232,10 +261,9 @@ class Plot:
         if self.pattern == "plot":
             try:
                 from IPython.display import display  # IPython环境下显示图形
-
                 display(self.figure)  # 在Jupyter Notebook中显示图形
             except ImportError:
-                if self.figure: # Ensure figure exists before calling show
+                if self.figure:
                     self.figure.show()  # 非IPython环境下直接显示图形
         elif self.pattern == "return":
             result = (self.figure, self.axes)
@@ -250,37 +278,30 @@ class Plot:
 
 # --------------------------------------------------------------------------------------------#
 class LinePlot(Plot):
-    """波形图, 谱图等线条图绘制类方法. 输入Axis和Data数据(一维或二维), 可绘制多线条图"""
+    """波形图, 谱图等线条图绘制方法, 可绘制多线条图"""
 
-    @InputCheck({"Axis": {"ndim": 1}, "Data": {}})
     def _custom_setup(
-        self, Axis: np.ndarray, Data: np.ndarray, Labels: list = None, **kwargs
+        self, Sig:Union[Signal,list], **kwargs
     ):
         """实现线图绘制"""
-        # 检查数据
-        if Data.ndim > 2:
-            raise ValueError("Data数据维度超过2维, 无法绘图")
-        Data = (
-            Data.reshape(1, -1) if Data.ndim == 1 else Data
-        )  # 确保Data为[data1,data2]结构
-        if len(Axis) != Data.shape[1]:
-            raise ValueError(
-                f"Axis={len(Axis)}和Data={Data.shape[1]}的长度不一致, 无法绘图"
-            )  # 数据长度检查
         # 设置线图样式
         self.axes.grid(
             axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
         )
+        if isinstance(Sig,Signal):
+            Sig= [Sig]
         # 绘制线图
-        for i in range(Data.shape[0]):
+        for S in Sig:
+            if not isinstance(S,Signal):
+                raise ValueError("输入数据必须为Signal对象或Signal对象列表")
             self.axes.plot(
-                Axis, Data[i], label=f"Data {i+1}" if Labels is None else Labels[i]
+                S.t_Axis, S.data, label=S.label
             )
         # 设置图例
-        self.axes.legend(
-            loc="best",
-            prop=zh_font,
-        )
+        if len(Sig) >1:
+            self.axes.legend(
+                loc="best"
+            )
 
 
 # --------------------------------------------------------------------------------------------#
@@ -319,7 +340,7 @@ class HeatmapPlot(Plot):
         colorbarlabel = self.kwargs.get("colorbarlabel", None)
         colorbar = plt.colorbar(im, ax=self.axes)
         if colorbarlabel:
-            colorbar.set_label(colorbarlabel, fontproperties=zh_font)
+            colorbar.set_label(colorbarlabel)
 
 
 # --------------------------------------------------------------------------------------------#
@@ -366,7 +387,6 @@ class PeakfinderPlugin(PlotPlugin):
                         xytext=(0, 10),
                         ha="center",
                         color="red",
-                        fontproperties=en_font,
                     )
 
 
