@@ -17,6 +17,7 @@ from scipy import interpolate  # 插值分析包
 
 # 可视化绘图库
 import matplotlib.pyplot as plt
+from matplotlib import cycler  # 循环颜色
 from matplotlib import animation  # 动画绘图
 from matplotlib import font_manager  # 字体管理
 from matplotlib import ticker  # 坐标轴刻度管理
