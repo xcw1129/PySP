@@ -17,7 +17,6 @@ from PySP.Assist_Module.Dependencies import np, random
 from PySP.Assist_Module.Dependencies import copy
 
 from PySP.Assist_Module.Decorators import InputCheck
-from PySP.Plot import LinePlot
 
 
 # --------------------------------------------------------------------------------------------#
@@ -410,6 +409,25 @@ class Signal:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        """
+        支持NumPy的ufunc操作，如np.sin(Signal)、np.add(Signal, arr)等。
+        """
+        # 将所有Signal对象转为其data
+        args = [x.data if isinstance(x, type(self)) else x for x in inputs]
+        result = getattr(ufunc, method)(*args, **kwargs)
+        # 保持返回类型一致
+        if isinstance(result, np.ndarray):
+            # 只对一元操作返回Signal，否则返回ndarray
+            if method == "__call__" and len(args) == 1:
+                return type(self)(result, fs=self.fs, t0=self.t0, label=self.label)
+            return result
+        elif isinstance(result, tuple):
+            # 例如np.divmod等返回元组
+            return tuple(type(self)(r, fs=self.fs, t0=self.t0, label=self.label) if isinstance(r, np.ndarray) else r for r in result)
+        return result
+
+    # ----------------------------------------------------------------------------------------#
     def copy(self):
         """
         返回Signal对象的深拷贝
@@ -452,33 +470,15 @@ class Signal:
         )
         kwargs.pop("title", None)
         # 绘制时域波形图
+        from PySP.Plot import LinePlot
         LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).show(
-            Axis=self.t_Axis, Data=self.data
+            self
         )
-
-    # ----------------------------------------------------------------------------------------#
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        """
-        支持NumPy的ufunc操作，如np.sin(Signal)、np.add(Signal, arr)等。
-        """
-        # 将所有Signal对象转为其data
-        args = [x.data if isinstance(x, type(self)) else x for x in inputs]
-        result = getattr(ufunc, method)(*args, **kwargs)
-        # 保持返回类型一致
-        if isinstance(result, np.ndarray):
-            # 只对一元操作返回Signal，否则返回ndarray
-            if method == "__call__" and len(args) == 1:
-                return type(self)(result, fs=self.fs, t0=self.t0, label=self.label)
-            return result
-        elif isinstance(result, tuple):
-            # 例如np.divmod等返回元组
-            return tuple(type(self)(r, fs=self.fs, t0=self.t0, label=self.label) if isinstance(r, np.ndarray) else r for r in result)
-        return result
 
 # --------------------------------------------------------------------------------------------#
 @InputCheck({"Sig": {}, "fs_resampled": {"OpenLow": 0}, "T": {"OpenLow": 0}})
 def Resample(
-    Sig: Signal, fs_resampled: Optional[float] = None, t0: Optional[float] = 0, T: Optional[float] = None
+    Sig: Signal,type:str='fft', fs_resampled: Optional[float] = None, t0: Optional[float] = 0, T: Optional[float] = None
 ) -> Signal:
     """
     对信号进行任意时间段的重采样
@@ -487,6 +487,8 @@ def Resample(
     --------
     Sig : Signal
         输入信号
+    type : str, 可选
+        重采样方法, 可选'fft', 'extreme', 'spacing', 默认为'fft'
     fs_resampled : float, 可选
         重采样频率
     t0 : float, 可选
@@ -504,42 +506,72 @@ def Resample(
         raise ValueError("起始时间不在信号时间范围内")
     else:
         start_idx = int((t0 - Sig.t0) / Sig.dt)
-    # 获取重采样点数
+    # 获取重采样片段
     if T is None:
-        N_resampled = -1
+        data_resampled = Sig.data[start_idx:]
     elif T + t0 > Sig.T + Sig.t0:
         raise ValueError("重采样时间长度超过信号时间范围")
     else:
         N_resampled = int(T / (Sig.dt))  # N = T/dt
-    # 取出待重采样信号片段
-    data_resampled = Sig.data[start_idx : start_idx + N_resampled]
+        data_resampled = Sig.data[start_idx : start_idx + N_resampled]
+    # 获取重采样点数
     if fs_resampled is None:
         fs_resampled = Sig.fs
+    N_in = len(data_resampled)
+    N_out = int(N_in*Sig.dt*fs_resampled)
     # ----------------------------------------------------------------------------------------#
     # 对信号片段进行重采样
-    if T is None:
-        T = Sig.T + Sig.t0 - t0
-    N_in = int(T / Sig.dt)
-    N_out = int(T * fs_resampled)
-    data_in = Sig.data[start_idx : start_idx + N_in]
-    F_x = np.fft.fft(data_in)
     if Sig.fs > fs_resampled:
-        # 频谱裁剪
-        keep = N_out // 2
-        F_x_cut = np.zeros(N_out, dtype=complex)
-        F_x_cut[:keep] = F_x[:keep]
-        F_x_cut[-keep:] = F_x[-keep:]
-        data_resampled = np.fft.ifft(F_x_cut).real
+        if type=='fft':
+            F_x = np.fft.fft(data_resampled)  # 傅里叶变换
+            # 频谱裁剪
+            keep = N_out // 2
+            F_x_cut = np.zeros(N_out, dtype=complex)
+            F_x_cut[:keep] = F_x[:keep]
+            F_x_cut[-keep:] = F_x[-keep:]
+            data_resampled = np.fft.ifft(F_x_cut).real
+            # 调整重采样信号幅值
+            ratio = fs_resampled / Sig.fs
+            data_resampled *= ratio  # 调整幅值
+        # ------------------------------------------------------------------------------------#
+        elif type=='extreme':
+            # 时域极值法采样
+            idxs = np.linspace(0, N_in-1, (N_out//2)+1, dtype=int)
+            new_data = []
+            for i in range((N_out//2)):
+                seg = data_resampled[idxs[i]:idxs[i+1]]
+                new_data.append(np.min(seg))
+                new_data.append(np.max(seg))
+            # 保证采样点数为N_out
+            if N_out==len(new_data):
+                pass
+            elif N_out-len(new_data)==1:
+                new_data.append(data_resampled[-1])
+            else:
+                raise ValueError("极值法采样点数计算错误")
+            data_resampled = np.array(new_data)
+        # ------------------------------------------------------------------------------------#
+        elif type=='spacing':
+            # 时域直接抽取
+            idxs = np.linspace(0, N_in - 1, N_out, dtype=int)
+            data_resampled = data_resampled[idxs]
+        else:
+            raise ValueError("重采样方法仅支持'fft', 'extreme', 'spacing'")
     elif Sig.fs < fs_resampled:
+        if type!='fft':
+            raise ValueError("仅支持fft方法进行过采样")
+        F_x = np.fft.fft(data_resampled)  # 傅里叶变换
         # 频谱填充
         F_x_pad = np.zeros(N_out, dtype=complex)
         F_x_pad[: N_in // 2] = F_x[: N_in // 2]
         F_x_pad[-N_in // 2 :] = F_x[-N_in // 2 :]
         data_resampled = np.fft.ifft(F_x_pad).real
+        # 调整重采样信号幅值
+        ratio = fs_resampled / Sig.fs
+        data_resampled *= ratio  # 调整幅值
     else:
-        data_resampled = data_in
-    ratio = fs_resampled / Sig.fs
-    data_resampled *= ratio  # 调整幅值
+        pass  # 采样频率相同, 不进行重采样
+
     new_label = "重采样" + (Sig.label or "")
     return Signal(data_resampled, fs=fs_resampled, t0=t0, label=new_label)
 

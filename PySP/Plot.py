@@ -15,14 +15,12 @@
 """
 
 
-from cProfile import label
 from PySP.Assist_Module.Dependencies import resources
-from PySP.Assist_Module.Dependencies import Union
 from PySP.Assist_Module.Dependencies import np
 from PySP.Assist_Module.Dependencies import plt, font_manager, ticker,cycler
 from PySP.Assist_Module.Dependencies import signal
 
-from PySP.Signal import Signal
+from PySP.Signal import Signal, Resample
 
 from PySP.Assist_Module.Decorators import InputCheck
 
@@ -39,7 +37,7 @@ config = {
     "axes.labelsize": 18,  # 轴标签字体大小
     "xtick.labelsize": 16,  # x轴刻度标签字体大小
     "ytick.labelsize": 16,  # y轴刻度标签字体大小
-    "legend.fontsize": 14,  # 图例字体大小
+    "legend.fontsize": 16,  # 图例字体大小
     # 设置正常显示负号
     "figure.figsize": (12,5),  # 默认图形大小，12cm x 5cm
     "figure.dpi": 100,  # 显示分辨率
@@ -88,6 +86,8 @@ class Plot:
     ---------
     pattern : str, 可选
         执行模式, 默认为"plot", 可选"plot", "return", "save"
+    isSampled: bool, 可选
+        是否在绘图前对Signal对象进行采样, 默认为False
     (figsize) : tuple, 可选
         图像大小, 默认为(12, 5)
     (title) : str, 可选
@@ -152,12 +152,14 @@ class Plot:
     def __init__(
         self,
         pattern: str = "plot",
+        isSampled: bool = False,
         **kwargs,
     ):
         """初始化绘图显示设置参数, 额外可传入kwargs参数见Plot类注释"""
         self.figure = None
         self.axes = None
         self.pattern = pattern  # 执行模式
+        self.isSampled= isSampled # 是否在绘图前对Signal对象进行采样
         self.kwargs = kwargs  # 存储所有plt已有绘图参数
         self.plugins = []
         # 更新rcParams
@@ -281,24 +283,29 @@ class LinePlot(Plot):
     """波形图, 谱图等线条图绘制方法, 可绘制多线条图"""
 
     def _custom_setup(
-        self, Sig:Union[Signal,list], **kwargs
+        self, Sig: 'Signal | list', **kwargs
     ):
         """实现线图绘制"""
         # 设置线图样式
         self.axes.grid(
             axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
         )
-        if isinstance(Sig,Signal):
-            Sig= [Sig]
+        # 延迟导入，避免循环引用
+        from PySP.Signal import Signal
+        if isinstance(Sig, Signal):
+            Sig = [Sig]
         # 绘制线图
         for S in Sig:
-            if not isinstance(S,Signal):
+            if not isinstance(S, Signal):
                 raise ValueError("输入数据必须为Signal对象或Signal对象列表")
+            if self.isSampled:# 采样到2000点绘制，保持线图视觉效果前提下加快绘图速度
+                fs_resampled= 2000/S.T
+                S=Resample(S,type='extreme',fs_resampled=fs_resampled)
             self.axes.plot(
                 S.t_Axis, S.data, label=S.label
             )
         # 设置图例
-        if len(Sig) >1:
+        if len(Sig) > 1:
             self.axes.legend(
                 loc="best"
             )
@@ -345,40 +352,37 @@ class HeatmapPlot(Plot):
 
 # --------------------------------------------------------------------------------------------#
 class PeakfinderPlugin(PlotPlugin):
-    """峰值查找类插件, 适用于LinePlot类, 用于查找并标注峰值对应的坐标"""
-
+    """
+    峰值查找插件, 用于查找并标注峰值对应的坐标
+    
+    参数:
+    ---------
+    同signal.find_peaks函数的参数
+    """
     @InputCheck({"height": {"OpenLow": 0}, "distance": {"Low": 1}})
-    def __init__(self, height: float, distance: int = 1):
-        """
-        初始化峰值查找插件
+    def __init__(self, **kwargs):
+        self.find_peaks_params = kwargs
 
-        参数:
-        ---------
-        height : float
-            峰值高度阈值
-        distance : int, 可选
-            峰值之间的最小距离, 默认为1, 即相邻峰值至少间隔1个数据点
-        """
-        self.height = height
-        self.distance = distance
-
-    @InputCheck({"Axis": {"ndim": 1}, "Data": {}})
-    def apply(self, plot_obj, Axis, Data, **kwargs):
-        """查找并标注峰值"""
-        # 确保Data为[data1,data2]结构
-        Data = Data.reshape(1, -1) if Data.ndim == 1 else Data
-        for i, Data_i in enumerate(Data):
+    def apply(self, plot_obj, Sig: 'Signal | list', **kwargs):
+        """查找并标注峰值，支持Signal对象或Signal对象列表输入"""
+        # 延迟导入，避免循环引用
+        from PySP.Signal import Signal
+        if isinstance(Sig, Signal):
+            Sig = [Sig]
+        for i, S in enumerate(Sig):
+            if not isinstance(S, Signal):
+                raise ValueError("输入数据必须为Signal对象或Signal对象列表")
+            Axis = S.t_Axis
+            Data = S.data
             # 寻找峰值
             peak_idx, peak_params = signal.find_peaks(
-                np.abs(Data_i), height=self.height, distance=self.distance
-            )  # 绝对峰值
-            if peak_idx.size > 0: # 仅当找到峰值时才进行索引和绘图
-                peak_idx = peak_idx.astype(int) # 确保索引是整数类型
-                peak_Data = Data_i[peak_idx]
+                np.abs(Data), **self.find_peaks_params
+            )
+            if peak_idx.size > 0:
+                peak_idx = peak_idx.astype(int)
+                peak_Data = Data[peak_idx]
                 peak_Axis = Axis[peak_idx]
-                # 标注峰值
                 plot_obj.axes.plot(peak_Axis, peak_Data, "o", color="red", markersize=5)
-                # 添加标注
                 for axis, data in zip(peak_Axis, peak_Data):
                     plot_obj.axes.annotate(
                         f"({axis:.2f}, {data:.2f})@{i+1}",
@@ -387,46 +391,12 @@ class PeakfinderPlugin(PlotPlugin):
                         xytext=(0, 10),
                         ha="center",
                         color="red",
+                        size=16
                     )
 
 
 # --------------------------------------------------------------------------------------------#
-# 绘图类方法的实例化函数接口, 一般供Analysis.Plot方法调用, 也可直接调用
+# 绘图方法的通用实例化函数接口, 供Analysis.Plot方法调用
 def LinePlotFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
-    """
-    波形图, 谱图等线条图绘制函数方法
-
-    参数:
-    ---------
-    Axis : np.ndarray
-        x轴数据
-    Data : np.ndarray
-        y轴数据
-    **kwargs : dict, 可选
-        其他绘图参数
-    """
-    # 创建绘图对象
-    fig = LinePlot(**kwargs)
-    # 执行绘图
-    fig.show(Axis, Data)
-
-
-def HeatmapPlotFunc(Axis1, Axis2, Data, **kwargs):
-    """
-    热力图绘制函数, 使用HeatmapPlot类
-
-    参数:
-    ---------
-    Axis1 : np.ndarray
-        x轴数据
-    Axis2 : np.ndarray
-        y轴数据
-    Data : np.ndarray
-        热力图数据
-    **kwargs : dict, 可选
-        其他绘图参数
-    """
-    # 创建绘图对象
-    fig = HeatmapPlot(**kwargs)
-    # 执行绘图
-    fig.show(Axis1, Axis2, Data)
+    Sig= Signal(data=Data, dt=Axis[1]-Axis[0], t0=Axis[0])
+    LinePlot(**kwargs).show(Sig)
