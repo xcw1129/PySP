@@ -13,9 +13,6 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/xcw1129/PySP",  # 项目主页
     packages=find_packages(),  # 自动发现包
-    package_data={
-        "PySP.Assist_Module": ["times+simsun.ttf"],  # 路径相对包目录
-    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
