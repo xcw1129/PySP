@@ -310,46 +310,6 @@ class LinePlot(Plot):
                 loc="best"
             )
 
-
-# --------------------------------------------------------------------------------------------#
-class HeatmapPlot(Plot):
-    """时频图等热力图绘制类方法. 输入Axis1, Axis2和Data, 额外绘图设置为aspect, origin, cmap, vmin, vmax, colorbarlabel"""
-
-    @InputCheck({"Axis1": {"ndim": 1}, "Axis2": {"ndim": 1}, "Data": {"ndim": 2}})
-    def _custom_setup(
-        self, Axis1: np.ndarray, Axis2: np.ndarray, Data: np.ndarray, **kwargs
-    ):
-        """实现热力图绘制"""
-        # 检查数据
-        if Data.ndim != 2:
-            raise ValueError("Data数据维度不为2维, 无法绘图")
-        elif len(Axis1) != Data.shape[0] or len(Axis2) != Data.shape[1]:
-            raise ValueError(
-                f"Axis1={len(Axis1)}, Axis2={len(Axis2)}, 和Data={Data.shape}的形状不一致, 无法绘图"
-            )
-        # 设置热力图样式
-        aspect = self.kwargs.get("aspect", "auto")
-        origin = self.kwargs.get("origin", "lower")
-        cmap = self.kwargs.get("cmap", "jet")
-        vmin = self.kwargs.get("vmin", None)
-        vmax = self.kwargs.get("vmax", None)
-        # 绘制热力图
-        im = self.axes.imshow(
-            Data.T,
-            aspect=aspect,
-            origin=origin,
-            cmap=cmap,
-            extent=[Axis1[0], Axis1[-1], Axis2[0], Axis2[-1]],
-            vmin=vmin,
-            vmax=vmax,
-        )
-        # 添加颜色条
-        colorbarlabel = self.kwargs.get("colorbarlabel", None)
-        colorbar = plt.colorbar(im, ax=self.axes)
-        if colorbarlabel:
-            colorbar.set_label(colorbarlabel)
-
-
 # --------------------------------------------------------------------------------------------#
 class PeakfinderPlugin(PlotPlugin):
     """
