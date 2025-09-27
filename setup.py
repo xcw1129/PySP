@@ -16,7 +16,6 @@ setup(
     package_data={
         "PySP.Assist_Module": ["times+simsun.ttf"],  # 路径相对包目录
     },
-    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
