@@ -4,6 +4,7 @@ from typing import get_origin, get_args # 输入检查
 from functools import wraps  # 函数装饰器
 import inspect  # 函数检查
 import copy  # 对象复制
+from importlib import resources  # 资源管理
 
 # 向量数值计算库
 import numpy as np
@@ -17,6 +18,7 @@ from scipy import interpolate  # 插值分析包
 
 # 可视化绘图库
 import matplotlib.pyplot as plt
+from matplotlib import cycler  # 循环颜色
 from matplotlib import animation  # 动画绘图
 from matplotlib import font_manager  # 字体管理
 from matplotlib import ticker  # 坐标轴刻度管理
