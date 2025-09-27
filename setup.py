@@ -5,10 +5,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysp-xcw",  # 包名
-    version="7.3.0",      # 版本号
+    version="7.3.1",      # 版本号
     author="Xiong Chengwen",   # 作者
     author_email="xcw1824@outlook.com",  # 作者邮箱
-    description="Various classical signal analysis and processing algorithms, in the field of mechanical fault diagnosis, are implemented.",
+    description="Various classic and modern signal analysis and processing algorithms are implemented.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/xcw1129/PySP",  # 项目主页
