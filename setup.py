@@ -33,7 +33,6 @@ setup(
         "matplotlib>=3.4.0",
         "pandas>=1.3.0",
     ],
-    include_package_data=True,
     keywords=["signal processing", "fault diagnosis", "time-frequency analysis", "spectral analysis"],
     project_urls={
         "Bug Tracker": "https://github.com/xcw1129/PySP/issues",
