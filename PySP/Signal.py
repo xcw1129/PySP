@@ -432,7 +432,7 @@ class Signal:
         # 绘制时域波形图
         from PySP.Plot import LinePlot
 
-        LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).show(self)
+        LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).TimeWaveform(self)
 
 
 # --------------------------------------------------------------------------------------------#
