@@ -78,6 +78,8 @@ class Signal:
             "fs": {"OpenLow": 0},
             "dt": {"OpenLow": 0},
             "T": {"OpenLow": 0},
+            "t0": {"CloseLow": 0},
+            "label":{}
         }
     )
     def __init__(
@@ -87,7 +89,7 @@ class Signal:
         fs: Optional[float] = None,
         dt: Optional[float] = None,
         T: Optional[float] = None,
-        t0: Optional[float] = 0,
+        t0: Optional[float] = 0.0,
         label: Optional[str] = None,
     ):
         # 输入参数检查

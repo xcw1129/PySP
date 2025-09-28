@@ -55,9 +55,6 @@ def InputCheck(*var_checks):
                         )
                     else:
                         pass
-                    # 处理float类型的int输入
-                    if var_type is float and isinstance(var_value, int):
-                        var_value = float(var_value)
                     # 针对某些变量类型进行额外检查
                     # ------------------------------------------------------------------------#
                     # array类检查
