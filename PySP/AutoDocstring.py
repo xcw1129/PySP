@@ -12,21 +12,16 @@
         4. auto_update_target_module: 自动更新本文件开头指定的目标模块文件的模块注释（支持多个文件）
 """
 
-
-
-
-
 import ast
 import os
 import re
-from typing import Dict, List, Tuple, Optional
 
 # ----------- 需操作的目标模块文件名及描述（字典形式，键为文件名，值为描述） -----------
 TARGET_MODULES = {
     "AutoDocstring.py": "自动文档字符串生成器模块, 用于扫描Python文件并生成模块级注释文档",
     "Signal.py": "信号数据模块, 定义了PySP库中的核心信号数据对象Signal的基本结构, 以及一些信号预处理函数",
     "Analysis.py": "分析处理方法模块, 定义了PySP库中高级分析处理方法模块的基本类结构Analysis",
-    "Plot.py": "绘图方法模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类和函数接口, 以及辅助插件",
+    "Plot.py": "绘图可视化模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类实现, 以及辅助插件",
 }
 # ---------------------------------------------------------------
 

@@ -7,12 +7,10 @@
         1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
 """
 
-
-
 from PySP.Assist_Module.Decorators import InputCheck
 from PySP.Signal import Signal
 
-PLOT = False  # 全局默认绘图开关
+IS_PLOT = False  # 全局默认绘图开关
 
 
 # --------------------------------------------------------------------------------------------#
@@ -47,9 +45,8 @@ class Analysis:
 
     # ----------------------------------------------------------------------------------------#
     @InputCheck({"Sig": {}, "isPlot": {}})
-    def __init__(self, Sig: Signal, isPlot: bool = PLOT, **kwargs):
+    def __init__(self, Sig: Signal, isPlot: bool = IS_PLOT, **kwargs):
         self.Sig = Sig.copy()  # 防止对原信号进行修改
-        # 绘图参数全局设置
         self.isPlot = isPlot
         self.plot_kwargs = kwargs
 
@@ -60,6 +57,7 @@ class Analysis:
             def wrapper(self, *args, **kwargs):
                 res = func(self, *args, **kwargs)
                 if self.isPlot:
+                    # 需确保被装饰函数返回值格式与plot_func输入参数格式一致
                     if isinstance(res, tuple):
                         plot_func(*res, **self.plot_kwargs)
                     else:

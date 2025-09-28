@@ -543,8 +543,7 @@ def Resample(
     else:
         pass  # 采样频率相同, 不进行重采样
 
-    new_label = "重采样" + (Sig.label or "")
-    return Signal(data_resampled, fs=fs_resampled, t0=t0, label=new_label)
+    return Signal(data_resampled, fs=fs_resampled, t0=t0, label=Sig.label)
 
 
 # --------------------------------------------------------------------------------------------#

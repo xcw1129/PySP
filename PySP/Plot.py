@@ -1,19 +1,17 @@
 """
 # Plot
-绘图方法模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类和函数接口, 以及辅助插件
+绘图可视化模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类实现, 以及辅助插件
 
 ## 内容
     - class:
         1. PlotPlugin: 绘图插件类，提供扩展绘图功能的接口
         2. Plot: 绘图类, 实现通用绘图框架, 供绘图方法继承并实现具体绘图逻辑.
-        3. LinePlot: 波形图, 谱图等线条图绘制类方法. 输入Axis和Data数据(一维或二维), 可绘制多线条图
-        4. HeatmapPlot: 时频图等热力图绘制类方法. 输入Axis1, Axis2和Data, 额外绘图设置为aspect, origin, cmap, vmin, vmax, colorbarlabel
-        5. PeakfinderPlugin: 峰值查找类插件, 适用于LinePlot类, 用于查找并标注峰值对应的坐标
-    - function:
-        1. LinePlotFunc: 波形图, 谱图等线条图绘制函数方法
+        3. LinePlot: 波形图, 谱图等线条图绘制方法, 可绘制多线条图
+        4. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
 
-from PySP.Assist_Module.Dependencies import resources
+from networkx import display
+from PySP.Assist_Module.Dependencies import FLOAT_EPS, resources
 from PySP.Assist_Module.Dependencies import Union
 from PySP.Assist_Module.Dependencies import deepcopy
 from PySP.Assist_Module.Dependencies import np
@@ -152,11 +150,10 @@ class Plot:
         """
         self.figure = None
         self.axes = None
-        self.ncols = ncols
-        self.isSampled = isSampled
+        self.ncols = ncols # 子图列数
+        self.isSampled = isSampled # 是否对Signal对象进行采样
         self._kwargs = kwargs  # 全局默认kwargs, 不允许外部修改
-
-        self.plot_tasks = []  # 绘图任务列表, 实时更新. 绘图时按顺序执行
+        self.tasks = []  # 绘图任务列表, 实时更新. 绘图时按顺序执行
         plt.rcParams.update(config)
 
     @property
@@ -249,12 +246,12 @@ class Plot:
         Plot
             返回绘图对象本身，以支持链式调用。
         """
-        if not self.plot_tasks:
+        if not self.tasks:
             raise RuntimeError(
                 "请先添加一个绘图任务 (例如调用 TimeWaveform)，再设置其参数。"
             )
         # 更新最后一个任务的kwargs
-        self.plot_tasks[-1]["kwargs"].update(kwargs)
+        self.tasks[-1]["kwargs"].update(kwargs)
         return self
 
     def add_plugin_to_task(self, plugin: PlotPlugin) -> "Plot":
@@ -271,14 +268,14 @@ class Plot:
         Plot
             返回绘图对象本身，以支持链式调用。
         """
-        if not self.plot_tasks:
+        if not self.tasks:
             raise RuntimeError(
                 "请先添加一个绘图任务 (例如调用 TimeWaveform)，再为其添加插件。"
             )
         if not isinstance(plugin, PlotPlugin):
             raise TypeError("插件必须是 PlotPlugin 的实例。")
         # 为最后一个任务添加插件
-        self.plot_tasks[-1]["plugins"].append(plugin)
+        self.tasks[-1]["plugins"].append(plugin)
         return self
 
     @InputCheck(
@@ -308,7 +305,7 @@ class Plot:
             如果 `pattern` 为 "return"，则返回包含 figure 和 axes 对象的元组。
             否则返回 None。
         """
-        num_tasks = len(self.plot_tasks)
+        num_tasks = len(self.tasks)
         if num_tasks == 0:
             return
 
@@ -319,7 +316,7 @@ class Plot:
                 ax.set_visible(False)
                 continue
 
-            task = self.plot_tasks[0]  # 执行最高优先级的任务
+            task = self.tasks[0]  # 执行最高优先级的任务
             task_data = task["data"]
             task_kwargs = task["kwargs"]
             task_plot_function = task["plot_function"]
@@ -339,7 +336,7 @@ class Plot:
                     plugin._apply(ax, task_data)
 
                 # 4. 移除已执行的任务
-                self.plot_tasks.pop(0)
+                self.tasks.pop(0)
 
         # 调整布局防止重叠
         self.figure.tight_layout()
@@ -353,15 +350,14 @@ class Plot:
             except ImportError:
                 if self.figure:
                     self.figure.show()
+            plt.close(self.figure)
         elif pattern == "return":
             result = (self.figure, self.axes)
-            plt.close(self.figure)
             return result
         elif pattern == "save":
             self._save_figure(filename, save_format)
         else:
             raise ValueError(f"未知的模式: {pattern}")
-        plt.close(self.figure)
 
 
 # --------------------------------------------------------------------------------------------#
@@ -387,7 +383,7 @@ class LinePlot(Plot):
             返回绘图对象本身，以支持链式调用。
         """
 
-        def _draw_waveform(ax, data):
+        def _draw_timewaveform(ax, data):
             """内部函数：在指定ax上绘制时域波形"""
             ax.grid(
                 axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
@@ -399,9 +395,8 @@ class LinePlot(Plot):
                     raise ValueError("输入数据必须为Signal对象或Signal对象列表")
                 if self.isSampled:
                     fs_resampled = 2000 / S.T if S.N > 2000 else S.fs
-                    label=S.label
                     S = Resample(S, type="extreme", fs_resampled=fs_resampled, t0=S.t0)
-                ax.plot(S.t_Axis, S.data, label=label)
+                ax.plot(S.t_Axis, S.data, label=S.label)
             if len(data) > 1:
                 ax.legend(loc="best")
 
@@ -412,20 +407,23 @@ class LinePlot(Plot):
         task = {
             "data": Sig,
             "kwargs": task_kwargs,
-            "plot_function": _draw_waveform,
+            "plot_function": _draw_timewaveform,
             "plugins": [],  # 初始化任务专属插件列表
         }
-        self.plot_tasks.append(task)
+        self.tasks.append(task)
         return self
 
-    def Spectrum(self, Spectrum: tuple, **kwargs):
+    @InputCheck({"Axis": {"ndim":1}, "Data": {"ndim":1}})
+    def Spectrum(self, Axis:np.ndarray,Data:np.ndarray, **kwargs):
         """
         注册一个谱图的绘制任务。
 
         参数:
         ---------
-        SpectrumData : tuple
-            包含谱轴和幅值轴的元组 (Axis, Data)。
+        Axis : np.ndarray
+            谱坐标轴数据, 一维数组。
+        Data : np.ndarray
+            谱幅值数据, 一维数组。
         **kwargs :
             该子图特定的绘图参数。
 
@@ -448,12 +446,12 @@ class LinePlot(Plot):
         task_kwargs.update(kwargs)
 
         task = {
-            "data": Spectrum,
+            "data": (Axis, Data),
             "kwargs": task_kwargs,
             "plot_function": _draw_spectrum,
             "plugins": [],  # 初始化任务专属插件列表
         }
-        self.plot_tasks.append(task)
+        self.tasks.append(task)
         return self
 
 
@@ -508,3 +506,20 @@ class PeakfinderPlugin(PlotPlugin):
                     color="red",
                     size=16,
                 )
+
+
+# --------------------------------------------------------------------------------------------#
+def TimeWaveformFunc(Sig: Signal, **kwargs):
+    """单信号时域波形图绘制函数"""
+    plot_kwargs = {"xlabel": "时间/s", "ylabel": "幅值"}
+    plot_kwargs.update(kwargs)
+    fig,ax=LinePlot(**plot_kwargs).TimeWaveform(Sig).show(pattern='return')
+    plt.show()
+
+
+def FreqSpectrumFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
+    """单谱图绘制函数"""
+    plot_kwargs = {"xlabel": "频率/Hz", "ylabel": "幅值"}
+    plot_kwargs.update(kwargs)
+    fig,ax=LinePlot(**plot_kwargs).Spectrum(Axis, Data).show(pattern='return')
+    plt.show()
