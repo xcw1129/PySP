@@ -436,10 +436,17 @@ class Signal:
 
 
 # --------------------------------------------------------------------------------------------#
-@InputCheck({"Sig": {}, "fs_resampled": {"OpenLow": 0}, "T": {"OpenLow": 0}})
+@InputCheck(
+    {
+        "Sig": {},
+        "type": {"Content": ["spacing", "fft", "extreme"]},
+        "fs_resampled": {"OpenLow": 0},
+        "T": {"OpenLow": 0},
+    }
+)
 def Resample(
     Sig: Signal,
-    type: str = "fft",
+    type: str = "spacing",
     fs_resampled: Optional[float] = None,
     t0: Optional[float] = 0.0,
     T: Optional[float] = None,
@@ -452,7 +459,7 @@ def Resample(
     Sig : Signal
         输入信号
     type : str, 可选
-        重采样方法, 可选'fft', 'extreme', 'spacing', 默认为'fft'
+        重采样方法, 可选'fft', 'extreme', 'spacing', 默认为'spacing'
     fs_resampled : float, 可选
         重采样频率
     t0 : float, 可选
@@ -485,7 +492,7 @@ def Resample(
     N_out = int(N_in * Sig.dt * fs_resampled)
     # ----------------------------------------------------------------------------------------#
     # 对信号片段进行重采样
-    if Sig.fs > fs_resampled:
+    if Sig.fs > fs_resampled:  # 下采样
         if type == "fft":
             F_x = np.fft.fft(data_resampled)  # 傅里叶变换
             # 频谱裁剪
@@ -517,11 +524,11 @@ def Resample(
         # ------------------------------------------------------------------------------------#
         elif type == "spacing":
             # 时域直接抽取
-            idxs = np.linspace(0, N_in - 1, N_out, dtype=int)
+            idxs = np.linspace(0, N_in, N_out, dtype=int, endpoint=False)
             data_resampled = data_resampled[idxs]
         else:
             raise ValueError("重采样方法仅支持'fft', 'extreme', 'spacing'")
-    elif Sig.fs < fs_resampled:
+    elif Sig.fs < fs_resampled:  # 上采样
         if type != "fft":
             raise ValueError("仅支持fft方法进行过采样")
         F_x = np.fft.fft(data_resampled)  # 傅里叶变换
@@ -549,7 +556,7 @@ def Resample(
         "noise": {"CloseLow": 0},
     }
 )
-def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0) -> Signal:
+def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0.0) -> Signal:
     """
     生成仿真含噪准周期信号
 
