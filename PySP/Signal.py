@@ -10,8 +10,6 @@
         2. Periodic: 生成仿真含噪准周期信号
 """
 
-
-
 from PySP.Assist_Module.Dependencies import Optional
 from PySP.Assist_Module.Dependencies import np, random
 from PySP.Assist_Module.Dependencies import copy
@@ -73,18 +71,18 @@ class Signal:
 
     @InputCheck(
         {
-            "data" : {"ndim":1},
+            "data": {"ndim": 1},
             "N": {"Low": 1},
             "fs": {"OpenLow": 0},
             "dt": {"OpenLow": 0},
             "T": {"OpenLow": 0},
             "t0": {"CloseLow": 0},
-            "label":{}
+            "label": {},
         }
     )
     def __init__(
         self,
-        data: Optional[np.ndarray]= None,
+        data: Optional[np.ndarray] = None,
         N: Optional[int] = None,
         fs: Optional[float] = None,
         dt: Optional[float] = None,
@@ -93,38 +91,42 @@ class Signal:
         label: Optional[str] = None,
     ):
         # 输入参数检查
-        if data is not None:# 1, 2, 3
+        if data is not None:  # 1, 2, 3
             self.data = np.asarray(copy.deepcopy(data))  # 深拷贝，防止对原数据进行修改
             N = len(data)
             # 当给出data时, 只允许给出一个采样参数
-            if not [dt, fs, T].count(None) == 2:# 1, 2, 3
-                raise ValueError("采样参数错误: 当给定数据时, 请只指定fs, dt, T其中一个.")
+            if not [dt, fs, T].count(None) == 2:  # 1, 2, 3
+                raise ValueError(
+                    "采样参数错误: 当给定数据时, 请只指定fs, dt, T其中一个."
+                )
         else:
-            if (T is not None) and (N is not None):# 1, x
-                if (fs is not None) or (dt is not None):# x
+            if (T is not None) and (N is not None):  # 1, x
+                if (fs is not None) or (dt is not None):  # x
                     raise ValueError("采样参数错误: 当给定T和N时, 请不要指定fs或dt.")
-                else:# 1
-                    fs= N / T
-            elif (fs is None) and (dt is None):# x
+                else:  # 1
+                    fs = N / T
+            elif (fs is None) and (dt is None):  # x
                 raise ValueError("采样参数错误: 请指定fs或dt其中一个.")
-            elif (T is None) and (N is not None):# 1, 2
+            elif (T is None) and (N is not None):  # 1, 2
                 pass
-            elif (T is not None) and (N is None):# 1, 2
-                if fs is not None:# 1
+            elif (T is not None) and (N is None):  # 1, 2
+                if fs is not None:  # 1
                     N = int(T * fs)
-                else:# 2
+                else:  # 2
                     N = int(T / dt)
-            else:# x
-                raise ValueError("采样参数错误: 当未给定数据时, 请至少指定T或N其中一个.")
-            self.data = np.zeros(N,dtype=float)  # 如果没有数据, 初始化为零数组   
-            
+            else:  # x
+                raise ValueError(
+                    "采样参数错误: 当未给定数据时, 请至少指定T或N其中一个."
+                )
+            self.data = np.zeros(N, dtype=float)  # 如果没有数据, 初始化为零数组
+
         # ------------------------------------------------------------------------------------#
         # 采样参数初始化, fs为核心参数允许修改。 dt和T由fs和N自动计算，不允许修改
-        if fs is not None:#1
+        if fs is not None:  # 1
             self.fs = fs
-        elif dt is not None:#2
+        elif dt is not None:  # 2
             self.fs = 1 / dt
-        elif T is not None:#3
+        elif T is not None:  # 3
             self.fs = N / T
         # ------------------------------------------------------------------------------------#
         # 设置初始采样时间
@@ -180,7 +182,9 @@ class Signal:
         """
         信号频率坐标轴
         """
-        return np.fft.fftfreq(self.N,d=self.dt)  # 频率坐标，f=[0,df,2df,..,N//2 df,..,-2df,-df]
+        return np.fft.fftfreq(
+            self.N, d=self.dt
+        )  # 频率坐标，f=[0,df,2df,..,N//2 df,..,-2df,-df]
 
     # ----------------------------------------------------------------------------------------#
     def __repr__(self) -> str:
@@ -233,7 +237,7 @@ class Signal:
             if copy is True:
                 data_to_return = data_to_return.copy()
             else:
-                data_to_return = self.data # 直接返回内部数组
+                data_to_return = self.data  # 直接返回内部数组
         return data_to_return
 
     # ----------------------------------------------------------------------------------------#
@@ -257,28 +261,15 @@ class Signal:
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
-            return Signal(
-                self.data + other.data,
-                fs=self.fs,
-                t0=self.t0
-            )
+            return Signal(self.data + other.data, fs=self.fs, t0=self.t0)
         elif isinstance(other, np.ndarray):
             if other.ndim != 1 or len(other) != self.N:
                 raise ValueError("数组形状与信号不匹配, 无法运算")
-            return Signal(
-                self.data + other,
-                fs=self.fs,
-                t0=self.t0
-            )
-        elif isinstance(other,(int,float,complex)):  # 检查是否为标量
-            return Signal(
-                self.data + other,
-                fs=self.fs,
-                t0=self.t0
-            )
+            return Signal(self.data + other, fs=self.fs, t0=self.t0)
+        elif isinstance(other, (int, float, complex)):  # 检查是否为标量
+            return Signal(self.data + other, fs=self.fs, t0=self.t0)
         else:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
-
 
     # ----------------------------------------------------------------------------------------#
     def __sub__(self, other):
@@ -288,25 +279,13 @@ class Signal:
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
-            return Signal(
-                self.data - other.data,
-                fs=self.fs,
-                t0=self.t0
-            )
+            return Signal(self.data - other.data, fs=self.fs, t0=self.t0)
         elif isinstance(other, np.ndarray):
             if other.ndim != 1 or len(other) != self.N:
                 raise ValueError("数组形状与信号不匹配, 无法运算")
-            return Signal(
-                self.data - other,
-                fs=self.fs,
-                t0=self.t0
-            )
-        elif isinstance(other,(int,float,complex)):  # 检查是否为标量
-            return Signal(
-                self.data - other,
-                fs=self.fs,
-                t0=self.t0
-            )
+            return Signal(self.data - other, fs=self.fs, t0=self.t0)
+        elif isinstance(other, (int, float, complex)):  # 检查是否为标量
+            return Signal(self.data - other, fs=self.fs, t0=self.t0)
         else:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
@@ -334,25 +313,13 @@ class Signal:
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
-            return Signal(
-                self.data * other.data,
-                fs=self.fs,
-                t0=self.t0
-            )
+            return Signal(self.data * other.data, fs=self.fs, t0=self.t0)
         elif isinstance(other, np.ndarray):
             if other.ndim != 1 or len(other) != self.N:
                 raise ValueError("数组形状与信号不匹配, 无法运算")
-            return Signal(
-                self.data * other,
-                fs=self.fs,
-                t0=self.t0
-            )
-        elif isinstance(other,(int, float,complex)):  # 检查是否为标量
-            return Signal(
-                self.data * other,
-                fs=self.fs,
-                t0=self.t0
-            )
+            return Signal(self.data * other, fs=self.fs, t0=self.t0)
+        elif isinstance(other, (int, float, complex)):  # 检查是否为标量
+            return Signal(self.data * other, fs=self.fs, t0=self.t0)
         else:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
@@ -365,25 +332,13 @@ class Signal:
         if isinstance(other, Signal):
             if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
-            return Signal(
-            self.data / other.data,
-            fs=self.fs,
-            t0=self.t0
-            )
+            return Signal(self.data / other.data, fs=self.fs, t0=self.t0)
         elif isinstance(other, np.ndarray):
             if other.ndim != 1 or len(other) != self.N:
                 raise ValueError("数组形状与信号不匹配, 无法运算")
-            return Signal(
-            self.data / other,
-            fs=self.fs,
-            t0=self.t0
-            )
+            return Signal(self.data / other, fs=self.fs, t0=self.t0)
         elif isinstance(other, (int, float, complex)):  # 检查是否为标量
-            return Signal(
-            self.data / other,
-            fs=self.fs,
-            t0=self.t0
-            )
+            return Signal(self.data / other, fs=self.fs, t0=self.t0)
         else:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
@@ -402,11 +357,7 @@ class Signal:
         """
         # 默认Signal和array对象调用 __truediv__ 方法, 此处仅处理标量情况
         if isinstance(other, (int, float, complex)):
-            return Signal(
-                other / self.data,
-                fs=self.fs,
-                t0=self.t0
-            )
+            return Signal(other / self.data, fs=self.fs, t0=self.t0)
         else:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
@@ -426,7 +377,14 @@ class Signal:
             return result
         elif isinstance(result, tuple):
             # 例如np.divmod等返回元组
-            return tuple(type(self)(r, fs=self.fs, t0=self.t0, label=self.label) if isinstance(r, np.ndarray) else r for r in result)
+            return tuple(
+                (
+                    type(self)(r, fs=self.fs, t0=self.t0, label=self.label)
+                    if isinstance(r, np.ndarray)
+                    else r
+                )
+                for r in result
+            )
         return result
 
     # ----------------------------------------------------------------------------------------#
@@ -473,14 +431,18 @@ class Signal:
         kwargs.pop("title", None)
         # 绘制时域波形图
         from PySP.Plot import LinePlot
-        LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).show(
-            self
-        )
+
+        LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).show(self)
+
 
 # --------------------------------------------------------------------------------------------#
 @InputCheck({"Sig": {}, "fs_resampled": {"OpenLow": 0}, "T": {"OpenLow": 0}})
 def Resample(
-    Sig: Signal,type:str='fft', fs_resampled: Optional[float] = None, t0: Optional[float] = 0, T: Optional[float] = None
+    Sig: Signal,
+    type: str = "fft",
+    fs_resampled: Optional[float] = None,
+    t0: Optional[float] = 0.0,
+    T: Optional[float] = None,
 ) -> Signal:
     """
     对信号进行任意时间段的重采样
@@ -520,11 +482,11 @@ def Resample(
     if fs_resampled is None:
         fs_resampled = Sig.fs
     N_in = len(data_resampled)
-    N_out = int(N_in*Sig.dt*fs_resampled)
+    N_out = int(N_in * Sig.dt * fs_resampled)
     # ----------------------------------------------------------------------------------------#
     # 对信号片段进行重采样
     if Sig.fs > fs_resampled:
-        if type=='fft':
+        if type == "fft":
             F_x = np.fft.fft(data_resampled)  # 傅里叶变换
             # 频谱裁剪
             keep = N_out // 2
@@ -536,31 +498,31 @@ def Resample(
             ratio = fs_resampled / Sig.fs
             data_resampled *= ratio  # 调整幅值
         # ------------------------------------------------------------------------------------#
-        elif type=='extreme':
+        elif type == "extreme":
             # 时域极值法采样
-            idxs = np.linspace(0, N_in-1, (N_out//2)+1, dtype=int)
+            idxs = np.linspace(0, N_in - 1, (N_out // 2) + 1, dtype=int)
             new_data = []
-            for i in range((N_out//2)):
-                seg = data_resampled[idxs[i]:idxs[i+1]]
+            for i in range((N_out // 2)):
+                seg = data_resampled[idxs[i] : idxs[i + 1]]
                 new_data.append(np.min(seg))
                 new_data.append(np.max(seg))
             # 保证采样点数为N_out
-            if N_out==len(new_data):
+            if N_out == len(new_data):
                 pass
-            elif N_out-len(new_data)==1:
+            elif N_out - len(new_data) == 1:
                 new_data.append(data_resampled[-1])
             else:
                 raise ValueError("极值法采样点数计算错误")
             data_resampled = np.array(new_data)
         # ------------------------------------------------------------------------------------#
-        elif type=='spacing':
+        elif type == "spacing":
             # 时域直接抽取
             idxs = np.linspace(0, N_in - 1, N_out, dtype=int)
             data_resampled = data_resampled[idxs]
         else:
             raise ValueError("重采样方法仅支持'fft', 'extreme', 'spacing'")
     elif Sig.fs < fs_resampled:
-        if type!='fft':
+        if type != "fft":
             raise ValueError("仅支持fft方法进行过采样")
         F_x = np.fft.fft(data_resampled)  # 傅里叶变换
         # 频谱填充
@@ -579,7 +541,14 @@ def Resample(
 
 
 # --------------------------------------------------------------------------------------------#
-@InputCheck({"fs": {"OpenLow": 0}, "T": {"OpenLow": 0},"CosParams":{}, "noise": {"CloseLow": 0}})
+@InputCheck(
+    {
+        "fs": {"OpenLow": 0},
+        "T": {"OpenLow": 0},
+        "CosParams": {},
+        "noise": {"CloseLow": 0},
+    }
+)
 def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0) -> Signal:
     """
     生成仿真含噪准周期信号
@@ -600,7 +569,7 @@ def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0) -> Signal:
     Sig : Signal
         仿真含噪准周期信号
     """
-    Sig= Signal(fs=fs, T=T, label="仿真含噪准周期信号")
+    Sig = Signal(fs=fs, T=T, label="仿真含噪准周期信号")
     for i, params in enumerate(CosParams):
         if len(params) != 3:
             raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
