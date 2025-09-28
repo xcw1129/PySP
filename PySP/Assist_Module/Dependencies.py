@@ -3,7 +3,7 @@ from typing import Optional, Callable, Union,Dict, List,Tuple, Any# 类型注解
 from typing import get_origin, get_args # 输入检查
 from functools import wraps  # 函数装饰器
 import inspect  # 函数检查
-import copy  # 对象复制
+from copy import deepcopy  # 对象复制
 from importlib import resources  # 资源管理
 
 # 向量数值计算库

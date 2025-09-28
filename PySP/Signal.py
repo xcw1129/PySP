@@ -12,7 +12,7 @@
 
 from PySP.Assist_Module.Dependencies import Optional
 from PySP.Assist_Module.Dependencies import np, random
-from PySP.Assist_Module.Dependencies import copy
+from PySP.Assist_Module.Dependencies import deepcopy
 
 from PySP.Assist_Module.Decorators import InputCheck
 
@@ -92,7 +92,7 @@ class Signal:
     ):
         # 输入参数检查
         if data is not None:  # 1, 2, 3
-            self.data = np.asarray(copy.deepcopy(data))  # 深拷贝，防止对原数据进行修改
+            self.data = np.asarray(deepcopy(data))  # 深拷贝，防止对原数据进行修改
             N = len(data)
             # 当给出data时, 只允许给出一个采样参数
             if not [dt, fs, T].count(None) == 2:  # 1, 2, 3
@@ -392,7 +392,7 @@ class Signal:
         """
         返回Signal对象的深拷贝
         """
-        return copy.deepcopy(self)
+        return deepcopy(self)
 
     # ----------------------------------------------------------------------------------------#
     def info(self) -> dict:
