@@ -14,7 +14,6 @@ def InputCheck(*var_checks):
     def decorator(func):
         @wraps(func)  # 保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
         def wrapper(*args, **kwargs):
-            from PySP.Signal import Signal
 
             # --------------------------------------------------------------------------------#
             # 获取函数输入变量
@@ -40,17 +39,25 @@ def InputCheck(*var_checks):
                 # ----------------------------------------------------------------------------#
                 # 对于传值的函数参数进行类型检查
                 if var_value is not None:
-                    # 处理 Optional 类型
+                    # 处理 Union 类型
                     if get_origin(var_type) is Union:
-                        var_type = get_args(var_type)[0]
-                    # 处理float变量的int输入
-                    if var_type is float and isinstance(var_value, int):
-                        var_value = float(var_value)
-                    # 检查输入值类型是否为预设类型
-                    if var_type and not isinstance(var_value, var_type):
+                        valid_types = [
+                            t for t in get_args(var_type) if t is not type(None)
+                        ]
+                        if not any(isinstance(var_value, t) for t in valid_types):
+                            raise TypeError(
+                                f"输入变量 '{var_name}' 类型不为要求的 {', '.join([t.__name__ for t in valid_types])}, 实际为 {type(var_value).__name__}"
+                            )
+                    # 检查其它输入值类型是否为预设类型
+                    elif var_type and not isinstance(var_value, var_type):
                         raise TypeError(
                             f"输入变量 '{var_name}' 类型不为要求的 {var_type.__name__}, 实际为 {type(var_value).__name__}"
                         )
+                    else:
+                        pass
+                    # 处理float类型的int输入
+                    if var_type is float and isinstance(var_value, int):
+                        var_value = float(var_value)
                     # 针对某些变量类型进行额外检查
                     # ------------------------------------------------------------------------#
                     # array类检查
@@ -114,6 +121,7 @@ def InputCheck(*var_checks):
                                 )
                     # ------------------------------------------------------------------------#
                     # Signal类
+                    from PySP.Signal import Signal
                     if isinstance(var_value, Signal):
                         pass
             return func(*args, **kwargs)  # 检查通过，执行函数

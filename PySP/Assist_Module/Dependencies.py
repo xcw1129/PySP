@@ -1,5 +1,5 @@
 # PYTHON基础库
-from typing import Optional, Callable, Union,Dict, List,Tuple, Any# 类型提示
+from typing import Optional, Callable, Union,Dict, List,Tuple, Any# 类型注解
 from typing import get_origin, get_args # 输入检查
 from functools import wraps  # 函数装饰器
 import inspect  # 函数检查
@@ -23,6 +23,6 @@ from matplotlib import animation  # 动画绘图
 from matplotlib import font_manager  # 字体管理
 from matplotlib import ticker  # 坐标轴刻度管理
 
-
+# 数学常数
 FLOAT_EPS = np.finfo(float).eps  # 机器精度
 PI = np.pi  # 圆周率
