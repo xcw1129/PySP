@@ -130,7 +130,6 @@ class Plot:
     )
     def __init__(
         self,
-        pattern: str = "plot",
         ncols: int = 1,
         isSampled: bool = False,
         **kwargs,
@@ -140,11 +139,6 @@ class Plot:
 
         参数:
         ---------
-        pattern : str, 可选
-            执行模式, 默认为"plot"。
-            - "plot": 直接显示图形。
-            - "return": 返回figure和axes对象。
-            - "save": 保存图形。
         ncols : int, 可选
             子图的列数, 默认为1。
         isSampled: bool, 可选
@@ -158,19 +152,23 @@ class Plot:
         """
         self.figure = None
         self.axes = None
-        self.pattern = pattern
         self.ncols = ncols
         self.isSampled = isSampled
-        self.kwargs = kwargs  # 全局默认kwargs
-        self.plot_tasks = []  # 绘图任务列表
+        self._kwargs = kwargs  # 全局默认kwargs, 不允许外部修改
+
+        self.plot_tasks = []  # 绘图任务列表, 实时更新. 绘图时按顺序执行
         plt.rcParams.update(config)
+
+    @property
+    def kwargs(self):
+        return deepcopy(self._kwargs)
 
     def _setup_figure(self, num_tasks):
         """根据任务数量设置图形和子图"""
-        ncols= self.ncols
+        ncols = self.ncols
         nrows = (num_tasks + ncols - 1) // ncols
         # 从全局kwargs获取figsize，计算总的figsize
-        base_figsize = self.kwargs.get("figsize", (9,4))
+        base_figsize = self._kwargs.get("figsize", (9, 4))
         figsize = (base_figsize[0] * ncols, base_figsize[1] * nrows)
         # 创建图形和子图
         self.figure, self.axes = plt.subplots(nrows, ncols, figsize=figsize)
@@ -223,14 +221,12 @@ class Plot:
             )
         ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
 
-    def _save_figure(self):
+    def _save_figure(self, filename, save_format):
         """保存图形"""
         if self.figure is not None:
-            filename = self.kwargs.get("filename", "Plot.png")
-            save_format = self.kwargs.get("save_format", "png")  # 获取保存格式
             if save_format != filename.split(".")[-1]:
                 filename = f"{filename.split('.')[0]}.{save_format}"
-            self.figure.savefig(filename, save_format=save_format)
+            self.figure.savefig(filename)
         else:
             raise ValueError("图形未创建，无法保存")
 
@@ -254,14 +250,16 @@ class Plot:
             返回绘图对象本身，以支持链式调用。
         """
         if not self.plot_tasks:
-            raise RuntimeError("请先添加一个绘图任务 (例如调用 TimeWaveform)，再设置其参数。")
+            raise RuntimeError(
+                "请先添加一个绘图任务 (例如调用 TimeWaveform)，再设置其参数。"
+            )
         # 更新最后一个任务的kwargs
         self.plot_tasks[-1]["kwargs"].update(kwargs)
         return self
 
     def add_plugin_to_task(self, plugin: PlotPlugin) -> "Plot":
         """
-        为最新添加的绘图任务添加一个插件。
+        为最新添加的绘图任务添加一个插件. 需注意插件与该任务的数据类型兼容.
 
         参数:
         ----------
@@ -274,18 +272,35 @@ class Plot:
             返回绘图对象本身，以支持链式调用。
         """
         if not self.plot_tasks:
-            raise RuntimeError("请先添加一个绘图任务 (例如调用 TimeWaveform)，再为其添加插件。")
+            raise RuntimeError(
+                "请先添加一个绘图任务 (例如调用 TimeWaveform)，再为其添加插件。"
+            )
         if not isinstance(plugin, PlotPlugin):
             raise TypeError("插件必须是 PlotPlugin 的实例。")
         # 为最后一个任务添加插件
         self.plot_tasks[-1]["plugins"].append(plugin)
         return self
 
-    def show(self):
+    @InputCheck(
+        {
+            "pattern": {"Content": ("plot", "return", "save")},
+            "filename": {},
+            "save_format": {
+                "Content": ("png", "jpg", "jpeg", "tiff", "bmp", "pdf", "svg")
+            },
+        }
+    )
+    def show(self, pattern: str = "plot", filename="Plot.png", save_format="png"):
         """
         执行所有已注册的绘图任务并显示/返回/保存最终图形。
 
-        根据初始化时设置的 `pattern` 参数决定行为。
+        参数:
+        ---------
+        pattern : str, 可选
+            执行模式, 默认为"plot"。
+            - "plot": 直接显示图形。
+            - "return": 返回figure和axes对象。
+            - "save": 保存图形。
 
         返回:
         ----------
@@ -300,11 +315,11 @@ class Plot:
         self._setup_figure(num_tasks)
 
         for i, ax in enumerate(self.axes):
-            if i >= num_tasks: # 如果子图数量多于任务数，则隐藏多余的子图
+            if i >= num_tasks:  # 如果子图数量多于任务数，则隐藏多余的子图
                 ax.set_visible(False)
                 continue
 
-            task = self.plot_tasks[0]# 执行最高优先级的任务
+            task = self.plot_tasks[0]  # 执行最高优先级的任务
             task_data = task["data"]
             task_kwargs = task["kwargs"]
             task_plot_function = task["plot_function"]
@@ -322,30 +337,30 @@ class Plot:
                 # 3. 应用该任务专属的插件
                 for plugin in task_plugins:
                     plugin._apply(ax, task_data)
-                    
+
                 # 4. 移除已执行的任务
                 self.plot_tasks.pop(0)
-                
 
         # 调整布局防止重叠
         self.figure.tight_layout()
 
         # 显示或返回图形
-        if self.pattern == "plot":
+        if pattern == "plot":
             try:
                 from IPython.display import display
+
                 display(self.figure)
             except ImportError:
                 if self.figure:
                     self.figure.show()
-        elif self.pattern == "return":
+        elif pattern == "return":
             result = (self.figure, self.axes)
             plt.close(self.figure)
             return result
-        elif self.pattern == "save":
-            self._save_figure()
+        elif pattern == "save":
+            self._save_figure(filename, save_format)
         else:
-            raise ValueError(f"未知的模式: {self.pattern}")
+            raise ValueError(f"未知的模式: {pattern}")
         plt.close(self.figure)
 
 
@@ -354,7 +369,7 @@ class LinePlot(Plot):
     """波形图, 谱图等线条图绘制方法, 可绘制多线条图"""
 
     @InputCheck({"Sig": {}})
-    def TimeWaveform(self, Sig: Union[Signal, list[Signal]], **kwargs):
+    def TimeWaveform(self, Sig: Union[Signal, list], **kwargs):
         """
         注册一个时域波形图的绘制任务。
 
@@ -374,7 +389,9 @@ class LinePlot(Plot):
 
         def _draw_waveform(ax, data):
             """内部函数：在指定ax上绘制时域波形"""
-            ax.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
+            ax.grid(
+                axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
+            )
             if isinstance(data, Signal):
                 data = [data]
             for S in data:
@@ -382,13 +399,14 @@ class LinePlot(Plot):
                     raise ValueError("输入数据必须为Signal对象或Signal对象列表")
                 if self.isSampled:
                     fs_resampled = 2000 / S.T if S.N > 2000 else S.fs
+                    label=S.label
                     S = Resample(S, type="extreme", fs_resampled=fs_resampled, t0=S.t0)
-                ax.plot(S.t_Axis, S.data, label=S.label)
+                ax.plot(S.t_Axis, S.data, label=label)
             if len(data) > 1:
                 ax.legend(loc="best")
 
         # 任务的kwargs首先继承全局kwargs，然后被调用时传入的kwargs覆盖
-        task_kwargs = deepcopy(self.kwargs)
+        task_kwargs = self.kwargs
         task_kwargs.update(kwargs)
 
         task = {
@@ -400,14 +418,14 @@ class LinePlot(Plot):
         self.plot_tasks.append(task)
         return self
 
-    def Spectrum(self, SpectrumData: tuple, **kwargs):
+    def Spectrum(self, Spectrum: tuple, **kwargs):
         """
-        注册一个频谱图的绘制任务。
-        
+        注册一个谱图的绘制任务。
+
         参数:
         ---------
         SpectrumData : tuple
-            包含频率轴和幅值轴的元组 (freq_axis, amp_axis)。
+            包含谱轴和幅值轴的元组 (Axis, Data)。
         **kwargs :
             该子图特定的绘图参数。
 
@@ -417,18 +435,20 @@ class LinePlot(Plot):
             返回绘图对象本身，以支持链式调用。
         """
 
-        def _draw_spectrum(ax, spec_data):
+        def _draw_spectrum(ax, data):
             """内部函数：在指定ax上绘制频谱"""
-            freq_axis, amp_axis = spec_data
-            ax.plot(freq_axis, amp_axis)
-            ax.grid(axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10))
+            Axis, Data = data
+            ax.plot(Axis, Data)
+            ax.grid(
+                axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
+            )
 
         # 任务的kwargs首先继承全局kwargs，然后被调用时传入的kwargs覆盖
-        task_kwargs = deepcopy(self.kwargs)
+        task_kwargs = self.kwargs
         task_kwargs.update(kwargs)
 
         task = {
-            "data": SpectrumData,
+            "data": Spectrum,
             "kwargs": task_kwargs,
             "plot_function": _draw_spectrum,
             "plugins": [],  # 初始化任务专属插件列表
@@ -460,16 +480,18 @@ class PeakfinderPlugin(PlotPlugin):
     def _apply(self, ax: plt.Axes, data):
         """在指定的子图上查找并标注峰值"""
         # 插件现在作用于单个ax
-        if not isinstance(data, Signal):
-            # 如果数据不是单个Signal对象，插件可能无法工作
-            # 可以选择忽略、发出警告或尝试处理列表
+        if isinstance(data, Signal):
+            Axis = data.t_Axis
+            Data = data.data
+        elif isinstance(data, tuple) and len(data) == 2:
+            Axis = data[0]
+            Data = data[1]
+        else:
+            # 不兼容插件, 跳过
             return
-
-        Axis = data.t_Axis
-        Data = data.data
         # 寻找峰值
         peak_idx, _ = signal.find_peaks(
-            np.abs(Data), **self.find_peaks_params
+            np.abs(Data - np.mean(Data)), **self.find_peaks_params
         )
         if peak_idx.size > 0:
             peak_idx = peak_idx.astype(int)
