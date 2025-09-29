@@ -190,16 +190,21 @@ class Plot:
         xlim = task_kwargs.get("xlim", (None, None))
         ax.set_xlim(xlim[0], xlim[1])# 设置X轴范围
 
+
     def _setup_y_axis(self, ax, task_kwargs):
         """设置Y轴"""
         ylabel = task_kwargs.get("ylabel", None)
         ax.set_ylabel(ylabel)  # 设置Y轴标签
-        ax.margins(y=0.1)  # 设置Y轴出血边边距为10%
         yticks = task_kwargs.get("yticks", None)
+        ynbins = task_kwargs.get("nticks", 5)
+        yscale = task_kwargs.get("yscale", "linear")
         if yticks is not None:
             ax.set_yticks(yticks)  # 设置Y轴刻度
-        yscale=task_kwargs.get("yscale", "linear")
-        ax.set_yscale(yscale)  # 设置Y轴刻度类型
+        elif yscale == "log":
+            ax.set_yscale("log") # 设置为对数刻度
+        elif ynbins is not None and isinstance(ynbins, int) and ynbins > 0:
+            cur_ylim = ax.get_ylim()
+            ax.set_yticks(np.linspace(cur_ylim[0]+0.2*np.mean(cur_ylim), cur_ylim[1]-0.2*np.mean(cur_ylim), ynbins))  # 设置指定数量的均匀分布刻度, 出血边20%
         ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))  # 设置Y轴刻度格式
         ylim = task_kwargs.get("ylim", (None, None))
         ax.set_ylim(ylim[0], ylim[1])  # 设置Y轴范围
