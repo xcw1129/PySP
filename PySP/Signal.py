@@ -445,7 +445,7 @@ class Signal:
         if isinstance(res, np.ndarray) and res.shape == self.data.shape:
             return type(self)(res, fs=self.fs, t0=self.t0)
         return res
-    
+
     # ----------------------------------------------------------------------------------------#
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         """
@@ -463,6 +463,12 @@ class Signal:
                     return result  # 返回数组
                 else:
                     return type(self)(result, fs=self.fs, t0=self.t0)
+            elif isinstance(result, (int, float, complex)):  # 标量
+                return result
+            else:
+                raise NotImplementedError(
+                    f"返回类型 {type(result).__name__} 未知, 无法封装"
+                )
 
         if isinstance(result, tuple):
             # 例如np.divmod等返回元组
