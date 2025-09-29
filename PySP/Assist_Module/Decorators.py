@@ -44,7 +44,8 @@ def InputCheck(*var_checks):
                         valid_types = [
                             t for t in get_args(var_type) if t is not type(None)
                         ]
-                        if not any(isinstance(var_value, t) for t in valid_types):
+                        isvalid=[isinstance(var_value, t) for t in valid_types]
+                        if not any(isvalid):
                             raise TypeError(
                                 f"输入变量 '{var_name}' 类型不为要求的 {', '.join([t.__name__ for t in valid_types])}, 实际为 {type(var_value).__name__}"
                             )
