@@ -5,18 +5,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysp-xcw",  # 包名
-    version="7.3.0",      # 版本号
+    version="7.3.1",      # 版本号
     author="Xiong Chengwen",   # 作者
     author_email="xcw1824@outlook.com",  # 作者邮箱
-    description="Various classical signal analysis and processing algorithms, in the field of mechanical fault diagnosis, are implemented.",
+    description="Various classic and modern signal analysis and processing algorithms are implemented.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/xcw1129/PySP",  # 项目主页
     packages=find_packages(),  # 自动发现包
-    package_data={
-        "PySP.Assist_Module": ["times+simsun.ttf"],  # 路径相对包目录
-    },
-    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
@@ -33,7 +29,6 @@ setup(
         "matplotlib>=3.4.0",
         "pandas>=1.3.0",
     ],
-    include_package_data=True,
     keywords=["signal processing", "fault diagnosis", "time-frequency analysis", "spectral analysis"],
     project_urls={
         "Bug Tracker": "https://github.com/xcw1129/PySP/issues",
