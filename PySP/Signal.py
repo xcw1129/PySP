@@ -191,17 +191,17 @@ class Signal:
         """
         返回Signal对象的字符串表示, 用于调试
         """
-        return f"Signal(data={self.data}, fs={self.fs}, label={self.label})"
+        info = self.info()
+        return f"{self.label}的采样参数: \n" + "\n".join(
+            [f"{k}: {v}" for k, v in info.items()]
+        )
 
     # ----------------------------------------------------------------------------------------#
     def __str__(self) -> str:
         """
         返回Signal对象的介绍信息, 使Signal对象支持print()函数调用
         """
-        info = self.info()
-        return f"{self.label}的采样参数: \n" + "\n".join(
-            [f"{k}: {v}" for k, v in info.items()]
-        )
+        return f"Signal(data={self.data}, fs={self.fs}, label={self.label})"
 
     # ----------------------------------------------------------------------------------------#
     def __len__(self) -> int:
@@ -254,7 +254,63 @@ class Signal:
         return False
 
     # ----------------------------------------------------------------------------------------#
-    def __add__(self, other):
+    def __gt__(self, other):
+        """支持 Signal > other"""
+        if isinstance(other, Signal):
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法比较")
+            return self.data > other.data
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组形状与信号不匹配, 无法比较")
+            return self.data > other
+        else:
+            return self.data > other
+
+    # ----------------------------------------------------------------------------------------#
+    def __lt__(self, other):
+        """支持 Signal < other"""
+        if isinstance(other, Signal):
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法比较")
+            return self.data < other.data
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组形状与信号不匹配, 无法比较")
+            return self.data < other
+        else:
+            return self.data < other
+
+    # ----------------------------------------------------------------------------------------#
+    def __ge__(self, other):
+        """支持 Signal >= other"""
+        if isinstance(other, Signal):
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法比较")
+            return self.data >= other.data
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组形状与信号不匹配, 无法比较")
+            return self.data >= other
+        else:
+            return self.data >= other
+
+    # ----------------------------------------------------------------------------------------#
+    def __le__(self, other):
+        """支持 Signal <= other"""
+        if isinstance(other, Signal):
+            if self.fs != other.fs or self.N != other.N or self.t0 != other.t0:
+                raise ValueError("两个信号的采样参数不一致, 无法比较")
+            return self.data <= other.data
+        elif isinstance(other, np.ndarray):
+            if other.ndim != 1 or len(other) != self.N:
+                raise ValueError("数组形状与信号不匹配, 无法比较")
+            return self.data <= other
+        else:
+            return self.data <= other
+
+    # ----------------------------------------------------------------------------------------#
+    def __add__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的加法运算
         """
@@ -272,7 +328,7 @@ class Signal:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
-    def __sub__(self, other):
+    def __sub__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的减法运算
         """
@@ -290,7 +346,7 @@ class Signal:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
-    def __radd__(self, other):
+    def __radd__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的右加法运算
         """
@@ -298,7 +354,7 @@ class Signal:
         return self.__add__(other)
 
     # ----------------------------------------------------------------------------------------#
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的右减法运算
         """
@@ -306,7 +362,7 @@ class Signal:
         return self.__sub__(other) * (-1)
 
     # ----------------------------------------------------------------------------------------#
-    def __mul__(self, other):
+    def __mul__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的乘法运算
         """
@@ -324,7 +380,7 @@ class Signal:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的除法运算
         """
@@ -343,7 +399,7 @@ class Signal:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
-    def __rmul__(self, other):
+    def __rmul__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的右乘法运算
         """
@@ -351,7 +407,7 @@ class Signal:
         return self.__mul__(other)
 
     # ----------------------------------------------------------------------------------------#
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other) -> "Signal":
         """
         实现Signal对象与Signal/array/标量对象的右除法运算
         """
@@ -362,30 +418,57 @@ class Signal:
             raise TypeError(f"不支持Signal对象与{type(other).__name__}类型进行运算操作")
 
     # ----------------------------------------------------------------------------------------#
+    def __pow__(self, other) -> "Signal":
+        """
+        支持 Signal ** scalar/array/Signal
+        """
+        # 提取数值
+        if isinstance(other, type(self)):
+            exp = other.data
+        else:
+            exp = other
+        res = np.power(self.data, exp)
+        # 若结果与原信号同形则封装回 Signal，否则返回 ndarray
+        if isinstance(res, np.ndarray) and res.shape == self.data.shape:
+            return type(self)(res, fs=self.fs, t0=self.t0)
+        return res
+
+    # ----------------------------------------------------------------------------------------#
+    def __rpow__(self, other) -> "Signal":
+        """
+        支持 scalar/array ** Signal
+        """
+        base = other
+        if isinstance(other, type(self)):
+            base = other.data
+        res = np.power(base, self.data)
+        if isinstance(res, np.ndarray) and res.shape == self.data.shape:
+            return type(self)(res, fs=self.fs, t0=self.t0)
+        return res
+    
+    # ----------------------------------------------------------------------------------------#
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         """
         支持NumPy的ufunc操作，如np.sin(Signal)、np.add(Signal, arr)等。
         """
-        # 将所有Signal对象转为其data
+        # 将np函数输入中的Signal对象替换为其data-np.ndarray
         args = [x.data if isinstance(x, type(self)) else x for x in inputs]
+        # 执行NumPy的ufunc操作
         result = getattr(ufunc, method)(*args, **kwargs)
+
         # 保持返回类型一致
-        if isinstance(result, np.ndarray):
-            # 只对一元操作返回Signal，否则返回ndarray
-            if method == "__call__" and len(args) == 1:
-                return type(self)(result, fs=self.fs, t0=self.t0, label=self.label)
-            return result
-        elif isinstance(result, tuple):
+        def package(result):
+            if isinstance(result, np.ndarray):
+                if result.shape != self.data.shape:
+                    return result  # 返回数组
+                else:
+                    return type(self)(result, fs=self.fs, t0=self.t0)
+
+        if isinstance(result, tuple):
             # 例如np.divmod等返回元组
-            return tuple(
-                (
-                    type(self)(r, fs=self.fs, t0=self.t0, label=self.label)
-                    if isinstance(r, np.ndarray)
-                    else r
-                )
-                for r in result
-            )
-        return result
+            return tuple((package(r)) for r in result)
+        else:
+            return package(result)
 
     # ----------------------------------------------------------------------------------------#
     def copy(self):
@@ -428,11 +511,11 @@ class Signal:
         title = kwargs.get(
             "title", f"{self.label}时域波形图" if self.label else "时域波形图"
         )
-        kwargs.pop("title", None)
+        kwargs.update({"title": title})
         # 绘制时域波形图
-        from PySP.Plot import LinePlot
+        from PySP.Plot import TimeWaveformFunc
 
-        LinePlot(xlabel="时间/s", ylabel="幅值", title=title, **kwargs).TimeWaveform(self)
+        TimeWaveformFunc(self, **kwargs)
 
 
 # --------------------------------------------------------------------------------------------#
