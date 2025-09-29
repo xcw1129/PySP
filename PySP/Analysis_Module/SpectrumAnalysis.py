@@ -1,6 +1,6 @@
 """
-# Fourier
-傅立叶变换为基础的频谱分析模块
+# FT
+傅立叶变换为基础的经典谱分析模块
 
 ## 内容
     - class:
@@ -16,10 +16,11 @@ from PySP.Assist_Module.Dependencies import np
 from PySP.Assist_Module.Dependencies import fft, signal
 
 from PySP.Assist_Module.Decorators import InputCheck
+
+from PySP.Plot_Module.LinePlot import TimeWaveformFunc
+
 from PySP.Signal import Signal
 from PySP.Analysis import Analysis
-from PySP.Analysis_Module.TimeStatistics import Time_Analysis
-from PySP.Plot import LinePlotFunc
 
 
 # --------------------------------------------------------------------------------------------#
@@ -28,8 +29,8 @@ from PySP.Plot import LinePlotFunc
 # ---------## --------------------------------------------------------------------------------#
 @InputCheck({"num": {"Low": 1}, "padding": {"Low": 1}})
 def window(
-    type: str,
     num: int,
+    type: str="汉宁窗",
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
 ) -> np.ndarray:
@@ -38,65 +39,58 @@ def window(
 
     参数:
     --------
-    type : str
-        窗函数类型, 可选: "矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗" 和 "自定义窗"
     num : int
-        采样点数
+        采样点数, 输入范围: >=1
+    type : str, 默认: "汉宁窗"
+        窗函数类型, 输入范围: ["矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗", "自定义窗"]
     func : Callable, 可选
-        自定义窗函数, 默认不使用
+        自定义窗函数
     padding : int, 可选
-        窗序列双边各零填充点数, 默认不填充
-
+        窗序列双边各零填充点数, 输入范围: >=1
+        
     返回:
     --------
-    Amp_scale : float
-        幅值归一化系数
-    Engy_scale : float
-        能量归一化系数
     win_data : np.ndarray
         窗函数采样序列
     """
     # 定义窗函数
-    N = num
     window_func = {}  # 标准窗函数表达式字典
     window_func["矩形窗"] = lambda n: np.ones(len(n))
-    window_func["汉宁窗"] = lambda n: 0.5 * (1 - np.cos(2 * np.pi * n / (N - 1)))
-    window_func["海明窗"] = lambda n: 0.54 - 0.46 * np.cos(2 * np.pi * n / (N - 1))
+    window_func["汉宁窗"] = lambda n: 0.5 * (1 - np.cos(2 * np.pi * n / (num - 1)))
+    window_func["海明窗"] = lambda n: 0.54 - 0.46 * np.cos(2 * np.pi * n / (num - 1))
     window_func["巴特利特窗"] = lambda n: np.where(
-        np.less_equal(n, (N - 1) / 2), 2 * n / (N - 1), 2 - 2 * n / (N - 1)
+        np.less_equal(n, (num - 1) / 2), 2 * n / (num - 1), 2 - 2 * n / (num - 1)
     )
     window_func["布莱克曼窗"] = (
         lambda n: 0.42
-        - 0.5 * np.cos(2 * np.pi * n / (N - 1))
-        + 0.08 * np.cos(4 * np.pi * n / (N - 1))
+        - 0.5 * np.cos(2 * np.pi * n / (num - 1))
+        + 0.08 * np.cos(4 * np.pi * n / (num - 1))
     )
     window_func["自定义窗"] = func
     # ----------------------------------------------------------------------------------------#
     # 生成采样点
-    if N < 1:
+    if num < 1:
         return np.array([])
-    elif N == 1:
+    elif num == 1:
         return np.ones(1, float)
-    n = np.arange(N)  # n=0,1,2,3,...,N-1
-    if N % 2 == 0:
-        N += 1  # 保证window[N//2]采样点幅值为1, 此时窗函数非对称
+    n = np.arange(num)  # n=0,1,2,3,...,N-1
+    if num % 2 == 0:
+        num += 1  # 保证window[N//2]采样点幅值为1, 此时窗函数非对称
     # ----------------------------------------------------------------------------------------#
     # 生成窗采样序列
     if type not in window_func.keys():
         raise ValueError("不支持的窗函数类型")
     win_data = window_func[type](n)
-    Amp_scale = 1 / np.mean(win_data)  # 窗函数幅值归一化
-    Engy_scale = 1 / np.mean(np.square(win_data))  # 窗函数能量归一化
     # 进行零填充（如果指定了填充长度）
     if padding is not None:
         win_data = np.pad(
             win_data, padding, mode="constant"
         )  # 双边各填充padding点, 共延长2*padding点
-    return Amp_scale, Engy_scale, win_data
+    return win_data
 
 
 # --------------------------------------------------------------------------------------------#
-class Frequency_Analysis(Analysis):
+class SpectrumAnalysis(Analysis):
     """
     信号频域分析、处理方法
 
@@ -104,14 +98,14 @@ class Frequency_Analysis(Analysis):
     --------
     Sig : Signal
         输入信号
-    plot : bool
+    isPlot : bool, 默认为False
         是否绘制分析结果图
 
-    属性:
+    属性：
     --------
     Sig : Signal
         输入信号
-    plot : bool
+    isPlot : bool
         是否绘制分析结果图
     plot_kwargs : dict
         绘图参数
@@ -130,7 +124,6 @@ class Frequency_Analysis(Analysis):
         计算信号的希尔伯特包络谱
     """
 
-    @InputCheck({"Sig": {}})
     def __init__(
         self,
         Sig: Signal,
@@ -138,7 +131,7 @@ class Frequency_Analysis(Analysis):
         **kwargs,
     ):
         super().__init__(Sig=Sig, isPlot=plot, **kwargs)
-        # 该分析类的特有参数
+        # 该分析类的特有初始化
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
@@ -166,7 +159,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, ft_data
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(LinePlotFunc)
+    @Analysis.Plot(TimeWaveformFunc)
     def Cft(self, WinType: str = "矩形窗") -> np.ndarray:
         """
         计算信号的单边傅里叶级数谱幅值
@@ -200,7 +193,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, Amp
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(LinePlotFunc)
+    @Analysis.Plot(TimeWaveformFunc)
     def Psd(
         self, WinType: str = "矩形窗", density: bool = True, both: bool = False
     ) -> np.ndarray:
@@ -245,7 +238,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(LinePlotFunc)
+    @Analysis.Plot(TimeWaveformFunc)
     def Psd_corr(self, density: bool = False, both: bool = False) -> np.ndarray:
         """
         自相关法计算信号的功率谱密度
@@ -269,7 +262,9 @@ class Frequency_Analysis(Analysis):
         df = self.Sig.df
         fs = self.Sig.fs
         # 自相关法计算功率谱
-        _, corr = Time_Analysis(self.Sig).Autocorr(both=True)
+        _, corr = signal.correlate(
+            self.Sig.data, self.Sig.data, mode="full"
+        )  # 互相关函数
         power = np.abs(fft.fft(corr) / N)  # 双边功率谱
         if density is True:
             power /= df  # 双边功率谱密度
@@ -281,7 +276,7 @@ class Frequency_Analysis(Analysis):
         return f_Axis, power
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(LinePlotFunc)
+    @Analysis.Plot(TimeWaveformFunc)
     def HTenve_spectra(self):
         """
         计算信号的希尔伯特包络谱
