@@ -1,4 +1,5 @@
 # PYTHON基础库
+import math  # 数学函数
 from typing import Optional, Callable, Union,Dict, List,Tuple, Any# 类型注解
 from typing import get_origin, get_args # 输入检查
 from functools import wraps  # 函数装饰器

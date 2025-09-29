@@ -10,8 +10,7 @@
         4. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
 
-from networkx import display
-from PySP.Assist_Module.Dependencies import FLOAT_EPS, resources
+from PySP.Assist_Module.Dependencies import resources
 from PySP.Assist_Module.Dependencies import Union
 from PySP.Assist_Module.Dependencies import deepcopy
 from PySP.Assist_Module.Dependencies import np
@@ -121,7 +120,6 @@ class Plot:
 
     @InputCheck(
         {
-            "pattern": {"Content": ("plot", "return", "save")},
             "ncols": {"Low": 1},
             "isSampled": {},
         }
@@ -150,8 +148,8 @@ class Plot:
         """
         self.figure = None
         self.axes = None
-        self.ncols = ncols # 子图列数
-        self.isSampled = isSampled # 是否对Signal对象进行采样
+        self.ncols = ncols  # 子图列数
+        self.isSampled = isSampled  # 是否对Signal对象进行采样
         self._kwargs = kwargs  # 全局默认kwargs, 不允许外部修改
         self.tasks = []  # 绘图任务列表, 实时更新. 绘图时按顺序执行
         plt.rcParams.update(config)
@@ -183,40 +181,32 @@ class Plot:
     def _setup_x_axis(self, ax, task_kwargs):
         """设置X轴"""
         xlabel = task_kwargs.get("xlabel", None)
-        if xlabel:
-            ax.set_xlabel(xlabel)
-        ax.margins(x=0)
-        xlim = task_kwargs.get("xlim", (None, None))
-        ax.set_xlim(xlim[0], xlim[1])
+        ax.set_xlabel(xlabel)# 设置X轴标签
+        ax.margins(x=0)#　 设置X轴出血边边距为0
         xticks = task_kwargs.get("xticks", None)
         if xticks is not None:
-            ax.set_xticks(xticks)
+            ax.set_xticks(xticks)# 设置X轴刻度
         else:
             cur_xlim = ax.get_xlim()
-            ax.set_xticks(np.linspace(cur_xlim[0], cur_xlim[1], 11))
-        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
+            ax.set_xticks(np.linspace(cur_xlim[0], cur_xlim[1], 11))# 设置11个均匀分布的刻度
+        ax.xaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))# 设置X轴刻度格式
+        xlim = task_kwargs.get("xlim", (None, None))
+        ax.set_xlim(xlim[0], xlim[1])# 设置X轴范围
 
     def _setup_y_axis(self, ax, task_kwargs):
         """设置Y轴"""
         ylabel = task_kwargs.get("ylabel", None)
-        if ylabel:
-            ax.set_ylabel(ylabel)
-        ylim = task_kwargs.get("ylim", (None, None))
-        ax.set_ylim(ylim[0], ylim[1])
+        ax.set_ylabel(ylabel)  # 设置Y轴标签
+        ax.margins(y=0.1)  # 设置Y轴出血边边距为10%
         yticks = task_kwargs.get("yticks", None)
         if yticks is not None:
-            ax.set_yticks(yticks)
-        else:
-            cur_ylim = ax.get_ylim()
-            cur_ylim_range = cur_ylim[1] - cur_ylim[0]
-            ax.set_yticks(
-                np.linspace(
-                    cur_ylim[0] + cur_ylim_range / 20,
-                    cur_ylim[1] - cur_ylim_range / 20,
-                    7,
-                )
-            )
-        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))
+            ax.set_yticks(yticks)  # 设置Y轴刻度
+        yscale=task_kwargs.get("yscale", "linear")
+        ax.set_yscale(yscale)  # 设置Y轴刻度类型
+        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.2f"))  # 设置Y轴刻度格式
+        ylim = task_kwargs.get("ylim", (None, None))
+        ax.set_ylim(ylim[0], ylim[1])  # 设置Y轴范围
+
 
     def _save_figure(self, filename, save_format):
         """保存图形"""
@@ -254,6 +244,7 @@ class Plot:
         self.tasks[-1]["kwargs"].update(kwargs)
         return self
 
+    @InputCheck({"plugin": {}})
     def add_plugin_to_task(self, plugin: PlotPlugin) -> "Plot":
         """
         为最新添加的绘图任务添加一个插件. 需注意插件与该任务的数据类型兼容.
@@ -413,8 +404,8 @@ class LinePlot(Plot):
         self.tasks.append(task)
         return self
 
-    @InputCheck({"Axis": {"ndim":1}, "Data": {"ndim":1}})
-    def Spectrum(self, Axis:np.ndarray,Data:np.ndarray, **kwargs):
+    @InputCheck({"Axis": {"ndim": 1}, "Data": {"ndim": 1}})
+    def Spectrum(self, Axis: np.ndarray, Data: np.ndarray, **kwargs):
         """
         注册一个谱图的绘制任务。
 
@@ -432,6 +423,9 @@ class LinePlot(Plot):
         LinePlot
             返回绘图对象本身，以支持链式调用。
         """
+        # 检查数据
+        if Axis.shape != Data.shape:
+            raise ValueError("Axis和Data必须具有相同的形状")
 
         def _draw_spectrum(ax, data):
             """内部函数：在指定ax上绘制频谱"""
@@ -461,7 +455,6 @@ class PeakfinderPlugin(PlotPlugin):
     峰值查找插件, 用于查找并标注峰值对应的坐标。
     """
 
-    @InputCheck({"height": {"OpenLow": 0}, "distance": {"Low": 1}})
     def __init__(self, **kwargs):
         """
         初始化峰值查找插件。
@@ -513,13 +506,22 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
     """单信号时域波形图绘制函数"""
     plot_kwargs = {"xlabel": "时间/s", "ylabel": "幅值"}
     plot_kwargs.update(kwargs)
-    fig,ax=LinePlot(**plot_kwargs).TimeWaveform(Sig).show(pattern='return')
+    fig, ax = LinePlot(isSampled=True,**plot_kwargs).TimeWaveform(Sig).show(pattern="return")
     plt.show()
 
 
 def FreqSpectrumFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
     """单谱图绘制函数"""
-    plot_kwargs = {"xlabel": "频率/Hz", "ylabel": "幅值"}
+    plot_kwargs = {"xlabel": "频率/Hz", "ylabel": "幅值", "yscale": "log"}
     plot_kwargs.update(kwargs)
-    fig,ax=LinePlot(**plot_kwargs).Spectrum(Axis, Data).show(pattern='return')
+    fig, ax = (
+        LinePlot(**plot_kwargs)
+        .Spectrum(Axis, Data)
+        .add_plugin_to_task(
+            PeakfinderPlugin(
+                distance=len(Axis) // 100, height=0.1 * np.max(Data), prominence=0.1
+            )
+        )
+        .show(pattern="return")
+    )
     plt.show()
