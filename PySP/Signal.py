@@ -5,10 +5,9 @@
 ## 内容
     - class:
         1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片和numpy广播函数调用等
-    - function:
-        1. Resample: 对信号进行任意时间段的重采样
-        2. Periodic: 生成仿真含噪准周期信号
 """
+
+
 
 from PySP.Assist_Module.Dependencies import Optional
 from PySP.Assist_Module.Dependencies import np

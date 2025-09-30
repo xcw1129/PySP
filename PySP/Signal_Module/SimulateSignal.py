@@ -1,14 +1,12 @@
 """
-# Signal
-信号数据模块, 定义了PySP库中的核心信号数据对象Signal的基本结构, 以及一些信号预处理函数
+# SimulateSignal
+模拟信号生成模块
 
 ## 内容
-    - class:
-        1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片和numpy广播函数调用等
     - function:
-        1. Resample: 对信号进行任意时间段的重采样
-        2. Periodic: 生成仿真含噪准周期信号
+        1. Periodic: 生成仿真含噪准周期信号
 """
+
 
 
 from PySP.Assist_Module.Dependencies import np, random
