@@ -1,14 +1,16 @@
 """
-# Plot
-绘图可视化模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类实现, 以及辅助插件
+# LinePlot
+线型图绘制模块, 实现了时域波形图、谱图等一维线条图绘制方法
 
 ## 内容
     - class:
-        1. PlotPlugin: 绘图插件类，提供扩展绘图功能的接口
-        2. Plot: 绘图类, 实现通用绘图框架, 供绘图方法继承并实现具体绘图逻辑.
-        3. LinePlot: 波形图, 谱图等线条图绘制方法, 可绘制多线条图
-        4. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
+        1. LinePlot: 波形图, 谱图等线条图绘制方法, 可绘制多线条图
+    - function:
+        1. TimeWaveformFunc: 单信号时域波形图绘制函数
+        2. FreqSpectrumFunc: 单谱图绘制函数
 """
+
+
 
 from PySP.Assist_Module.Dependencies import Union
 from PySP.Assist_Module.Dependencies import np

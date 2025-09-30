@@ -1,14 +1,12 @@
 """
-# Plot
-绘图可视化模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类实现, 以及辅助插件
+# PlotPlugin
+绘图插件模块, 提供了多种绘图辅助插件类, 可与Plot类结合使用以增强绘图功能
 
 ## 内容
     - class:
-        1. PlotPlugin: 绘图插件类，提供扩展绘图功能的接口
-        2. Plot: 绘图类, 实现通用绘图框架, 供绘图方法继承并实现具体绘图逻辑.
-        3. LinePlot: 波形图, 谱图等线条图绘制方法, 可绘制多线条图
-        4. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
+        1. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
+
 
 from PySP.Assist_Module.Dependencies import np
 from PySP.Assist_Module.Dependencies import plt
