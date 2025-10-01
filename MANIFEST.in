@@ -1,0 +1,3 @@
+include README.md
+recursive-include PySP *
+recursive-include PySP/_Assist_Module *.ttf

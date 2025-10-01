@@ -2,7 +2,7 @@
 	"folders": [
 		{
 			"name": "PySP",
-			"path": "."
+			"path": "../PySP"
 		},
 		{
 			"name": "PySP: dev",
