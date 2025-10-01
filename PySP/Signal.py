@@ -1,13 +1,12 @@
 """
-Signal 子接口
-==============
-信号数据相关 API 汇总，推荐通过 from PySP import Signal, Resample, Periodic 导入。
+# PySP.Signal: 信号数据生成、封装和预处理模块
 
-可用方法：
-------------------
-Signal   : 信号对象，支持数据、采样率、单位等属性与常用信号操作
-Resample : 信号重采样函数，支持多种插值与极值法
-Periodic : 多分量周期信号生成器，支持加噪声
+## 内容
+    - class:
+        1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片、运算比较和numpy函数调用等
+    - function:
+        1. Resample: 对信号进行任意时间段的重采样
+        2. Periodic: 生成仿真含噪准周期信号
 """
 
 from ._Signal_Module.core import Signal
@@ -19,6 +18,3 @@ __all__ = [
     "Resample",
     "Periodic",
 ]
-
-
-

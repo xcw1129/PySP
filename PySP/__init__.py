@@ -1,27 +1,10 @@
 """
-PySP 包公共入口
-==================
-PySP 是一个信号处理与可视化分析工具包。
+# PySP: 一维信号分析、处理与可视化Python包
 
-本模块为总接口，推荐通过如下方式导入：
-    from PySP import Signal, Plot, Analysis, ...
-
-顶层 API 一览：
-------------------
-Signal      : 信号对象，支持基本信号操作与属性
-Resample    : 信号重采样函数
-Periodic    : 多分量周期信号生成器
-Plot        : 通用绘图对象
-PlotPlugin  : 绘图插件基类
-LinePlot    : 折线图对象
-TimeWaveformFunc : 时域波形快速绘制函数
-FreqSpectrumFunc  : 频谱快速绘制函数
-PeakfinderPlugin  : 峰值检测插件
-Analysis    : 分析处理主类
-window      : 窗函数生成工具
-SpectrumAnalysis  : 频谱分析类
-
-详细用法请参考各子模块文档。
+## 模块
+    - PySP.Signal: 信号数据生成、封装和预处理模块
+    - PySP.Plot: 波形图、一维/二维谱图和测试统计图可视化模块
+    - PySP.Analysis: 谱分析、特征提取和分解等信号处理模块
 """
 
 __version__ = "7.4.2"

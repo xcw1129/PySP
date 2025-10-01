@@ -1,13 +1,12 @@
 """
-Analysis 子接口
-===============
-分析处理相关 API 汇总，推荐通过 from PySP import Analysis, window, SpectrumAnalysis 导入。
+# PySP.Analysis: 谱分析、特征提取和分解等信号处理模块
 
-可用方法：
-------------------
-Analysis         : 分析处理主类，支持信号分析、特征提取等
-window           : 窗函数生成工具，支持多种常用窗类型
-SpectrumAnalysis : 频谱分析类，支持多种频谱算法与可视化
+## 内容
+    - class:
+        1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
+        2. SpectrumAnalysis: 平稳信号频谱分析方法
+    - function:
+        1. window: 生成各类窗函数整周期采样序列
 """
 
 from ._Analysis_Module.core import Analysis
@@ -18,5 +17,3 @@ __all__ = [
     "window",
     "SpectrumAnalysis",
 ]
-
-
