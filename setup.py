@@ -13,6 +13,10 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/xcw1129/PySP",  # 项目主页
     packages=find_packages(),  # 自动发现包
+    package_data={
+        "PySP.Assist_Module": ["times+simsun.ttf"],
+    },
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",
@@ -23,7 +27,7 @@ setup(
         "scipy>=1.7.0",
         "matplotlib>=3.4.0",
     ],
-    keywords=["signal processing", "fault diagnosis", "time-frequency analysis", "spectral analysis"],
+    keywords=["signal processing", "spectral analysis", "time-frequency analysis", "feature extraction", "signal decomposition"],
     project_urls={
         "Bug Tracker": "https://github.com/xcw1129/PySP/issues",
         "Source Code": "https://github.com/xcw1129/PySP",
