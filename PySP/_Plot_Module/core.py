@@ -1,3 +1,15 @@
+"""
+# core
+绘图可视化核心模块, 定义了PySP库中所有绘图方法的基本方法类`Plot`及其插件基类`PlotPlugin`
+
+## 内容
+    - class:
+        1. PlotPlugin: 绘图插件类，提供扩展绘图功能的接口
+        2. Plot: 绘图类, 实现通用绘图框架, 供绘图方法继承并实现具体绘图逻辑.
+"""
+
+
+
 from PySP._Assist_Module.Dependencies import resources
 from PySP._Assist_Module.Dependencies import deepcopy
 from PySP._Assist_Module.Dependencies import np

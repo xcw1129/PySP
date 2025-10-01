@@ -1,3 +1,15 @@
+"""
+# core
+分析处理核心模块, 定义了PySP库中所有信号分析处理方法的基本方法类`Analysis`
+
+## 内容
+    - class:
+        1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
+"""
+
+
+
+
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Signal_Module.core import Signal
 

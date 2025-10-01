@@ -1,6 +1,6 @@
 """
 # AutoDocstring
-自动文档字符串生成器模块, 用于扫描Python文件并生成模块级注释文档
+自动文档字符串生成器模块, 用于扫描指定Python文件并生成模块级注释文档
 
 ## 内容
     - class:
@@ -14,21 +14,22 @@
 
 
 
+
 import ast
 import os
 import re
 
 # ----------- 需操作的目标模块文件名及描述（字典形式，键为文件名，值为描述） -----------
 TARGET_MODULES = {
-    "AutoDocstring.py": "自动文档字符串生成器模块, 用于扫描Python文件并生成模块级注释文档",
-    "Signal.py": "信号数据模块, 定义了PySP库中的核心信号数据对象Signal的基本结构, 以及一些信号预处理函数",
-    "Analysis.py": "分析处理方法模块, 定义了PySP库中高级分析处理方法模块的基本类结构Analysis",
-    "Plot.py": "绘图可视化模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类实现, 以及辅助插件",
+    "AutoDocstring.py": "自动文档字符串生成器模块, 用于扫描指定Python文件并生成模块级注释文档",
+    "_Signal_Module/core.py": "信号数据核心模块, 定义了PySP库中数据处理的基本对象类`Signal`",
     "_Signal_Module/SignalSampling.py": "信号采样预处理模块",
     "_Signal_Module/SimulateSignal.py": "模拟信号生成模块",
+    "_Plot_Module/core.py": "绘图可视化核心模块, 定义了PySP库中所有绘图方法的基本方法类`Plot`及其插件基类`PlotPlugin`",
     "_Plot_Module/LinePlot.py": "线型图绘制模块, 实现了时域波形图、谱图等一维线条图绘制方法",
-    "_Plot_Module/PlotPlugin.py": "绘图插件模块, 提供了多种绘图辅助插件类, 可与Plot类结合使用以增强绘图功能",
-    "_Analysis_Module/SpectrumAnalysis.py": "经典平稳谱分析模块, 提供了多种基于fft的谱分析方法",
+    "_Plot_Module/PlotPlugin.py": "绘图插件模块, 提供了多种绘图辅助插件, 可与Plot类结合使用以增强绘图功能",
+    "_Analysis_Module/core.py": "分析处理核心模块, 定义了PySP库中所有信号分析处理方法的基本方法类`Analysis`",
+    "_Analysis_Module/SpectrumAnalysis.py": "平稳谱分析模块, 提供了多种基于fft的经典谱分析方法",
 }
 # ---------------------------------------------------------------
 

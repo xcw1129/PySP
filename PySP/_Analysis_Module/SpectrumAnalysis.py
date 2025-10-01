@@ -1,7 +1,6 @@
-__all__ = ['window', 'SpectrumAnalysis']
 """
 # SpectrumAnalysis
-经典平稳谱分析模块, 提供了多种基于fft的谱分析方法
+平稳谱分析模块, 提供了多种基于fft的经典谱分析方法
 
 ## 内容
     - class:
@@ -9,6 +8,8 @@ __all__ = ['window', 'SpectrumAnalysis']
     - function:
         1. window: 生成各类窗函数整周期采样序列
 """
+
+
 
 
 from PySP._Assist_Module.Dependencies import Optional, Callable

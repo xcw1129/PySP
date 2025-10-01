@@ -1,4 +1,3 @@
-__all__ = ['Periodic']
 """
 # SimulateSignal
 模拟信号生成模块
@@ -7,6 +6,8 @@ __all__ = ['Periodic']
     - function:
         1. Periodic: 生成仿真含噪准周期信号
 """
+
+
 
 
 

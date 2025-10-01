@@ -1,3 +1,14 @@
+"""
+# core
+信号数据核心模块, 定义了PySP库中数据处理的基本对象类`Signal`
+
+## 内容
+    - class:
+        1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片、运算比较和numpy函数调用等
+"""
+
+
+
 from PySP._Assist_Module.Dependencies import Optional
 from PySP._Assist_Module.Dependencies import np
 from PySP._Assist_Module.Dependencies import deepcopy

@@ -1,12 +1,13 @@
-__all__ = ['PeakfinderPlugin']
 """
 # PlotPlugin
-绘图插件模块, 提供了多种绘图辅助插件类, 可与Plot类结合使用以增强绘图功能
+绘图插件模块, 提供了多种绘图辅助插件, 可与Plot类结合使用以增强绘图功能
 
 ## 内容
     - class:
         1. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
+
+
 
 
 from PySP._Assist_Module.Dependencies import np
