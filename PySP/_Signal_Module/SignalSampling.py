@@ -131,3 +131,6 @@ def Resample(
 
     return Signal(data_resampled, fs=fs_resampled, t0=t0, label=Sig.label)
 
+
+
+__all__ = ["Resample"]

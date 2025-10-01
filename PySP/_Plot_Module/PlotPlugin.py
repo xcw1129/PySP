@@ -70,3 +70,7 @@ class PeakfinderPlugin(PlotPlugin):
                     color="red",
                     size=16,
                 )
+
+
+
+__all__ = ["PeakfinderPlugin"]

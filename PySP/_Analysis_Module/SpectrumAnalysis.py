@@ -242,3 +242,10 @@ class SpectrumAnalysis(Analysis):
         f_Axis = self.Sig.f_Axis[: N // 2]
         Amp = 2 * Amp[: len(f_Axis)]
         return f_Axis, Amp
+
+
+
+__all__ = [
+    "SpectrumAnalysis",
+    "window",
+]

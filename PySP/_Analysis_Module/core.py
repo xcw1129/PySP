@@ -70,3 +70,8 @@ class Analysis:
             return wrapper
 
         return plot_decorator
+
+
+__all__ = [
+    "Analysis",
+]

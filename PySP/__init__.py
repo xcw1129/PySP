@@ -9,25 +9,7 @@
 
 __version__ = "7.4.2"
 
-from .Signal import Signal, Resample, Periodic
-from .Plot import Plot, PlotPlugin, LinePlot, TimeWaveformFunc, FreqSpectrumFunc, PeakfinderPlugin
-from .Analysis import Analysis, window, SpectrumAnalysis
+from . import Signal
+from . import Plot
+from . import Analysis
 from . import _plot_init
-
-__all__ = [
-    # Signal
-    "Signal",
-    "Resample",
-    "Periodic",
-    # Plot
-    "Plot",
-    "PlotPlugin",
-    "LinePlot",
-    "TimeWaveformFunc",
-    "FreqSpectrumFunc",
-    "PeakfinderPlugin",
-    # Analysis
-    "Analysis",
-    "window",
-    "SpectrumAnalysis",
-]

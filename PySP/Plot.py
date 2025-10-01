@@ -12,15 +12,7 @@
         2. FreqSpectrumFunc: 单谱图绘制函数
 """
 
-from ._Plot_Module.core import Plot, PlotPlugin
-from ._Plot_Module.LinePlot import LinePlot, TimeWaveformFunc, FreqSpectrumFunc
-from ._Plot_Module.PlotPlugin import PeakfinderPlugin
+from ._Plot_Module.core import *
+from ._Plot_Module.LinePlot import *
+from ._Plot_Module.PlotPlugin import *
 
-__all__ = [
-    "Plot",
-    "PlotPlugin",
-    "LinePlot",
-    "TimeWaveformFunc",
-    "FreqSpectrumFunc",
-    "PeakfinderPlugin",
-]

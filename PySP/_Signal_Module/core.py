@@ -521,3 +521,7 @@ class Signal:
         from PySP._Plot_Module.LinePlot import TimeWaveformFunc
 
         TimeWaveformFunc(self, **kwargs)
+
+
+
+__all__ = ["Signal"]

@@ -9,11 +9,5 @@
         1. window: 生成各类窗函数整周期采样序列
 """
 
-from ._Analysis_Module.core import Analysis
-from ._Analysis_Module.SpectrumAnalysis import window, SpectrumAnalysis
-
-__all__ = [
-    "Analysis",
-    "window",
-    "SpectrumAnalysis",
-]
+from ._Analysis_Module.core import *
+from ._Analysis_Module.SpectrumAnalysis import *

@@ -9,12 +9,6 @@
         2. Periodic: 生成仿真含噪准周期信号
 """
 
-from ._Signal_Module.core import Signal
-from ._Signal_Module.SignalSampling import Resample
-from ._Signal_Module.SimulateSignal import Periodic
-
-__all__ = [
-    "Signal",
-    "Resample",
-    "Periodic",
-]
+from ._Signal_Module.core import *
+from ._Signal_Module.SignalSampling import *
+from ._Signal_Module.SimulateSignal import *

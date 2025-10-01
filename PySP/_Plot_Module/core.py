@@ -306,16 +306,20 @@ class Plot:
         if pattern == "plot":
             try:
                 from IPython.display import display
-                # 
+                # 若在Jupyter中, 使用display显示图形
                 display(self.figure)
             except ImportError:
                 if self.figure:
                     self.figure.show()
-            plt.close(self.figure)
+            plt.close(self.figure)# 关闭图形, 防止重复显示
         elif pattern == "return":
             result = (self.figure, self.axes)
-            return result
+            return result# 不关闭图形, 继续由matplotlib管理
         elif pattern == "save":
             self._save_figure(filename, save_format)
         else:
             raise ValueError(f"未知的模式: {pattern}")
+
+
+
+__all__ = ["Plot", "PlotPlugin"]

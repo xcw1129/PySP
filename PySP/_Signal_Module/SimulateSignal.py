@@ -59,3 +59,7 @@ def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0.0) -> Signa
         )  # 生成任意频率、幅值、初相位的余弦信号
     Sig.data += random.randn(len(Sig.t_Axis)) * noise  # 加入高斯白噪声
     return Sig
+
+
+
+__all__ = ["Periodic"]
