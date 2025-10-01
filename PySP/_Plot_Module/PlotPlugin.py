@@ -9,12 +9,12 @@ __all__ = ['PeakfinderPlugin']
 """
 
 
-from PySP.Assist_Module.Dependencies import np
-from PySP.Assist_Module.Dependencies import plt
-from PySP.Assist_Module.Dependencies import signal
+from PySP._Assist_Module.Dependencies import np
+from PySP._Assist_Module.Dependencies import plt
+from PySP._Assist_Module.Dependencies import signal
 
-from PySP.Signal_Module.core import Signal
-from PySP.Plot_Module.core import PlotPlugin
+from PySP._Signal_Module.core import Signal
+from PySP._Plot_Module.core import PlotPlugin
 
 # --------------------------------------------------------------------------------------------#
 # -## ----------------------------------------------------------------------------------------#

@@ -14,7 +14,7 @@ setup(
     url="https://github.com/xcw1129/PySP",  # 项目主页
     packages=find_packages(),  # 自动发现包
     package_data={
-        "PySP.Assist_Module": ["times+simsun.ttf"],
+        "PySP._Assist_Module": ["times+simsun.ttf"],
     },
     include_package_data=True,
     classifiers=[

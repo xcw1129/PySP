@@ -1,8 +1,8 @@
-from PySP.Assist_Module.Dependencies import Optional
-from PySP.Assist_Module.Dependencies import np
-from PySP.Assist_Module.Dependencies import deepcopy
+from PySP._Assist_Module.Dependencies import Optional
+from PySP._Assist_Module.Dependencies import np
+from PySP._Assist_Module.Dependencies import deepcopy
 
-from PySP.Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Decorators import InputCheck
 
 
 # --------------------------------------------------------------------------------------------#
@@ -507,6 +507,6 @@ class Signal:
         )
         kwargs.update({"title": title})
         # 绘制时域波形图
-        from PySP.Plot_Module.LinePlot import TimeWaveformFunc
+        from PySP._Plot_Module.LinePlot import TimeWaveformFunc
 
         TimeWaveformFunc(self, **kwargs)

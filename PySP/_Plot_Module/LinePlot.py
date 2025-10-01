@@ -13,17 +13,17 @@ __all__ = ['LinePlot', 'TimeWaveformFunc', 'FreqSpectrumFunc']
 
 
 
-from PySP.Assist_Module.Dependencies import Union
-from PySP.Assist_Module.Dependencies import np
-from PySP.Assist_Module.Dependencies import plt
+from PySP._Assist_Module.Dependencies import Union
+from PySP._Assist_Module.Dependencies import np
+from PySP._Assist_Module.Dependencies import plt
 
-from PySP.Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP.Signal_Module.SignalSampling import Resample
-from PySP.Plot_Module.PlotPlugin import PeakfinderPlugin
+from PySP._Signal_Module.SignalSampling import Resample
+from PySP._Plot_Module.PlotPlugin import PeakfinderPlugin
 
-from PySP.Signal_Module.core import Signal
-from PySP.Plot_Module.core import Plot
+from PySP._Signal_Module.core import Signal
+from PySP._Plot_Module.core import Plot
 
 
 # --------------------------------------------------------------------------------------------#

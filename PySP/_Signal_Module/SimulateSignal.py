@@ -10,11 +10,11 @@ __all__ = ['Periodic']
 
 
 
-from PySP.Assist_Module.Dependencies import np, random
+from PySP._Assist_Module.Dependencies import np, random
 
-from PySP.Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP.Signal_Module.core import Signal
+from PySP._Signal_Module.core import Signal
 
 # --------------------------------------------------------------------------------------------#
 # -## ----------------------------------------------------------------------------------------#

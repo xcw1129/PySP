@@ -1,5 +1,5 @@
-from PySP.Assist_Module.Decorators import InputCheck
-from PySP.Signal_Module.core import Signal
+from PySP._Assist_Module.Decorators import InputCheck
+from PySP._Signal_Module.core import Signal
 
 IS_PLOT = False  # 全局默认绘图开关
 

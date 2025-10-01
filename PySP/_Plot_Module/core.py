@@ -1,10 +1,10 @@
-from PySP.Assist_Module.Dependencies import resources
-from PySP.Assist_Module.Dependencies import deepcopy
-from PySP.Assist_Module.Dependencies import np
-from PySP.Assist_Module.Dependencies import plt, font_manager, ticker, cycler
+from PySP._Assist_Module.Dependencies import resources
+from PySP._Assist_Module.Dependencies import deepcopy
+from PySP._Assist_Module.Dependencies import np
+from PySP._Assist_Module.Dependencies import plt, font_manager, ticker, cycler
 
 
-from PySP.Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Decorators import InputCheck
 
 
 # 全局绘图配置模板（不含字体名，需实例化时动态填充）
@@ -144,7 +144,7 @@ class Plot:
             prop = None
             # 1. 尝试 importlib.resources 方式
             try:
-                font_path = resources.files("PySP.Assist_Module").joinpath(
+                font_path = resources.files("PySP._Assist_Module").joinpath(
                     "times+simsun.ttf"
                 )
                 font_manager.fontManager.addfont(font_path)
@@ -155,7 +155,7 @@ class Plot:
 
                 here = os.path.dirname(__file__)
                 font_path = os.path.abspath(
-                    os.path.join(here, "..", "Assist_Module", "times+simsun.ttf")
+                    os.path.join(here, "..", "_Assist_Module", "times+simsun.ttf")
                 )
                 if os.path.exists(font_path):
                     font_manager.fontManager.addfont(font_path)

@@ -11,16 +11,16 @@ __all__ = ['window', 'SpectrumAnalysis']
 """
 
 
-from PySP.Assist_Module.Dependencies import Optional, Callable
-from PySP.Assist_Module.Dependencies import np
-from PySP.Assist_Module.Dependencies import fft, signal
+from PySP._Assist_Module.Dependencies import Optional, Callable
+from PySP._Assist_Module.Dependencies import np
+from PySP._Assist_Module.Dependencies import fft, signal
 
-from PySP.Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP.Plot_Module.LinePlot import FreqSpectrumFunc, TimeWaveformFunc
+from PySP._Plot_Module.LinePlot import FreqSpectrumFunc, TimeWaveformFunc
 
-from PySP.Signal_Module.core import Signal
-from PySP.Analysis_Module.core import Analysis
+from PySP._Signal_Module.core import Signal
+from PySP._Analysis_Module.core import Analysis
 
 
 # --------------------------------------------------------------------------------------------#

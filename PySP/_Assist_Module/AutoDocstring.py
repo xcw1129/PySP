@@ -24,11 +24,11 @@ TARGET_MODULES = {
     "Signal.py": "信号数据模块, 定义了PySP库中的核心信号数据对象Signal的基本结构, 以及一些信号预处理函数",
     "Analysis.py": "分析处理方法模块, 定义了PySP库中高级分析处理方法模块的基本类结构Analysis",
     "Plot.py": "绘图可视化模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类实现, 以及辅助插件",
-    "Signal_Module/SignalSampling.py": "信号采样预处理模块",
-    "Signal_Module/SimulateSignal.py": "模拟信号生成模块",
-    "Plot_Module/LinePlot.py": "线型图绘制模块, 实现了时域波形图、谱图等一维线条图绘制方法",
-    "Plot_Module/PlotPlugin.py": "绘图插件模块, 提供了多种绘图辅助插件类, 可与Plot类结合使用以增强绘图功能",
-    "Analysis_Module/SpectrumAnalysis.py": "经典平稳谱分析模块, 提供了多种基于fft的谱分析方法",
+    "_Signal_Module/SignalSampling.py": "信号采样预处理模块",
+    "_Signal_Module/SimulateSignal.py": "模拟信号生成模块",
+    "_Plot_Module/LinePlot.py": "线型图绘制模块, 实现了时域波形图、谱图等一维线条图绘制方法",
+    "_Plot_Module/PlotPlugin.py": "绘图插件模块, 提供了多种绘图辅助插件类, 可与Plot类结合使用以增强绘图功能",
+    "_Analysis_Module/SpectrumAnalysis.py": "经典平稳谱分析模块, 提供了多种基于fft的谱分析方法",
 }
 # ---------------------------------------------------------------
 

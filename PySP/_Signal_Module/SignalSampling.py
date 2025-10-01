@@ -9,12 +9,12 @@ __all__ = ['Resample']
 """
 
 
-from PySP.Assist_Module.Dependencies import Optional
-from PySP.Assist_Module.Dependencies import np
+from PySP._Assist_Module.Dependencies import Optional
+from PySP._Assist_Module.Dependencies import np
 
-from PySP.Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP.Signal_Module.core import Signal
+from PySP._Signal_Module.core import Signal
 
 
 # --------------------------------------------------------------------------------------------#
