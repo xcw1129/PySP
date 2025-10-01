@@ -13,8 +13,8 @@ from PySP.Assist_Module.Dependencies import np
 from PySP.Assist_Module.Dependencies import plt
 from PySP.Assist_Module.Dependencies import signal
 
-from PySP.Signal import Signal
-from PySP.Plot import PlotPlugin
+from PySP.Signal_Module.core import Signal
+from PySP.Plot_Module.core import PlotPlugin
 
 # --------------------------------------------------------------------------------------------#
 # -## ----------------------------------------------------------------------------------------#

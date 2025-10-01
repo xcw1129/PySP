@@ -22,8 +22,8 @@ from PySP.Assist_Module.Decorators import InputCheck
 from PySP.Signal_Module.SignalSampling import Resample
 from PySP.Plot_Module.PlotPlugin import PeakfinderPlugin
 
-from PySP.Signal import Signal
-from PySP.Plot import Plot
+from PySP.Signal_Module.core import Signal
+from PySP.Plot_Module.core import Plot
 
 
 # --------------------------------------------------------------------------------------------#

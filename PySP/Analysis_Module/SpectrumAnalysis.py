@@ -19,8 +19,8 @@ from PySP.Assist_Module.Decorators import InputCheck
 
 from PySP.Plot_Module.LinePlot import FreqSpectrumFunc, TimeWaveformFunc
 
-from PySP.Signal import Signal
-from PySP.Analysis import Analysis
+from PySP.Signal_Module.core import Signal
+from PySP.Analysis_Module.core import Analysis
 
 
 # --------------------------------------------------------------------------------------------#

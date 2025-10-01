@@ -1,77 +1,38 @@
-# Analysis主API，导入Analysis_Module全部接口
-from .Analysis_Module.SpectrumAnalysis import *
-
-__all__ = []
-from .Analysis_Module import SpectrumAnalysis
-__all__ += SpectrumAnalysis.__all__
 """
 # Analysis
-分析处理方法模块, 定义了PySP库中高级分析处理方法模块的基本类结构Analysis
+分析处理方法模块的公共聚合接口：
+提供 Analysis 基类与常用分析实现的显式导出与懒加载，避免急切导入与循环依赖。
 
-## 内容
-    - class:
-        1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
+导出：
+    - Analysis (from PySP.Analysis_Module.core)
+    - window, SpectrumAnalysis (from PySP.Analysis_Module.SpectrumAnalysis)
 """
 
+from importlib import import_module
+from typing import Any
+
+__all__ = [
+    "Analysis",
+    "window",
+    "SpectrumAnalysis",
+]
+
+_EXPORTS = {
+    "Analysis": ("PySP.Analysis_Module.core", "Analysis"),
+    "window": ("PySP.Analysis_Module.SpectrumAnalysis", "window"),
+    "SpectrumAnalysis": ("PySP.Analysis_Module.SpectrumAnalysis", "SpectrumAnalysis"),
+}
 
 
-from PySP.Assist_Module.Decorators import InputCheck
-from PySP.Signal import Signal
+def __getattr__(name: str) -> Any:
+    if name in _EXPORTS:
+        mod_name, attr = _EXPORTS[name]
+        mod = import_module(mod_name)
+        return getattr(mod, attr)
+    raise AttributeError(f"module 'PySP.Analysis' has no attribute {name!r}")
 
-IS_PLOT = False  # 全局默认绘图开关
+
+def __dir__():  # 提升可发现性
+    return sorted(list(__all__))
 
 
-# --------------------------------------------------------------------------------------------#
-# -## ----------------------------------------------------------------------------------------#
-# -----## ------------------------------------------------------------------------------------#
-# ---------## --------------------------------------------------------------------------------#
-class Analysis:
-    """
-    信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
-
-    参数:
-    --------
-    Sig : Signal
-        输入信号
-    isPlot : bool, 默认为False
-        是否绘制分析结果图
-
-    属性：
-    --------
-    Sig : Signal
-        输入信号
-    isPlot : bool
-        是否绘制分析结果图
-    plot_kwargs : dict
-        绘图参数
-
-    方法:
-    --------
-    Plot(plot_func)
-        Analysis类专用绘图装饰器, 对方法运行结果进行绘图
-    """
-
-    # ----------------------------------------------------------------------------------------#
-    @InputCheck({"Sig": {}, "isPlot": {}})
-    def __init__(self, Sig: Signal, isPlot: bool = IS_PLOT, **kwargs):
-        self.Sig = Sig.copy()  # 防止对原信号进行修改
-        self.isPlot = isPlot
-        self.plot_kwargs = kwargs
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def Plot(plot_func: callable):
-        def plot_decorator(func):
-            def wrapper(self, *args, **kwargs):
-                res = func(self, *args, **kwargs)
-                if self.isPlot:
-                    # 需确保被装饰函数返回值格式与plot_func输入参数格式一致
-                    if isinstance(res, tuple):
-                        plot_func(*res, **self.plot_kwargs)
-                    else:
-                        plot_func(res, **self.plot_kwargs)
-                return res
-
-            return wrapper
-
-        return plot_decorator

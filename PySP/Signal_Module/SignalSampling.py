@@ -14,7 +14,7 @@ from PySP.Assist_Module.Dependencies import np
 
 from PySP.Assist_Module.Decorators import InputCheck
 
-from PySP.Signal import Signal
+from PySP.Signal_Module.core import Signal
 
 
 # --------------------------------------------------------------------------------------------#
