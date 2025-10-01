@@ -31,6 +31,8 @@ PySP/_Signal_Module/__pycache__/core.cpython-39.pyc
 PySP/__pycache__/Analysis.cpython-39.pyc
 PySP/__pycache__/Plot.cpython-39.pyc
 PySP/__pycache__/Signal.cpython-39.pyc
+PySP/__pycache__/__init__.cpython-39.pyc
+PySP/__pycache__/_plot_init.cpython-39.pyc
 pysp_xcw.egg-info/PKG-INFO
 pysp_xcw.egg-info/SOURCES.txt
 pysp_xcw.egg-info/dependency_links.txt
