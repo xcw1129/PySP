@@ -310,11 +310,10 @@ class Plot:
                 display(self.figure)
             except ImportError:
                 if self.figure:
-                    self.figure.show()
-            plt.close(self.figure)# 关闭图形, 防止重复显示
+                    plt.show()
         elif pattern == "return":
             result = (self.figure, self.axes)
-            return result# 不关闭图形, 继续由matplotlib管理
+            return result
         elif pattern == "save":
             self._save_figure(filename, save_format)
         else:
