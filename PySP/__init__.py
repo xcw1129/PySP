@@ -8,6 +8,7 @@ __version__ = "7.4.2"
 from .Signal import Signal, Resample, Periodic
 from .Plot import Plot, PlotPlugin, LinePlot, TimeWaveformFunc, FreqSpectrumFunc, PeakfinderPlugin
 from .Analysis import Analysis, window, SpectrumAnalysis
+from . import _plot_init
 
 __all__ = [
     # Signal

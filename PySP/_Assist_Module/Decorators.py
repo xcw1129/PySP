@@ -17,7 +17,8 @@ def InputCheck(*var_checks):
 
             # --------------------------------------------------------------------------------#
             # 获取函数输入变量
-            Vars = inspect.signature(func)
+            target = func.__func__ if isinstance(func, staticmethod) else func
+            Vars = inspect.signature(target)
             # 检查实际输入变量是否在函数参数中
             if "kwargs" not in Vars.parameters:
                 for var_name in kwargs:

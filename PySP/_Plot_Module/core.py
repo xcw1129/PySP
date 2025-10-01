@@ -7,47 +7,6 @@ from PySP._Assist_Module.Dependencies import plt, font_manager, ticker, cycler
 from PySP._Assist_Module.Decorators import InputCheck
 
 
-# 全局绘图配置模板（不含字体名，需实例化时动态填充）
-_config_template = {
-    "font.family": "sans-serif",  # 设置全局字体
-    # "font.sans-serif": prop.get_name(),
-    "font.size": 18,  # 设置全局字体大小
-    # 设置各元素字体大小统一
-    "axes.titlesize": 20,  # 标题字体大小
-    "axes.labelsize": 18,  # 轴标签字体大小
-    "xtick.labelsize": 16,  # x轴刻度标签字体大小
-    "ytick.labelsize": 16,  # y轴刻度标签字体大小
-    "legend.fontsize": 16,  # 图例字体大小
-    # 设置正常显示负号
-    "figure.figsize": (12, 5),  # 默认图形大小，12cm x 5cm
-    "figure.dpi": 100,  # 显示分辨率
-    "savefig.dpi": 600,  # 保存分辨率
-    "axes.prop_cycle": cycler(
-        color=[
-            "#1f77b4",  # 蓝
-            "#ff7f0e",  # 橙
-            "#2ca02c",  # 绿
-            "#d62728",  # 红
-            "#a77ece",  # 紫
-            "#8c564b",  # 棕
-            "#520e8e",  # 粉
-            "#7f7f7f",  # 灰
-            "#bcbd22",  # 橄榄
-            "#17becf",  # 青
-        ]
-    ),  # 设置颜色循环
-    "axes.grid": True,  # 显示网格
-    "axes.grid.axis": "y",  # 只显示y轴网格
-    "grid.linestyle": (0, (8, 6)),  # 网格线为虚线
-    "xtick.direction": "in",  # x轴刻度线朝内
-    "ytick.direction": "in",  # y轴刻度线朝内
-    "mathtext.fontset": "custom",  # 公式字体设置
-    "mathtext.rm": "Times New Roman",  # 数学公式字体 - 正常
-    "mathtext.it": "Times New Roman:italic",  # 数学公式字体 - 斜体
-    "mathtext.bf": "Times New Roman:bold",  # 数学公式字体 - 粗体
-}
-
-
 # --------------------------------------------------------------------------------------------#
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
@@ -137,46 +96,6 @@ class Plot:
         self.isSampled = isSampled  # 是否对Signal对象进行采样
         self._kwargs = kwargs  # 全局默认kwargs, 不允许外部修改
         self.tasks = []  # 绘图任务列表, 实时更新. 绘图时按顺序执行
-
-        # 字体注册与全局样式设置（只做一次）
-        if not Plot._font_registered:
-            font_path = None
-            prop = None
-            # 1. 尝试 importlib.resources 方式
-            try:
-                font_path = resources.files("PySP._Assist_Module").joinpath(
-                    "times+simsun.ttf"
-                )
-                font_manager.fontManager.addfont(font_path)
-                prop = font_manager.FontProperties(fname=font_path)
-            except Exception:
-                # 2. fallback: 直接用本地路径
-                import os
-
-                here = os.path.dirname(__file__)
-                font_path = os.path.abspath(
-                    os.path.join(here, "..", "_Assist_Module", "times+simsun.ttf")
-                )
-                if os.path.exists(font_path):
-                    font_manager.fontManager.addfont(font_path)
-                    prop = font_manager.FontProperties(fname=font_path)
-            # 3. 设置全局样式
-            config = dict(_config_template)
-            if prop is not None:
-                config["font.sans-serif"] = prop.get_name()
-            plt.rcParams.update(config)
-            Plot._font_registered = True
-        else:
-            # 只需设置全局样式（不重复注册字体）
-            config = dict(_config_template)
-            # 取已注册字体名
-            try:
-                font_names = [f.name for f in font_manager.fontManager.ttflist]
-                if font_names:
-                    config["font.sans-serif"] = font_names[0]
-            except Exception:
-                pass
-            plt.rcParams.update(config)
 
     @property
     def kwargs(self):
@@ -375,7 +294,7 @@ class Plot:
         if pattern == "plot":
             try:
                 from IPython.display import display
-
+                # 
                 display(self.figure)
             except ImportError:
                 if self.figure:

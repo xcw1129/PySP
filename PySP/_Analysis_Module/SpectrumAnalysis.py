@@ -133,8 +133,8 @@ class SpectrumAnalysis(Analysis):
         # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
-    @InputCheck({"data":{"ndim":1}})
     @staticmethod
+    @InputCheck({"data": {"ndim": 1}})
     def dft(data:np.ndarray) -> np.ndarray:
         """
         计算离散周期信号的傅里叶变换
@@ -151,10 +151,10 @@ class SpectrumAnalysis(Analysis):
         """
         X_f=fft.fft(data)
         return X_f
-    
+
     # ----------------------------------------------------------------------------------------#
-    @InputCheck({"data":{"ndim":1}, "fs":{"OpenLow":0}})
     @staticmethod
+    @InputCheck({"data":{"ndim":1}, "fs":{"OpenLow":0}})
     def ft(data:np.ndarray,fs:float,WinType: str= "汉宁窗") -> np.ndarray:
         """
         计算信号傅里叶变换的数值近似
@@ -181,7 +181,6 @@ class SpectrumAnalysis(Analysis):
         scale = 1 / np.mean(win_data)  # 幅值补偿因子
         X_f=fft.fft(data*win_data)/fs*scale
         return X_f
-        
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(FreqSpectrumFunc)
@@ -204,12 +203,12 @@ class SpectrumAnalysis(Analysis):
         Amp : np.ndarray
             单边傅里叶级数谱
         """
-        N= self.Sig.N
-        X_f = self.ft(self.Sig.data,self.Sig.fs,WinType=WinType)*self.Sig.df
+        N = self.Sig.N
+        X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.fs, WinType=WinType) * self.Sig.df
         Amp = np.abs(X_f)
         # 裁剪为单边余弦谱
         f_Axis = self.Sig.f_Axis[: N // 2]
-        Amp = 2 * Amp[: len(f_Axis)]# 余弦傅里叶级数幅值
+        Amp = 2 * Amp[: len(f_Axis)]  # 余弦傅里叶级数幅值
         return f_Axis, Amp
 
     # ----------------------------------------------------------------------------------------#
@@ -233,11 +232,11 @@ class SpectrumAnalysis(Analysis):
         Amp : np.ndarray
             包络谱
         """
-        N= self.Sig.N
+        N = self.Sig.N
         analytic = signal.hilbert(self.Sig.data)
         envelope = np.abs(analytic)
-        X_f= self.ft(envelope,self.Sig.fs,WinType=WinType)*self.Sig.df
-        Amp= np.abs(X_f)
+        X_f = SpectrumAnalysis.ft(envelope, self.Sig.fs, WinType=WinType) * self.Sig.df
+        Amp = np.abs(X_f)
         # 裁剪为单边余弦谱
         f_Axis = self.Sig.f_Axis[: N // 2]
         Amp = 2 * Amp[: len(f_Axis)]
