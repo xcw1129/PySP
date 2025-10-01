@@ -6,13 +6,11 @@ from PySP.Assist_Module.Dependencies import plt, font_manager, ticker, cycler
 
 from PySP.Assist_Module.Decorators import InputCheck
 
-# 全局绘图设置
-font_path = resources.files("PySP.Assist_Module").joinpath("times+simsun.ttf")
-font_manager.fontManager.addfont(font_path)  # 添加字体
-prop = font_manager.FontProperties(fname=font_path)  # 设置字体属性
-config = {
+
+# 全局绘图配置模板（不含字体名，需实例化时动态填充）
+_config_template = {
     "font.family": "sans-serif",  # 设置全局字体
-    "font.sans-serif": prop.get_name(),
+    # "font.sans-serif": prop.get_name(),
     "font.size": 18,  # 设置全局字体大小
     # 设置各元素字体大小统一
     "axes.titlesize": 20,  # 标题字体大小
@@ -103,6 +101,8 @@ class Plot:
         绘图任务列表
     """
 
+    _font_registered = False  # 类变量，标记字体是否已注册
+
     @InputCheck(
         {
             "ncols": {"Low": 1},
@@ -137,7 +137,46 @@ class Plot:
         self.isSampled = isSampled  # 是否对Signal对象进行采样
         self._kwargs = kwargs  # 全局默认kwargs, 不允许外部修改
         self.tasks = []  # 绘图任务列表, 实时更新. 绘图时按顺序执行
-        plt.rcParams.update(config)
+
+        # 字体注册与全局样式设置（只做一次）
+        if not Plot._font_registered:
+            font_path = None
+            prop = None
+            # 1. 尝试 importlib.resources 方式
+            try:
+                font_path = resources.files("PySP.Assist_Module").joinpath(
+                    "times+simsun.ttf"
+                )
+                font_manager.fontManager.addfont(font_path)
+                prop = font_manager.FontProperties(fname=font_path)
+            except Exception:
+                # 2. fallback: 直接用本地路径
+                import os
+
+                here = os.path.dirname(__file__)
+                font_path = os.path.abspath(
+                    os.path.join(here, "..", "Assist_Module", "times+simsun.ttf")
+                )
+                if os.path.exists(font_path):
+                    font_manager.fontManager.addfont(font_path)
+                    prop = font_manager.FontProperties(fname=font_path)
+            # 3. 设置全局样式
+            config = dict(_config_template)
+            if prop is not None:
+                config["font.sans-serif"] = prop.get_name()
+            plt.rcParams.update(config)
+            Plot._font_registered = True
+        else:
+            # 只需设置全局样式（不重复注册字体）
+            config = dict(_config_template)
+            # 取已注册字体名
+            try:
+                font_names = [f.name for f in font_manager.fontManager.ttflist]
+                if font_names:
+                    config["font.sans-serif"] = font_names[0]
+            except Exception:
+                pass
+            plt.rcParams.update(config)
 
     @property
     def kwargs(self):
