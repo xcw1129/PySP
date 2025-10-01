@@ -1,16 +1,12 @@
 """
 # Plot
 绘图可视化公共聚合接口：
-提供 Plot/PlotPlugin 基类与常用绘图实现的显式导出与懒加载，避免急切导入与循环依赖。
-
-导出：
-    - Plot, PlotPlugin (from PySP.Plot_Module.core)
-    - LinePlot, TimeWaveformFunc, FreqSpectrumFunc (from PySP.Plot_Module.LinePlot)
-    - PeakfinderPlugin (from PySP.Plot_Module.PlotPlugin)
+只暴露顶层 API，静态 import，确保 IDE 补全友好且不暴露子模块。
 """
 
-from importlib import import_module
-from typing import Any
+from .Plot_Module.core import Plot, PlotPlugin
+from .Plot_Module.LinePlot import LinePlot, TimeWaveformFunc, FreqSpectrumFunc
+from .Plot_Module.PlotPlugin import PeakfinderPlugin
 
 __all__ = [
     "Plot",
@@ -20,28 +16,5 @@ __all__ = [
     "FreqSpectrumFunc",
     "PeakfinderPlugin",
 ]
-
-_EXPORTS = {
-    # core base classes
-    "Plot": ("PySP.Plot_Module.core", "Plot"),
-    "PlotPlugin": ("PySP.Plot_Module.core", "PlotPlugin"),
-    # implementations
-    "LinePlot": ("PySP.Plot_Module.LinePlot", "LinePlot"),
-    "TimeWaveformFunc": ("PySP.Plot_Module.LinePlot", "TimeWaveformFunc"),
-    "FreqSpectrumFunc": ("PySP.Plot_Module.LinePlot", "FreqSpectrumFunc"),
-    "PeakfinderPlugin": ("PySP.Plot_Module.PlotPlugin", "PeakfinderPlugin"),
-}
-
-
-def __getattr__(name: str) -> Any:
-    if name in _EXPORTS:
-        mod_name, attr = _EXPORTS[name]
-        mod = import_module(mod_name)
-        return getattr(mod, attr)
-    raise AttributeError(f"module 'PySP.Plot' has no attribute {name!r}")
-
-
-def __dir__():
-    return sorted(list(__all__))
 
 
