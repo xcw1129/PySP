@@ -1,3 +1,4 @@
+__all__ = ['LinePlot', 'TimeWaveformFunc', 'FreqSpectrumFunc']
 """
 # LinePlot
 线型图绘制模块, 实现了时域波形图、谱图等一维线条图绘制方法

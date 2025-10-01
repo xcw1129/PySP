@@ -1,20 +1,12 @@
-from .Signal import Signal
-from .Signal_Module.SignalSampling import Resample
-from .Signal_Module.SimulateSignal import Periodic
-from .Plot_Module.LinePlot import LinePlot, TimeWaveformFunc, FreqSpectrumFunc
-from .Plot_Module.PlotPlugin import PeakfinderPlugin
-from .Analysis_Module.SpectrumAnalysis import window,SpectrumAnalysis
+# PySP包主入口，导入Signal/Plot/Analysis三大主API
+from .Signal import *
+from .Plot import *
+from .Analysis import *
 
-__version__ = "7.4.1"
+__all__ = []
+import PySP.Signal, PySP.Plot, PySP.Analysis
+__all__ += PySP.Signal.__all__
+__all__ += PySP.Plot.__all__
+__all__ += PySP.Analysis.__all__
 
-__all__ = [
-    "Signal",
-    "Resample",
-    "Periodic",
-    "LinePlot",
-    "TimeWaveformFunc",
-    "FreqSpectrumFunc",
-    "PeakfinderPlugin",
-    "window",
-    "SpectrumAnalysis",
-]
+__version__ = "7.4.2"

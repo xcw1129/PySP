@@ -1,3 +1,4 @@
+__all__ = ['window', 'SpectrumAnalysis']
 """
 # SpectrumAnalysis
 经典平稳谱分析模块, 提供了多种基于fft的谱分析方法

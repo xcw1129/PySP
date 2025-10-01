@@ -1,10 +1,18 @@
+# Signal主API，导入Signal_Module全部接口
+from .Signal_Module.SignalSampling import *
+from .Signal_Module.SimulateSignal import *
+
+__all__ = []
+from .Signal_Module import SignalSampling, SimulateSignal
+__all__ += SignalSampling.__all__
+__all__ += SimulateSignal.__all__
 """
 # Signal
 信号数据模块, 定义了PySP库中的核心信号数据对象Signal的基本结构, 以及一些信号预处理函数
 
 ## 内容
     - class:
-        1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片和numpy广播函数调用等
+        1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片、运算比较和numpy函数调用等
 """
 
 
@@ -22,7 +30,7 @@ from PySP.Assist_Module.Decorators import InputCheck
 # ---------## --------------------------------------------------------------------------------#
 class Signal:
     """
-    自带采样信息的信号数据类, 支持print、len、数组切片和numpy广播函数调用等
+    自带采样信息的信号数据类, 支持print、len、数组切片、运算比较和numpy函数调用等
 
     参数:
     --------

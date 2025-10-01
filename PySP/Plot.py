@@ -1,3 +1,11 @@
+# Plot主API，导入Plot_Module全部接口
+from .Plot_Module.LinePlot import *
+from .Plot_Module.PlotPlugin import *
+
+__all__ = []
+from .Plot_Module import LinePlot, PlotPlugin
+__all__ += LinePlot.__all__
+__all__ += PlotPlugin.__all__
 """
 # Plot
 绘图可视化模块, 定义了PySP库中所有绘图方法的基本类Plot. 提供了常用绘图方法的类实现, 以及辅助插件

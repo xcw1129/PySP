@@ -1,3 +1,4 @@
+__all__ = ['PeakfinderPlugin']
 """
 # PlotPlugin
 绘图插件模块, 提供了多种绘图辅助插件类, 可与Plot类结合使用以增强绘图功能

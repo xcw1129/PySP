@@ -1,3 +1,4 @@
+__all__ = ['Periodic']
 """
 # SimulateSignal
 模拟信号生成模块

@@ -1,3 +1,9 @@
+# Analysis主API，导入Analysis_Module全部接口
+from .Analysis_Module.SpectrumAnalysis import *
+
+__all__ = []
+from .Analysis_Module import SpectrumAnalysis
+__all__ += SpectrumAnalysis.__all__
 """
 # Analysis
 分析处理方法模块, 定义了PySP库中高级分析处理方法模块的基本类结构Analysis
