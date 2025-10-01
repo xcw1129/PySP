@@ -1,26 +1,20 @@
 Metadata-Version: 2.4
 Name: pysp-xcw
-Version: 7.0.2
-Summary: Various classical signal analysis and processing algorithms, in the field of mechanical fault diagnosis, are implemented.
+Version: 7.4.2
+Summary: Various classic and modern signal analysis and processing algorithms are implemented.
 Home-page: https://github.com/xcw1129/PySP
 Author: Xiong Chengwen
 Author-email: xcw1824@outlook.com
 Project-URL: Bug Tracker, https://github.com/xcw1129/PySP/issues
 Project-URL: Source Code, https://github.com/xcw1129/PySP
-Keywords: signal processing,fault diagnosis,time-frequency analysis,spectral analysis
+Keywords: signal processing,spectral analysis,time-frequency analysis,feature extraction,signal decomposition
 Classifier: Programming Language :: Python :: 3
-Classifier: License :: OSI Approved :: MIT License
-Classifier: Operating System :: OS Independent
-Classifier: Topic :: Scientific/Engineering :: Information Analysis
-Classifier: Topic :: Scientific/Engineering :: Visualization
 Classifier: Intended Audience :: Science/Research
-Classifier: Development Status :: 5 - Production/Stable
-Requires-Python: >=3.6
+Requires-Python: >=3.7
 Description-Content-Type: text/markdown
 Requires-Dist: numpy>=1.21.0
 Requires-Dist: scipy>=1.7.0
 Requires-Dist: matplotlib>=3.4.0
-Requires-Dist: pandas>=1.3.0
 Dynamic: author
 Dynamic: author-email
 Dynamic: classifier
@@ -172,3 +166,145 @@ MIT
 ## 贡献
 
 欢迎提交问题和拉取请求。
+
+---
+
+# PySP - Python Signal Processing Toolkit
+
+PySP is a Python library specifically designed for signal processing. Built upon powerful libraries like NumPy, SciPy, and Matplotlib, it provides high-level interfaces and tools to simplify the signal processing workflow.
+
+To install the library, use:
+```
+pip install pysp-xcw
+```
+
+## Core Features
+
+- **Object-oriented signal processing** - Encapsulates signal data and its sampling information through a dedicated Signal class
+- **Simplified analysis workflow** - Standardizes signal processing analysis processes using the Analysis base class
+- **Enhanced visualization capabilities** - Provides specialized plotting functions for signal processing through the Plot class hierarchy
+- **Extensible plugin system** - Supports extending plotting and analysis functionalities via a plugin mechanism
+
+## Main Components
+
+### Signal Class
+
+The Signal class is the core of PySP, encapsulating signal data and its sampling information, making signal processing more intuitive:
+
+```python
+from PySP.Signal import Signal, Periodic
+
+# Create a simulated periodic signal
+cos_params = [(10, 1, 0), (20, 0.5, np.pi/4)]  # [(frequency, amplitude, phase), ...]
+sig = Periodic(fs=1000, T=1, CosParams=cos_params, noise=0.1)
+
+# Signal attributes at a glance
+print(f"Sampling frequency: {sig.fs} Hz")
+print(f"Signal length: {sig.N} points")
+print(f"Signal duration: {sig.T} seconds")
+
+# Supports arithmetic operations
+sig2 = sig * 2 + 1
+```
+
+Key features:
+- Automatically manages sampling frequency, time axis, frequency axis, and other information
+- Supports slicing, mathematical operations, and NumPy function operations
+- Built-in signal visualization methods
+- Includes practical functions like signal resampling and periodic signal generation
+
+### Analysis Class
+
+The Analysis class provides a basic framework for signal processing analysis:
+
+```python
+from PySP.Analysis import Analysis
+from PySP.Plot import LinePlotFunc
+
+class FrequencyAnalysis(Analysis):
+    @Analysis.Plot(LinePlotFunc)
+    def spectrum(self):
+        # Calculate the spectrum
+        spec = np.abs(np.fft.fft(self.Sig.data))
+        return self.Sig.f_Axis, spec  # Returns suitable results for plotting
+```
+
+Key features:
+- Provides a unified analysis interface structure
+- Decorator for integrated plotting functions
+- Automatically handles signal copying to prevent accidental modification of source data
+
+### Plot Class Hierarchy
+
+The Plot class hierarchy provides visualization tools specifically designed for signal processing:
+
+```python
+from PySP.Plot import LinePlot, PeakFinderPlugin
+
+# Create a plot object
+plot = LinePlot(title="Signal with Peak Detection", xlabel="Time(s)", ylabel="Amplitude")
+
+# Add a peak detection plugin
+plot.add_plugin(PeakFinderPlugin(height=0.5, distance=50))
+
+# Execute plotting
+plot.plot(Axis=sig.t_Axis, Data=sig.data)
+```
+
+Key features:
+- Supports common signal processing charts such as line plots and heatmaps
+- Extensible plugin system (e.g., peak detection)
+- Unified style and configuration management
+- Supports Chinese labels and annotations
+
+## Installation
+
+```bash
+pip install pysp
+```
+
+## Usage Example
+
+```python
+from PySP.Signal import Signal, Periodic
+from PySP.Plot import LinePlotFunc_with_PeakFinder
+import numpy as np
+
+# Create a simulated signal
+fs = 1000  # Sampling frequency
+T = 1      # Signal duration
+t = np.arange(0, T, 1/fs)
+signal_data = np.sin(2*np.pi*10*t) + 0.5*np.sin(2*np.pi*20*t)
+sig = Signal(signal_data, fs=fs, label="Test Signal")
+
+# Signal operation example
+print(sig)  # Display signal information
+sig_filtered = sig * np.hanning(len(sig))  # Apply window function
+
+# Plot signal with peak detection
+LinePlotFunc_with_PeakFinder(
+    sig.t_Axis, 
+    sig.data,
+    height=0.8,
+    distance=50,
+    title="Sine Signal with Peak Detection",
+    xlabel="Time(s)",
+    ylabel="Amplitude"
+)
+```
+
+## Why Choose PySP?
+
+- **Simplified workflow** - No more manual tracking of sample rates and axes
+- **Clearer code** - Object-oriented structure makes signal processing code more readable and maintainable
+- **Reduced boilerplate** - Common operations are built-in, no need to rewrite them
+- **Enhanced visualization** - Plotting functions optimized specifically for signal processing
+- **Easy to extend** - Class-based design makes it easy to extend and customize
+
+## License
+
+MIT
+
+## Contributions
+
+Issues and pull requests are welcome.
