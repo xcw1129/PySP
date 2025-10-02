@@ -1,281 +1,431 @@
-# PySP - Python信号处理工具包
+# PySP - Python信号处理工具包 | Python Signal Processing Toolkit
 
-PySP是一个专为信号处理设计的Python工具库，它在NumPy、SciPy和Matplotlib等强大库的基础上构建，提供了简化信号处理工作流程的高级接口和工具。
+PySP是一个专为信号处理设计的Python工具库，基于NumPy、SciPy和Matplotlib构建，提供面向对象的信号处理工作流，让信号分析更加简洁高效。
 
-若要安装该库，使用：
-```
+PySP is a Python library specifically designed for signal processing. Built upon NumPy, SciPy, and Matplotlib, it provides an object-oriented signal processing workflow that makes signal analysis more concise and efficient.
+
+## 安装 | Installation
+
+```bash
 pip install pysp-xcw
 ```
 
-## 核心特性
+## 库的作用与架构特点 | Purpose and Architecture
 
-- **面向对象的信号处理** - 通过专用的Signal类封装信号数据及其采样信息
-- **简化的分析流程** - 使用Analysis基类规范化信号处理分析过程
-- **增强的可视化能力** - 通过Plot类体系提供针对信号处理的专用绘图功能
-- **可扩展的插件系统** - 支持通过插件机制扩展绘图和分析功能
+### 核心作用 | Core Purpose
 
-## 主要组件
+PySP旨在解决传统信号处理中的常见痛点：
+- 信号数据与采样参数分离管理，容易出错
+- 频繁的坐标轴计算和数据转换操作
+- 缺乏统一的分析和可视化接口
+- 代码重复率高，难以维护和扩展
 
-### Signal 类
+PySP aims to solve common pain points in traditional signal processing:
+- Signal data and sampling parameters are managed separately, prone to errors
+- Frequent axis calculations and data conversion operations
+- Lack of unified analysis and visualization interfaces
+- High code duplication, difficult to maintain and extend
 
-Signal类是PySP的核心，它封装了信号数据及其采样信息，使信号处理更加直观：
+### 架构特点 | Architecture Features
 
-```python
-from PySP.Signal import Signal, Periodic
+**1. 三层模块化设计 | Three-Layer Modular Design**
 
-# 创建一个模拟周期信号
-cos_params = [(10, 1, 0), (20, 0.5, np.pi/4)]  # [(频率, 幅值, 相位), ...]
-sig = Periodic(fs=1000, T=1, CosParams=cos_params, noise=0.1)
+PySP采用清晰的三层架构，职责分明：
+- **Signal层**：数据生成与封装
+- **Analysis层**：信号分析与处理
+- **Plot层**：结果可视化
 
-# 信号属性一目了然
-print(f"采样频率: {sig.fs} Hz")
-print(f"信号长度: {sig.N} 点")
-print(f"信号时长: {sig.T} 秒")
+PySP adopts a clear three-layer architecture with distinct responsibilities:
+- **Signal Layer**: Data generation and encapsulation
+- **Analysis Layer**: Signal analysis and processing
+- **Plot Layer**: Result visualization
 
-# 支持算术运算
-sig2 = sig * 2 + 1
-```
+**2. 面向对象设计 | Object-Oriented Design**
 
-主要特性：
-- 自动管理采样频率、时间轴、频率轴等信息
-- 支持切片、数学运算和NumPy函数操作
-- 内置信号可视化方法
-- 包含信号重采样、周期信号生成等实用功能
+- Signal类封装数据和采样信息，支持运算符重载和NumPy函数
+- Analysis基类提供统一的分析接口和装饰器模式
+- Plot基类实现可扩展的绘图框架和插件系统
 
-### Analysis 类
+- Signal class encapsulates data and sampling information, supports operator overloading and NumPy functions
+- Analysis base class provides unified analysis interface and decorator pattern
+- Plot base class implements extensible plotting framework and plugin system
 
-Analysis类提供了信号处理分析的基础框架：
+**3. 插件化扩展机制 | Plugin Extension Mechanism**
 
-```python
-from PySP.Analysis import Analysis
-from PySP.Plot import LinePlotFunc
+通过PlotPlugin基类，用户可以轻松扩展绘图功能，无需修改核心代码。
 
-class FrequencyAnalysis(Analysis):
-    @Analysis.Plot(LinePlotFunc)
-    def spectrum(self):
-        # 计算频谱
-        spec = np.abs(np.fft.fft(self.Sig.data))
-        return self.Sig.f_Axis, spec  # 返回适合绘图的结果
-```
-
-主要特性：
-- 提供统一的分析接口结构
-- 集成绘图功能的装饰器
-- 自动处理信号复制以防止意外修改源数据
-
-### Plot 类体系
-
-Plot类体系提供了专为信号处理设计的可视化工具：
-
-```python
-from PySP.Plot import LinePlot, PeakFinderPlugin
-
-# 创建绘图对象
-plot = LinePlot(title="带峰值检测的信号", xlabel="时间(s)", ylabel="幅值")
-
-# 添加峰值检测插件
-plot.add_plugin(PeakFinderPlugin(height=0.5, distance=50))
-
-# 执行绘图
-plot.plot(Axis=sig.t_Axis, Data=sig.data)
-```
-
-主要特性：
-- 支持线图、热力图等常用信号处理图表
-- 可扩展的插件系统（如峰值检测）
-- 统一的样式和配置管理
-- 支持中文标签和注释
-
-## 安装
-
-```bash
-pip install pysp
-```
-
-## 使用示例
-
-```python
-from PySP.Signal import Signal, Periodic
-from PySP.Plot import LinePlotFunc_with_PeakFinder
-import numpy as np
-
-# 创建模拟信号
-fs = 1000  # 采样频率
-T = 1      # 信号时长
-t = np.arange(0, T, 1/fs)
-signal_data = np.sin(2*np.pi*10*t) + 0.5*np.sin(2*np.pi*20*t)
-sig = Signal(signal_data, fs=fs, label="测试信号")
-
-# 信号操作示例
-print(sig)  # 显示信号信息
-sig_filtered = sig * np.hanning(len(sig))  # 应用窗函数
-
-# 绘制带峰值检测的信号
-LinePlotFunc_with_PeakFinder(
-    sig.t_Axis, 
-    sig.data,
-    height=0.8,
-    distance=50,
-    title="带峰值检测的正弦信号",
-    xlabel="时间(s)",
-    ylabel="幅值"
-)
-```
-
-## 为什么选择PySP？
-
-- **简化工作流程** - 不再需要手动跟踪采样率和坐标轴
-- **代码更清晰** - 面向对象结构让信号处理代码更易读、更易维护
-- **减少重复代码** - 常用操作已内置，无需重复编写
-- **可视化增强** - 专为信号处理优化的绘图功能
-- **易于扩展** - 基于类的设计使其易于扩展和自定义
-
-## 许可证
-
-MIT
-
-## 贡献
-
-欢迎提交问题和拉取请求。
+Through the PlotPlugin base class, users can easily extend plotting functionality without modifying core code.
 
 ---
 
-# PySP - Python Signal Processing Toolkit
+## 子模块详解 | Module Details
 
-PySP is a Python library specifically designed for signal processing. Built upon powerful libraries like NumPy, SciPy, and Matplotlib, it provides high-level interfaces and tools to simplify the signal processing workflow.
+### 1. Signal 模块 - 信号数据生成、封装和预处理 | Signal Module - Data Generation, Encapsulation and Preprocessing
 
-To install the library, use:
-```
-pip install pysp-xcw
-```
+#### 模块特点 | Module Features
 
-## Core Features
+Signal模块是PySP的核心，提供了智能的信号数据容器和生成工具。
 
-- **Object-oriented signal processing** - Encapsulates signal data and its sampling information through a dedicated Signal class
-- **Simplified analysis workflow** - Standardizes signal processing analysis processes using the Analysis base class
-- **Enhanced visualization capabilities** - Provides specialized plotting functions for signal processing through the Plot class hierarchy
-- **Extensible plugin system** - Supports extending plotting and analysis functionalities via a plugin mechanism
+The Signal module is the core of PySP, providing intelligent signal data containers and generation tools.
 
-## Main Components
+**核心类 | Core Classes:**
 
-### Signal Class
+**`Signal`类** - 自带采样信息的信号数据类
+- **自动管理属性**：fs(采样频率)、N(采样点数)、T(时长)、t0(起始时间)
+- **智能坐标轴**：自动生成t_Axis(时间轴)、f_Axis(频率轴)
+- **运算符支持**：支持+、-、*、/等运算，自动维护采样信息
+- **切片操作**：支持Python切片语法，返回新的Signal对象
+- **NumPy兼容**：可直接使用np.sin()、np.fft()等函数
+- **打印友好**：print(sig)直接显示完整信号信息
 
-The Signal class is the core of PySP, encapsulating signal data and its sampling information, making signal processing more intuitive:
+**`Signal` Class** - Signal data class with sampling information
+- **Auto-managed attributes**: fs(sampling frequency), N(number of samples), T(duration), t0(start time)
+- **Smart axes**: Automatically generates t_Axis(time axis), f_Axis(frequency axis)
+- **Operator support**: Supports +, -, *, / operations, automatically maintains sampling information
+- **Slicing operations**: Supports Python slicing syntax, returns new Signal objects
+- **NumPy compatible**: Can directly use np.sin(), np.fft() and other functions
+- **Print friendly**: print(sig) directly displays complete signal information
+
+#### 可用接口 | Available Interfaces
+
+**类 | Classes:**
+- `Signal(data, fs, t0=0, label="")` - 信号数据类
+
+**函数 | Functions:**
+- `Resample(Sig, type='spacing', fs_resampled=None, t0=0, T=None)` - 信号重采样
+  - type: 'spacing'(线性插值), 'fft'(频域), 'extreme'(极值点)
+  - 支持任意时间段和采样频率的重采样
+  
+- `Periodic(fs, T, CosParams, noise=0.0)` - 生成仿真准周期信号
+  - CosParams格式: [(f1, A1, phi1), (f2, A2, phi2), ...]
+  - 自动添加高斯白噪声
+
+**Classes:**
+- `Signal(data, fs, t0=0, label="")` - Signal data class
+
+**Functions:**
+- `Resample(Sig, type='spacing', fs_resampled=None, t0=0, T=None)` - Signal resampling
+  - type: 'spacing'(linear interpolation), 'fft'(frequency domain), 'extreme'(extrema points)
+  - Supports resampling at arbitrary time periods and sampling frequencies
+  
+- `Periodic(fs, T, CosParams, noise=0.0)` - Generate simulated quasi-periodic signals
+  - CosParams format: [(f1, A1, phi1), (f2, A2, phi2), ...]
+  - Automatically adds Gaussian white noise
+
+---
+
+### 2. Analysis 模块 - 谱分析、特征提取和信号处理 | Analysis Module - Spectrum Analysis, Feature Extraction and Processing
+
+#### 模块特点 | Module Features
+
+Analysis模块提供标准化的信号分析框架和常用频谱分析方法。
+
+The Analysis module provides a standardized signal analysis framework and common spectrum analysis methods.
+
+**基类 | Base Class:**
+
+**`Analysis`类** - 信号分析处理方法基类
+- **统一初始化**：接收Signal对象和绘图开关
+- **装饰器模式**：@Analysis.Plot装饰器自动绘图
+- **数据保护**：自动复制输入信号，防止修改原数据
+- **参数管理**：统一管理绘图参数
+
+**`Analysis` Class** - Base class for signal analysis methods
+- **Unified initialization**: Accepts Signal object and plotting switch
+- **Decorator pattern**: @Analysis.Plot decorator for automatic plotting
+- **Data protection**: Automatically copies input signal to prevent modifying original data
+- **Parameter management**: Unified management of plotting parameters
+
+**分析类 | Analysis Classes:**
+
+**`SpectrumAnalysis`类** - 平稳信号频谱分析
+- 提供多种经典频谱估计方法
+- 基于FFT的快速实现
+- 支持窗函数和零填充
+- 自动频率轴归一化
+
+**`SpectrumAnalysis` Class** - Stationary signal spectrum analysis
+- Provides various classical spectrum estimation methods
+- Fast implementation based on FFT
+- Supports window functions and zero padding
+- Automatic frequency axis normalization
+
+#### 可用接口 | Available Interfaces
+
+**类 | Classes:**
+- `Analysis(Sig, isPlot=False, **kwargs)` - 分析基类
+  - Sig: Signal对象
+  - isPlot: 是否自动绘图
+  - **kwargs: 绘图参数
+
+- `SpectrumAnalysis(Sig, isPlot=False, **kwargs)` - 频谱分析类
+  - 继承Analysis的所有功能
+  - 提供各种频谱估计方法
+
+**函数 | Functions:**
+- `window(num, type="汉宁窗", func=None, padding=None)` - 生成窗函数
+  - type: "矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗", "自定义窗"
+  - padding: 双边零填充点数
+  - 返回整周期采样序列
+
+**Classes:**
+- `Analysis(Sig, isPlot=False, **kwargs)` - Analysis base class
+  - Sig: Signal object
+  - isPlot: Whether to plot automatically
+  - **kwargs: Plotting parameters
+
+- `SpectrumAnalysis(Sig, isPlot=False, **kwargs)` - Spectrum analysis class
+  - Inherits all features of Analysis
+  - Provides various spectrum estimation methods
+
+**Functions:**
+- `window(num, type="Hanning", func=None, padding=None)` - Generate window function
+  - type: "Rectangle", "Hanning", "Hamming", "Bartlett", "Blackman", "Custom"
+  - padding: Number of zero padding points on both sides
+  - Returns full-period sampling sequence
+
+---
+
+### 3. Plot 模块 - 波形图、谱图和统计图可视化 | Plot Module - Waveform, Spectrum and Statistical Visualization
+
+#### 模块特点 | Module Features
+
+Plot模块提供专业的信号处理可视化工具，支持插件扩展。
+
+The Plot module provides professional signal processing visualization tools with plugin support.
+
+**核心类 | Core Classes:**
+
+**`Plot`类** - 绘图基类
+- **多子图布局**：支持自定义列数的子图排列
+- **任务队列**：采用任务队列机制，支持链式调用
+- **参数继承**：全局参数与局部参数的继承和覆盖
+- **插件系统**：支持添加多个插件扩展功能
+
+**`Plot` Class** - Plotting base class
+- **Multi-subplot layout**: Supports custom column arrangement
+- **Task queue**: Uses task queue mechanism, supports method chaining
+- **Parameter inheritance**: Inheritance and override of global and local parameters
+- **Plugin system**: Supports adding multiple plugins for extended functionality
+
+**`LinePlot`类** - 线型图绘制类
+- **TimeWaveform()**: 时域波形图
+- **FreqSpectrum()**: 频域谱图
+- 支持多信号叠加显示
+- 自动图例管理
+
+**`LinePlot` Class** - Line plot class
+- **TimeWaveform()**: Time-domain waveform plot
+- **FreqSpectrum()**: Frequency-domain spectrum plot
+- Supports multi-signal overlay display
+- Automatic legend management
+
+**插件类 | Plugin Classes:**
+
+**`PlotPlugin`类** - 插件基类
+- 定义插件接口规范
+- 支持插件链式调用
+
+**`PeakfinderPlugin`类** - 峰值查找插件
+- 基于scipy.signal.find_peaks
+- 自动标注峰值坐标
+- 可配置检测参数(height, distance等)
+
+**`PlotPlugin` Class** - Plugin base class
+- Defines plugin interface specification
+- Supports plugin chaining
+
+**`PeakfinderPlugin` Class** - Peak finding plugin
+- Based on scipy.signal.find_peaks
+- Automatically annotates peak coordinates
+- Configurable detection parameters (height, distance, etc.)
+
+#### 可用接口 | Available Interfaces
+
+**类 | Classes:**
+- `Plot(ncols=1, isSampled=False, **kwargs)` - 绘图基类
+- `PlotPlugin(**kwargs)` - 插件基类
+- `LinePlot(ncols=1, isSampled=False, **kwargs)` - 线型图类
+  - `TimeWaveform(Sig, **kwargs)` - 注册时域波形图任务
+  - `FreqSpectrum(Sig, **kwargs)` - 注册频谱图任务
+  - `add_plugin(plugin)` - 添加插件
+  - `show()` - 显示图形
+  
+- `PeakfinderPlugin(**kwargs)` - 峰值查找插件
+  - kwargs传递给scipy.signal.find_peaks
+
+**函数 | Functions:**
+- `TimeWaveformFunc(Sig, **kwargs)` - 单信号时域波形图绘制函数
+- `FreqSpectrumFunc(Sig, **kwargs)` - 单信号频谱图绘制函数
+
+**Classes:**
+- `Plot(ncols=1, isSampled=False, **kwargs)` - Plotting base class
+- `PlotPlugin(**kwargs)` - Plugin base class
+- `LinePlot(ncols=1, isSampled=False, **kwargs)` - Line plot class
+  - `TimeWaveform(Sig, **kwargs)` - Register time-domain waveform task
+  - `FreqSpectrum(Sig, **kwargs)` - Register spectrum plot task
+  - `add_plugin(plugin)` - Add plugin
+  - `show()` - Display figure
+  
+- `PeakfinderPlugin(**kwargs)` - Peak finding plugin
+  - kwargs passed to scipy.signal.find_peaks
+
+**Functions:**
+- `TimeWaveformFunc(Sig, **kwargs)` - Single signal time-domain waveform plotting function
+- `FreqSpectrumFunc(Sig, **kwargs)` - Single signal spectrum plotting function
+
+---
+
+## 完整工作流示例 | Complete Workflow Example
+
+下面是一个完整的示例，展示如何使用PySP的三个子模块完成从信号生成、分析到可视化的完整流程：
+
+Below is a complete example demonstrating how to use PySP's three modules to complete the full workflow from signal generation, analysis to visualization:
 
 ```python
-from PySP.Signal import Signal, Periodic
-
-# Create a simulated periodic signal
-cos_params = [(10, 1, 0), (20, 0.5, np.pi/4)]  # [(frequency, amplitude, phase), ...]
-sig = Periodic(fs=1000, T=1, CosParams=cos_params, noise=0.1)
-
-# Signal attributes at a glance
-print(f"Sampling frequency: {sig.fs} Hz")
-print(f"Signal length: {sig.N} points")
-print(f"Signal duration: {sig.T} seconds")
-
-# Supports arithmetic operations
-sig2 = sig * 2 + 1
-```
-
-Key features:
-- Automatically manages sampling frequency, time axis, frequency axis, and other information
-- Supports slicing, mathematical operations, and NumPy function operations
-- Built-in signal visualization methods
-- Includes practical functions like signal resampling and periodic signal generation
-
-### Analysis Class
-
-The Analysis class provides a basic framework for signal processing analysis:
-
-```python
-from PySP.Analysis import Analysis
-from PySP.Plot import LinePlotFunc
-
-class FrequencyAnalysis(Analysis):
-    @Analysis.Plot(LinePlotFunc)
-    def spectrum(self):
-        # Calculate the spectrum
-        spec = np.abs(np.fft.fft(self.Sig.data))
-        return self.Sig.f_Axis, spec  # Returns suitable results for plotting
-```
-
-Key features:
-- Provides a unified analysis interface structure
-- Decorator for integrated plotting functions
-- Automatically handles signal copying to prevent accidental modification of source data
-
-### Plot Class Hierarchy
-
-The Plot class hierarchy provides visualization tools specifically designed for signal processing:
-
-```python
-from PySP.Plot import LinePlot, PeakFinderPlugin
-
-# Create a plot object
-plot = LinePlot(title="Signal with Peak Detection", xlabel="Time(s)", ylabel="Amplitude")
-
-# Add a peak detection plugin
-plot.add_plugin(PeakFinderPlugin(height=0.5, distance=50))
-
-# Execute plotting
-plot.plot(Axis=sig.t_Axis, Data=sig.data)
-```
-
-Key features:
-- Supports common signal processing charts such as line plots and heatmaps
-- Extensible plugin system (e.g., peak detection)
-- Unified style and configuration management
-- Supports Chinese labels and annotations
-
-## Installation
-
-```bash
-pip install pysp
-```
-
-## Usage Example
-
-```python
-from PySP.Signal import Signal, Periodic
-from PySP.Plot import LinePlotFunc_with_PeakFinder
 import numpy as np
+from PySP.Signal import Signal, Periodic, Resample
+from PySP.Analysis import SpectrumAnalysis, window
+from PySP.Plot import LinePlot, PeakfinderPlugin
 
-# Create a simulated signal
-fs = 1000  # Sampling frequency
-T = 1      # Signal duration
-t = np.arange(0, T, 1/fs)
-signal_data = np.sin(2*np.pi*10*t) + 0.5*np.sin(2*np.pi*20*t)
-sig = Signal(signal_data, fs=fs, label="Test Signal")
+# ========== 1. Signal模块：生成和处理信号 ==========
+# ========== 1. Signal Module: Generate and Process Signals ==========
 
-# Signal operation example
-print(sig)  # Display signal information
-sig_filtered = sig * np.hanning(len(sig))  # Apply window function
+# 生成仿真周期信号 | Generate simulated periodic signal
+cos_params = [(10, 1.0, 0), (25, 0.5, np.pi/4), (40, 0.3, np.pi/2)]
+sig_original = Periodic(fs=1000, T=2.0, CosParams=cos_params, noise=0.1)
+print("原始信号 | Original Signal:")
+print(sig_original)
 
-# Plot signal with peak detection
-LinePlotFunc_with_PeakFinder(
-    sig.t_Axis, 
-    sig.data,
-    height=0.8,
-    distance=50,
-    title="Sine Signal with Peak Detection",
-    xlabel="Time(s)",
-    ylabel="Amplitude"
+# Signal对象支持运算 | Signal objects support operations
+sig_windowed = sig_original * window(len(sig_original), type="汉宁窗")
+sig_windowed.label = "加窗信号 | Windowed Signal"
+
+# 信号重采样 | Signal resampling
+sig_resampled = Resample(sig_original, type='extreme', fs_resampled=500)
+sig_resampled.label = "重采样信号 | Resampled Signal"
+
+# 信号切片操作 | Signal slicing
+sig_slice = sig_original[0:1000]  # 取前1000个点 | Take first 1000 points
+sig_slice.label = "信号切片 | Signal Slice"
+
+
+# ========== 2. Analysis模块：信号分析 ==========
+# ========== 2. Analysis Module: Signal Analysis ==========
+
+# 创建频谱分析对象 | Create spectrum analysis object
+spectrum_analyzer = SpectrumAnalysis(sig_windowed, isPlot=False)
+
+# 注意：SpectrumAnalysis类有多种谱估计方法，这里展示框架用法
+# Note: SpectrumAnalysis class has various spectrum estimation methods, showing framework usage here
+# 实际使用中应调用具体的谱分析方法，如：
+# spectrum = spectrum_analyzer.periodogram()  # 周期图法
+# spectrum = spectrum_analyzer.welch()        # Welch方法
+# For actual use, call specific spectrum analysis methods
+
+
+# ========== 3. Plot模块：可视化 ==========
+# ========== 3. Plot Module: Visualization ==========
+
+# 创建多子图绘图对象 | Create multi-subplot plotting object
+plot = LinePlot(
+    ncols=2,  # 2列子图布局 | 2-column subplot layout
+    figsize=(7, 3),
+    isSampled=True  # 对长信号自动采样以提高绘图速度 | Auto-sample long signals for faster plotting
 )
+
+# 添加峰值检测插件 | Add peak detection plugin
+peak_plugin = PeakfinderPlugin(height=0.3, distance=80)
+plot.add_plugin(peak_plugin)
+
+# 绘制时域波形对比 | Plot time-domain waveform comparison
+plot.TimeWaveform(
+    [sig_original, sig_resampled],
+    title="时域信号对比 | Time-Domain Comparison",
+    xlabel="时间 (s) | Time (s)",
+    ylabel="幅值 | Amplitude"
+)
+
+# 绘制频谱对比 | Plot spectrum comparison
+plot.FreqSpectrum(
+    [sig_original, sig_windowed],
+    title="频谱对比 | Spectrum Comparison",
+    xlabel="频率 (Hz) | Frequency (Hz)",
+    ylabel="幅值 | Magnitude",
+    xlim=[0, 100]  # 只显示0-100Hz | Only show 0-100Hz
+)
+
+# 显示图形 | Display figure
+plot.show()
+
+
+# ========== 进阶用法：使用Analysis装饰器自动绘图 ==========
+# ========== Advanced Usage: Auto-plotting with Analysis Decorator ==========
+
+from PySP.Analysis import Analysis
+from PySP.Plot import FreqSpectrumFunc
+
+class MySpectrumAnalysis(Analysis):
+    """自定义频谱分析类 | Custom spectrum analysis class"""
+    
+    @Analysis.Plot(FreqSpectrumFunc)  # 自动绘图装饰器 | Auto-plotting decorator
+    def simple_fft(self):
+        """简单FFT频谱 | Simple FFT spectrum"""
+        spectrum = np.abs(np.fft.fft(self.Sig.data))
+        spectrum = spectrum[:len(spectrum)//2]  # 取单边谱 | Get single-sided spectrum
+        freq_axis = self.Sig.f_Axis[:len(spectrum)]
+        return freq_axis, spectrum
+
+# 使用自定义分析类 | Use custom analysis class
+analyzer = MySpectrumAnalysis(sig_windowed, isPlot=True, title="FFT频谱 | FFT Spectrum")
+freq, spec = analyzer.simple_fft()  # 自动绘图 | Automatically plots
+
+print("\n分析完成！ | Analysis Complete!")
+print(f"频谱长度 | Spectrum Length: {len(spec)}")
+print(f"最大幅值频率 | Peak Frequency: {freq[np.argmax(spec)]:.2f} Hz")
 ```
 
-## Why Choose PySP?
+### 示例说明 | Example Description
 
-- **Simplified workflow** - No more manual tracking of sample rates and axes
-- **Clearer code** - Object-oriented structure makes signal processing code more readable and maintainable
-- **Reduced boilerplate** - Common operations are built-in, no need to rewrite them
-- **Enhanced visualization** - Plotting functions optimized specifically for signal processing
-- **Easy to extend** - Class-based design makes it easy to extend and customize
+这个完整示例展示了：
 
-## License
+This complete example demonstrates:
+
+1. **Signal模块的强大功能** | **Powerful Signal Module Features**
+   - 生成仿真信号 | Generate simulated signals
+   - 信号运算(加窗) | Signal operations (windowing)
+   - 信号重采样 | Signal resampling
+   - 信号切片 | Signal slicing
+
+2. **Analysis模块的分析框架** | **Analysis Module Framework**
+   - 创建分析对象 | Create analysis objects
+   - 使用装饰器自动绘图 | Use decorators for auto-plotting
+   - 扩展自定义分析方法 | Extend custom analysis methods
+
+3. **Plot模块的可视化能力** | **Plot Module Visualization Capabilities**
+   - 多子图布局 | Multi-subplot layout
+   - 插件系统(峰值检测) | Plugin system (peak detection)
+   - 链式调用 | Method chaining
+   - 参数灵活配置 | Flexible parameter configuration
+
+## 为什么选择PySP？ | Why Choose PySP?
+
+- **简化工作流程** - 不再手动管理采样参数和坐标轴
+- **代码更清晰** - 面向对象让代码更易读、更易维护
+- **减少重复** - 常用操作内置，提高开发效率
+- **专业可视化** - 针对信号处理优化的绘图功能
+- **易于扩展** - 插件和继承机制让功能扩展变得简单
+
+- **Simplified Workflow** - No more manual management of sampling parameters and axes
+- **Clearer Code** - Object-oriented approach makes code more readable and maintainable
+- **Reduced Duplication** - Built-in common operations improve development efficiency
+- **Professional Visualization** - Plotting features optimized for signal processing
+- **Easy Extension** - Plugin and inheritance mechanisms make feature extension simple
+
+## 许可证 | License
 
 MIT
 
-## Contributions
+## 贡献 | Contributions
 
-Issues and pull requests are welcome.
+欢迎提交问题和拉取请求。 | Issues and pull requests are welcome.
