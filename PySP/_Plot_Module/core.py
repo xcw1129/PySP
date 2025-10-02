@@ -9,7 +9,6 @@
 """
 
 
-
 from PySP._Assist_Module.Dependencies import resources
 from PySP._Assist_Module.Dependencies import deepcopy
 from PySP._Assist_Module.Dependencies import np
@@ -304,21 +303,13 @@ class Plot:
 
         # 显示或返回图形
         if pattern == "plot":
-            try:
-                from IPython.display import display
-                # 若在Jupyter中, 使用display显示图形
-                display(self.figure)
-            except ImportError:
-                if self.figure:
-                    plt.show()
+            plt.show()
         elif pattern == "return":
-            result = (self.figure, self.axes)
-            return result
+            return self.figure, self.axes
         elif pattern == "save":
             self._save_figure(filename, save_format)
         else:
             raise ValueError(f"未知的模式: {pattern}")
-
 
 
 __all__ = ["Plot", "PlotPlugin"]
