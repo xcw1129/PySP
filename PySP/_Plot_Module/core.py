@@ -303,11 +303,12 @@ class Plot:
 
         # 显示或返回图形
         if pattern == "plot":
-            plt.show()
+            self.figure.show()
         elif pattern == "return":
             return self.figure, self.axes
         elif pattern == "save":
             self._save_figure(filename, save_format)
+            plt.close(self.figure)  
         else:
             raise ValueError(f"未知的模式: {pattern}")
 

@@ -134,7 +134,7 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
     plot_kwargs = {"xlabel": "时间/s", "ylabel": "幅值"}
     plot_kwargs.update(kwargs)
     fig, ax = LinePlot(isSampled=True,**plot_kwargs).TimeWaveform(Sig).show(pattern="return")
-    plt.show()
+    fig.show()
 
 
 def FreqSpectrumFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
@@ -151,7 +151,7 @@ def FreqSpectrumFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
         )
         .show(pattern="return")
     )
-    plt.show()
+    fig.show()
 
 
 __all__ = ["LinePlot", "TimeWaveformFunc", "FreqSpectrumFunc"]
