@@ -9,7 +9,6 @@
 """
 
 
-
 from PySP._Assist_Module.Dependencies import resources
 from PySP._Assist_Module.Dependencies import deepcopy
 from PySP._Assist_Module.Dependencies import np
@@ -163,15 +162,15 @@ class Plot:
             ax.set_yticks(yticks)  # 设置Y轴刻度
         elif yscale == "log":
             ax.set_yscale("log")  # 设置为对数刻度
-        elif ynbins is not None and isinstance(ynbins, int) and ynbins > 0:
+        else:
             cur_ylim = ax.get_ylim()
             ax.set_yticks(
                 np.linspace(
-                    cur_ylim[0] + 0.2 * np.mean(cur_ylim),
-                    cur_ylim[1] - 0.2 * np.mean(cur_ylim),
+                    cur_ylim[0] + 0.1 * (cur_ylim[1] - cur_ylim[0]),# 显示范围不变，刻度范围缩小以提供出血边
+                    cur_ylim[1] - 0.1 * (cur_ylim[1] - cur_ylim[0]),
                     ynbins,
                 )
-            )  # 设置指定数量的均匀分布刻度, 出血边20%
+            )  # 设置指定数量的均匀分布刻度
         ax.yaxis.set_major_formatter(
             ticker.FormatStrFormatter("%.2f")
         )  # 设置Y轴刻度格式
@@ -304,21 +303,14 @@ class Plot:
 
         # 显示或返回图形
         if pattern == "plot":
-            try:
-                from IPython.display import display
-                # 若在Jupyter中, 使用display显示图形
-                display(self.figure)
-            except ImportError:
-                if self.figure:
-                    plt.show()
+            self.figure.show()
         elif pattern == "return":
-            result = (self.figure, self.axes)
-            return result
+            return self.figure, self.axes
         elif pattern == "save":
             self._save_figure(filename, save_format)
+            plt.close(self.figure)  
         else:
             raise ValueError(f"未知的模式: {pattern}")
-
 
 
 __all__ = ["Plot", "PlotPlugin"]
