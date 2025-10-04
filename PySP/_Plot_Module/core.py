@@ -133,49 +133,61 @@ class Plot:
             ax.set_title(title)
 
     def _setup_x_axis(self, ax, task_kwargs):
-        """设置X轴"""
+        # 设置X轴
         xlabel = task_kwargs.get("xlabel", None)
-        ax.set_xlabel(xlabel)  # 设置X轴标签
-        ax.margins(x=0)  # 　 设置X轴出血边边距为0
+        # 设置X轴标签
+        ax.set_xlabel(xlabel)
+        # 设置X轴出血边边距为0
+        ax.margins(x=0)
         xticks = task_kwargs.get("xticks", None)
         if xticks is not None:
-            ax.set_xticks(xticks)  # 设置X轴刻度
+            # 设置X轴刻度
+            ax.set_xticks(xticks)
         else:
             cur_xlim = ax.get_xlim()
+            # 设置11个均匀分布的刻度
             ax.set_xticks(
                 np.linspace(cur_xlim[0], cur_xlim[1], 11)
-            )  # 设置11个均匀分布的刻度
+            )
+        # 设置X轴刻度格式
         ax.xaxis.set_major_formatter(
             ticker.FormatStrFormatter("%.2f")
-        )  # 设置X轴刻度格式
+        )
         xlim = task_kwargs.get("xlim", (None, None))
-        ax.set_xlim(xlim[0], xlim[1])  # 设置X轴范围
+        # 设置X轴范围
+        ax.set_xlim(xlim[0], xlim[1])
 
     def _setup_y_axis(self, ax, task_kwargs):
-        """设置Y轴"""
+        # 设置Y轴
         ylabel = task_kwargs.get("ylabel", None)
-        ax.set_ylabel(ylabel)  # 设置Y轴标签
+        # 设置Y轴标签
+        ax.set_ylabel(ylabel)
         yticks = task_kwargs.get("yticks", None)
         ynbins = task_kwargs.get("nticks", 5)
         yscale = task_kwargs.get("yscale", "linear")
+        # 设置Y轴刻度
         if yticks is not None:
-            ax.set_yticks(yticks)  # 设置Y轴刻度
+            ax.set_yticks(yticks)
         elif yscale == "log":
-            ax.set_yscale("log")  # 设置为对数刻度
+            # 设置为对数刻度
+            ax.set_yscale("log")
         else:
             cur_ylim = ax.get_ylim()
+            # 设置指定数量的均匀分布刻度（范围缩小以提供出血边）
             ax.set_yticks(
                 np.linspace(
-                    cur_ylim[0] + 0.1 * (cur_ylim[1] - cur_ylim[0]),# 显示范围不变，刻度范围缩小以提供出血边
+                    cur_ylim[0] + 0.1 * (cur_ylim[1] - cur_ylim[0]),
                     cur_ylim[1] - 0.1 * (cur_ylim[1] - cur_ylim[0]),
                     ynbins,
                 )
-            )  # 设置指定数量的均匀分布刻度
-        ax.yaxis.set_major_formatter(
-            ticker.FormatStrFormatter("%.2f")
-        )  # 设置Y轴刻度格式
+            )
+        # 设置Y轴刻度格式
+        sf = ticker.ScalarFormatter(useMathText=True)  # 设置科学计数法显示，指数放到坐标轴顶部
+        sf.set_powerlimits((-3, 3))  # 仅在绝对值小于1e-3或大于1e3时才用科学计数法
+        ax.yaxis.set_major_formatter(sf)
+        # 设置Y轴范围
         ylim = task_kwargs.get("ylim", (None, None))
-        ax.set_ylim(ylim[0], ylim[1])  # 设置Y轴范围
+        ax.set_ylim(ylim[0], ylim[1])
 
     def _save_figure(self, filename, save_format):
         """保存图形"""
