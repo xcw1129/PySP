@@ -58,8 +58,6 @@ class LinePlot(Plot):
             ax.grid(
                 axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
             )
-            if isinstance(data, Signal):
-                data = [data]
             for S in data:
                 if not isinstance(S, Signal):
                     raise ValueError("输入数据必须为Signal对象或Signal对象列表")
@@ -70,8 +68,11 @@ class LinePlot(Plot):
             if len(data) > 1:
                 ax.legend(loc="best")
 
-        # 任务的kwargs首先继承全局kwargs，然后被调用时传入的kwargs覆盖
+        if not isinstance(Sig, list):
+            Sig = [Sig]
+        # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
         task_kwargs = self.kwargs
+        task_kwargs.update({"xlabel": Sig[0].t_Axis.label, "ylabel": "幅值"})
         task_kwargs.update(kwargs)
 
         task = {
@@ -131,9 +132,7 @@ class LinePlot(Plot):
 # --------------------------------------------------------------------------------------------#
 def TimeWaveformFunc(Sig: Signal, **kwargs):
     """单信号时域波形图绘制函数"""
-    plot_kwargs = {"xlabel": "时间/s", "ylabel": "幅值"}
-    plot_kwargs.update(kwargs)
-    fig, ax = LinePlot(isSampled=True,**plot_kwargs).TimeWaveform(Sig).show(pattern="return")
+    fig, ax = LinePlot(isSampled=True, **kwargs).TimeWaveform(Sig).show(pattern="return")
     fig.show()
 
 

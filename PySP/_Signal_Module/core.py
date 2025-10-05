@@ -102,7 +102,7 @@ class t_Axis(Axis):
     def __init__(self, dt: float, N: int, t0: float = 0.0):
         self.dt = dt
         self.t0 = t0
-        super().__init__(dx=dt, N=N, x0=t0, unit="s", name="t")
+        super().__init__(dx=dt, N=N, x0=t0, unit="s", name="时间")
 
     @property
     def dx(self):
@@ -117,7 +117,7 @@ class f_Axis(Axis):
     def __init__(self, df: float, N: int, f0: float = 0.0):
         self.df = df
         self.f0 = f0
-        super().__init__(dx=df, N=N, x0=f0, unit="Hz", name="f")
+        super().__init__(dx=df, N=N, x0=f0, unit="Hz", name="频率")
 
     @property
     def dx(self):
