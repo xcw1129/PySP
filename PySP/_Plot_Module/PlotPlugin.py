@@ -43,7 +43,7 @@ class PeakfinderPlugin(PlotPlugin):
         """在指定的子图上查找并标注峰值"""
         # 插件现在作用于单个ax
         if isinstance(data, Signal):
-            Axis = data.t_Axis
+            Axis = data.t_Axis()
             Data = data.data
         elif isinstance(data, tuple) and len(data) == 2:
             Axis = data[0]
