@@ -83,6 +83,21 @@ class Axis:
         """
         self.data[index] = value
 
+    # ---------------------------------numpy兼容--------------------------------------------------#
+    def __array__(self, dtype=None) -> np.ndarray:
+        data_to_return = self.data
+        if dtype is not None:
+            data_to_return = data_to_return.astype(dtype)
+        return data_to_return
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        # 将np函数输入中的Axis对象替换为其data-np.ndarray
+        args = [x.data if isinstance(x, type(self)) else x for x in inputs]
+        # 执行NumPy的ufunc操作
+        result = getattr(ufunc, method)(*args, **kwargs)
+        return result
+
+
 class t_Axis(Axis):
     def __init__(self, dt: float, N: int, t0: float = 0.0):
         self.dt = dt
