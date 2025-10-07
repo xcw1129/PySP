@@ -19,73 +19,82 @@ from PySP._Assist_Module.Decorators import InputCheck
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
 class Axis:
-    @InputCheck({"dx": {"OpenLow": 0}, "N": {"Low": 1}, "x0": {}, "unit": {}, "name": {}})
-    def __init__(self, dx: float, N: int, x0: float = 0.0, unit: str = "", name: str = ""):
-        self._dx = dx
+
+    @InputCheck(
+        {
+            "N": {"Low": 1},
+            "name": {},
+            "dx": {"OpenLow": 0},
+            "x0": {"CloseLow": 0.0},
+            "unit": {},
+        }
+    )
+    def __init__(self, N: int, name: str, dx: float, x0: float = 0.0, unit: str = ""):
+        # 外部面向.a属性，内部使用动态._a属性
         self.N = N
-        self._x0 = x0
-        self.unit = unit
         self.name = name
+        self.dx = dx
+        self.x0 = x0
+        self.unit = unit
 
     @property
-    def dx(self):
-        return self._dx
+    def _N(self):
+        return self.N
 
     @property
-    def x0(self):
-        return self._x0
+    def _dx(self):
+        return self.dx
+
+    @property
+    def _x0(self):
+        return self.x0
 
     @property
     def data(self) -> np.ndarray:
         # 坐标轴数据动态生成
-        return self.x0 + np.arange(self.N) * self.dx# x=[x0,x0+dx,x0+2dx,...,x0+(N-1)dx]
+        return (
+            self._x0 + np.arange(self._N) * self._dx
+        )  # x=[x0,x0+dx,x0+2dx,...,x0+(N-1)dx]
 
     @property
     def lim(self) -> tuple:
-        return (self.x0, self.x0 + self.dx * self.N)# (x0, x0+N*dx)
+        return (self._x0, self._x0 + self._dx * self._N)  # (x0, x0+N*dx)
 
     @property
     def label(self) -> str:
-        return f"{self.name}/{self.unit}" if self.unit!="" else self.name
+        return f"{self.name}/{self.unit}" if self.unit != "" else self.name
 
     def __call__(self):
         return self.data
 
     def __eq__(self, other) -> bool:
         if isinstance(other, type(self)):
-            if self.N == other.N and self.dx == other.dx and self.x0 == other.x0:
+            if self._N == other._N and self._dx == other._dx and self._x0 == other._x0:
                 return True
         elif isinstance(other, np.ndarray):
-            if other.ndim == 1 and len(other) == self.N:
-                return np.array_equal(self.data, other)
+            return np.array_equal(self.data, other)
         return False
 
     # --------------------------------------python函数兼容---------------------------------------#
     def __len__(self):
-        return self.N
+        return self._N
 
     def __str__(self):
-        return f"Axis(data={self.data}, {self.name}/{self.unit})"
+        return f"{type(self).__name__}({self.name}={self.data}{self.unit})"
 
     def __repr__(self):
         return self.__str__()
 
     # ------------------------------------切片索引支持-----------------------------------------#
     def __getitem__(self, index):
-        """
-        使Signal对象支持切片访问
-        """
         return self.data[index]
 
     def __setitem__(self, index, value):
-        """
-        使Signal对象支持切片赋值
-        """
         self.data[index] = value
 
     # ---------------------------------numpy兼容--------------------------------------------------#
     def __array__(self, dtype=None) -> np.ndarray:
-        data_to_return = self.data
+        data_to_return = self.data  # .data属性每次调用都会生成新的ndarray
         if dtype is not None:
             data_to_return = data_to_return.astype(dtype)
         return data_to_return
@@ -99,17 +108,17 @@ class Axis:
 
 
 class t_Axis(Axis):
-    def __init__(self, dt: float, N: int, t0: float = 0.0):
+    def __init__(self, N: int, dt: float, t0: float = 0.0):
         self.dt = dt
         self.t0 = t0
-        super().__init__(dx=dt, N=N, x0=t0, unit="s", name="时间")
+        super().__init__(N=N, dx=dt, x0=t0, unit="s", name="时间")
 
     @property
-    def dx(self):
+    def _dx(self):
         return self.dt
 
     @property
-    def x0(self):
+    def _x0(self):
         return self.t0
 
 
@@ -120,20 +129,133 @@ class f_Axis(Axis):
         super().__init__(dx=df, N=N, x0=f0, unit="Hz", name="频率")
 
     @property
-    def dx(self):
+    def _dx(self):
         return self.df
 
     @property
-    def x0(self):
-        return 0.0
-
-    @property
-    def dx(self):
-        return self.df
-
-    @property
-    def x0(self):
+    def _x0(self):
         return self.f0
+
+
+class Series:
+    @InputCheck({"axis": {}, "data": {"ndim": 1}, "name": {}, "unit": {}, "label": {}})
+    def __init__(
+        self,
+        axis: Axis,
+        data: Optional[np.ndarray] = None,
+        name: str = "",
+        unit: str = "",
+        label: str = "",
+    ):
+        if data is not None:
+            self.data = np.asarray(deepcopy(data))
+            if len(data) != len(axis):
+                raise ValueError(f"数据长度={len(data)}与坐标轴长度={len(axis)}不匹配")
+        else:
+            self.data = np.zeros(len(axis), dtype=float)
+
+        self.axis = axis
+        self.name = name
+        self.unit = unit
+        self.label = label
+
+    @property
+    def N(self):
+        return len(self.data)
+
+    @property
+    def _axis(self):  # 类方法只允许调用._axis属性, 防止.axis被修改
+        return self.axis
+
+    # --------------------------------------python函数兼容---------------------------------------#
+    def __str__(self) -> str:
+        return (
+            f"{type(self).__name__}({self.name}={self.data}{self.unit}, {self._axis})"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __len__(self) -> int:
+        return self.N
+
+    # --------------------------------------切片索引支持-----------------------------------------#
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def __setitem__(self, index, value):
+        self.data[index] = value
+
+    # -------------------------------------比较操作支持----------------------------------------#
+    def __eq__(self, other) -> bool:
+        if isinstance(other, type(self)):
+            if self._axis == other._axis:
+                return np.array_equal(self.data, other.data)
+        elif isinstance(other, np.ndarray):
+            return np.array_equal(self.data, other)
+        elif isinstance(other, (int, float, complex)):
+            return np.all(self.data == other)
+        return False
+
+    def __gt__(self, other):
+        if isinstance(other, type(self)):
+            if self._axis != other._axis:
+                raise ValueError(
+                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
+                )
+            else:
+                return self.data > other.data
+        elif isinstance(other, (np.ndarray, int, float, complex)):
+            return self.data > other
+        else:
+            raise TypeError(
+                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
+            )
+
+    def __lt__(self, other):
+        if isinstance(other, type(self)):
+            if self._axis != other._axis:
+                raise ValueError(
+                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
+                )
+            else:
+                return self.data < other.data
+        elif isinstance(other, (np.ndarray, int, float, complex)):
+            return self.data < other
+        else:
+            raise TypeError(
+                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
+            )
+
+    def __ge__(self, other):
+        if isinstance(other, type(self)):
+            if self._axis != other._axis:
+                raise ValueError(
+                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
+                )
+            else:
+                return self.data >= other.data
+        elif isinstance(other, (np.ndarray, int, float, complex)):
+            return self.data >= other
+        else:
+            raise TypeError(
+                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
+            )
+
+    def __le__(self, other):
+        if isinstance(other, type(self)):
+            if self._axis != other._axis:
+                raise ValueError(
+                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
+                )
+            else:
+                return self.data <= other.data
+        elif isinstance(other, (np.ndarray, int, float, complex)):
+            return self.data <= other
+        else:
+            raise TypeError(
+                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
+            )
 
 
 class Signal:
@@ -247,8 +369,8 @@ class Signal:
         # 设置信号标签
         self.label = label
         # 设置坐标轴
-        self.t_Axis = t_Axis(dt=1/fs, N=N, t0=t0)
-        self.f_Axis = f_Axis(df=fs/N, N=N, f0=0.0)# 信号频率起始点默认为0
+        self.t_Axis = t_Axis(dt=1 / fs, N=N, t0=t0)
+        self.f_Axis = f_Axis(df=fs / N, N=N, f0=0.0)  # 信号频率起始点默认为0
 
     # -----------------------------------------不可修改类属性----------------------------------#
     @property
@@ -257,14 +379,14 @@ class Signal:
         信号长度
         """
         return len(self.data)
-    
+
     @property
     def dt(self) -> float:
         """
         采样时间间隔
         """
         return self.t_Axis.dt
-    
+
     @property
     def t0(self) -> float:
         """
@@ -278,7 +400,7 @@ class Signal:
         频率分辨率
         """
         return self.f_Axis.df
-    
+
     @property
     def fs(self) -> float:
         """
@@ -641,4 +763,4 @@ class Signal:
         TimeWaveformFunc(self, **kwargs)
 
 
-__all__ = ["Signal"]
+__all__ = ["Axis", "t_Axis", "f_Axis", "Series", "Signal"]
