@@ -64,7 +64,7 @@ class LinePlot(Plot):
                 if self.isSampled:
                     fs_resampled = 2000 / S.T if S.N > 2000 else S.fs
                     S = Resample(S, type="extreme", fs_resampled=fs_resampled, t0=S.t0)
-                ax.plot(S.t_Axis, S.data, label=S.label)
+                ax.plot(S.t_axis, S.data, label=S.label)
             if len(data) > 1:
                 ax.legend(loc="best")
 
