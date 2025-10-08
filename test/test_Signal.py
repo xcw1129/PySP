@@ -251,11 +251,11 @@ class TestSignalProperties:
 
         # --- 测试时间轴 ---
         expected_t_Axis = np.arange(N) / fs + t0
-        assert np.allclose(Sig.t_Axis, expected_t_Axis)
+        assert np.allclose(Sig.t_axis, expected_t_Axis)
 
         # --- 测试频率轴 ---
         expected_f_Axis = np.fft.fftfreq(N, d=1 / fs)
-        assert np.allclose(Sig.f_Axis, expected_f_Axis)
+        assert np.allclose(Sig.f_axis, expected_f_Axis)
 
 # ----------------------------------------------------------------------------------------#
     def test_modify_fs_updates_properties(self):
@@ -274,8 +274,8 @@ class TestSignalProperties:
         assert Sig.dt == pytest.approx(1 / new_fs)
         assert Sig.T == pytest.approx(Sig.N / new_fs)
         assert Sig.df == pytest.approx(new_fs / Sig.N)
-        assert np.allclose(Sig.t_Axis, np.arange(Sig.N) / new_fs + Sig.t0)
-        assert np.allclose(Sig.f_Axis, np.fft.fftfreq(Sig.N, d=1 / new_fs))
+        assert np.allclose(Sig.t_axis, np.arange(Sig.N) / new_fs + Sig.t0)
+        assert np.allclose(Sig.f_axis, np.fft.fftfreq(Sig.N, d=1 / new_fs))
 
         # --- 确保其他属性未被意外修改 ---
         assert Sig.t0 == 0.0
@@ -300,9 +300,9 @@ class TestSignalProperties:
         with pytest.raises(AttributeError, match="has no setter"):
             Sig.df = 0.5
         with pytest.raises(AttributeError, match="has no setter"):
-            Sig.t_Axis = np.arange(1000)
+            Sig.t_axis = np.arange(1000)
         with pytest.raises(AttributeError, match="has no setter"):
-            Sig.f_Axis = np.arange(1000)
+            Sig.f_axis = np.arange(1000)
 
         # --- 测试可修改属性（data, t0, label）---
         new_data = np.random.rand(1000) * 2
