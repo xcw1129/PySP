@@ -64,7 +64,7 @@ class LinePlot(Plot):
                 if self.isSampled:
                     fs_resampled = 2000 / S.T if S.N > 2000 else S.fs
                     S = Resample(S, type="extreme", fs_resampled=fs_resampled, t0=S.t0)
-                ax.plot(S.t_axis, S.data, label=S.label)
+                ax.plot(S.t_axis(), S.data, label=S.label)
             if len(data) > 1:
                 ax.legend(loc="best")
 
@@ -72,7 +72,7 @@ class LinePlot(Plot):
             Sig = [Sig]
         # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
         task_kwargs = self.kwargs
-        task_kwargs.update({"xlabel": Sig[0].t_Axis.label, "ylabel": "幅值"})
+        task_kwargs.update({"xlabel": Sig[0].t_axis.label, "ylabel": f"{Sig[0].name}/{Sig[0].unit}"})
         task_kwargs.update(kwargs)
 
         task = {
@@ -134,6 +134,7 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
     """单信号时域波形图绘制函数"""
     fig, ax = LinePlot(isSampled=True, **kwargs).TimeWaveform(Sig).show(pattern="return")
     fig.show()
+    return fig, ax
 
 
 def FreqSpectrumFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
@@ -151,6 +152,7 @@ def FreqSpectrumFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
         .show(pattern="return")
     )
     fig.show()
+    return fig, ax
 
 
 __all__ = ["LinePlot", "TimeWaveformFunc", "FreqSpectrumFunc"]

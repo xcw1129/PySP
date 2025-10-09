@@ -15,7 +15,7 @@ from PySP._Assist_Module.Dependencies import np
 
 from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP._Signal_Module.core import Signal
+from PySP._Signal_Module.core import Signal,t_Axis
 
 
 # --------------------------------------------------------------------------------------------#
@@ -129,7 +129,7 @@ def Resample(
     else:
         pass  # 采样频率相同, 不进行重采样
 
-    return Signal(data_resampled, fs=fs_resampled, t0=t0, label=Sig.label)
+    return Signal(axis=t_Axis(N=len(data_resampled), fs=fs_resampled, t0=t0), data=data_resampled, name=Sig.name, unit=Sig.unit, label=Sig.label)
 
 
 
