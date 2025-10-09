@@ -9,6 +9,7 @@
 
 from PySP._Assist_Module.Dependencies import Optional
 from PySP._Assist_Module.Dependencies import np
+from PySP._Assist_Module.Dependencies import plt
 from PySP._Assist_Module.Dependencies import deepcopy
 
 from PySP._Assist_Module.Decorators import InputCheck
@@ -33,14 +34,14 @@ class Axis:
     ):
         # ._a属性仅为Axis类使用，子类使用.s覆写对应.__a__动态属性供Axis自带方法调用
         # ._a属性对象初始化后一般不变，可通过._a与.s是否相等判断对象是否被修改
-        self._N = N# 子类不推荐.N覆写，len()获取长度以保持Axis对象的数组特性
+        self._N = N  # 子类不推荐.N覆写，len()获取长度以保持Axis对象的数组特性
         self._dx = dx
         self._x0 = x0
         self.name = name
         self.unit = unit  # 推荐使用标准单位或领域内通用单位
 
     @property
-    def __N__(self):# __a__属性需子类重写
+    def __N__(self):  # __a__属性需子类重写
         return self._N
 
     @property
@@ -65,14 +66,14 @@ class Axis:
     @property
     def label(self) -> str:
         return f"{self.name}/{self.unit}"
-    
+
     def copy(self) -> "Axis":
         return deepcopy(self)
 
     def __call__(self):
         return self.data  # Axis()返回.data属性，方便直接调用
 
-    def __eq__(self, other) -> bool:# 坐标轴数据类型信号意义上的相等比较
+    def __eq__(self, other) -> bool:  # 坐标轴数据类型信号意义上的相等比较
         if isinstance(other, type(self)):
             if (
                 self.__N__ == other.__N__
@@ -121,22 +122,50 @@ class Axis:
 
 
 class t_Axis(Axis):
-    def __init__(self, N: int, dt: float, t0: float = 0.0):
-        self.dt = dt
+    @InputCheck(
+        {
+            "fs": {"OpenLow": 0.0},
+            "dt": {"OpenLow": 0.0},
+            "T": {"OpenLow": 0.0},
+            "N": {"Low": 1}
+        }
+    )
+    def __init__(self, fs:Optional[float]= None, dt: Optional[float]= None, T: Optional[float]= None, N: Optional[int]= None, t0: float = 0.0):
+        # 输入参数检查
+        if (not [N, fs, dt, T].count(None) == 2) or (
+            fs is not None and dt is not None
+        ):
+            raise ValueError("采样参数输入错误")
+        # ------------------------------------------------------------------------------------#
+        # 采样参数初始化, fs为核心参数
+        if fs is not None:
+            pass
+        elif dt is not None:
+            fs = 1 / dt
+        else:  # 若fs和dt均未指定, 则T和N必定均已指定
+            fs = N / T
+        N = N if N is not None else int(T * fs)
+        self.fs = fs  # 采样频率
         self.t0 = t0
-        super().__init__(N=N, dx=dt, x0=t0, unit="s", name="时间")
+        # ------------------------------------------------------------------------------------#
+        super().__init__(N=N, dx=1 / fs, x0=t0, unit="s", name="时间")
 
     @property
     def __dx__(self):
-        return self.dt
+        return 1 / self.fs
 
     @property
     def __x0__(self):
         return self.t0
-    
+
     @property
-    def T(self):
-        return self.lim[1]-self.lim[0]  # 采样时长
+    def dt(self):
+        return 1 / self.fs  # 采样时间间隔
+
+    @property
+    def T(self):  # 仅运行通过dt修改时间轴数据
+        return self.lim[1] - self.lim[0]  # 采样时长
+
 
 class f_Axis(Axis):
     def __init__(self, df: float, N: int, f0: float = 0.0):
@@ -170,7 +199,7 @@ class Series:
         else:
             self.data = np.zeros(len(axis), dtype=float)
 
-        self._axis = axis# ._axis属性仅为Series类使用，子类使用.axis覆写.__axis__动态属性供Series自带方法调用
+        self._axis = axis  # ._axis属性仅为Series类使用，子类使用.axis覆写.__axis__动态属性供Series自带方法调用
         self.name = name
         self.unit = unit
         self.label = label
@@ -186,9 +215,7 @@ class Series:
     # ----------------------------------------------------------------------------------------#
     # Python内置函数兼容
     def __str__(self) -> str:
-        return (
-            f"{type(self).__name__}[{self.label}]({self.name}={self.data}{self.unit}, {self.__axis__})"
-        )
+        return f"{type(self).__name__}[{self.label}]({self.name}={self.data}{self.unit}, {self.__axis__})"
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -411,18 +438,21 @@ class Series:
             return tuple((package(r)) for r in result)
         else:
             return package(result)
-        
+
     def copy(self) -> "Series":
         return deepcopy(self)
-    
+
     def plot(self, **kwargs):
         from PySP.Plot import LinePlot
-        fig, ax = LinePlot(**kwargs).Spectrum(self.__axis__, self.data).show(pattern="return")
+
+        fig, ax = (
+            LinePlot(**kwargs).Spectrum(self.__axis__, self.data).show(pattern="return")
+        )
         fig.show()
         return fig, ax
 
 
-class Signal:
+class Signal(Series):
     @InputCheck(
         {
             "N": {"Low": 1},
@@ -434,60 +464,17 @@ class Signal:
     )
     def __init__(
         self,
+        axis: t_Axis,
         data: Optional[np.ndarray] = None,
-        N: Optional[int] = None,
-        fs: Optional[float] = None,
-        dt: Optional[float] = None,
-        T: Optional[float] = None,
-        t0: Optional[float] = 0.0,
         name: str = "",
         unit: str = "",
         label: str = "",
     ):
-        # 输入参数检查
-        if data is not None:  # 1, 2, 3
-            N = len(data)
-            # 当给出data时, 只允许给出一个采样参数
-            if not [dt, fs, T].count(None) == 2:  # 1, 2, 3
-                raise ValueError(
-                    "采样参数错误: 当给定数据时, 请只指定fs, dt, T其中一个."
-                )
-        else:
-            if (T is not None) and (N is not None):  # 1, x
-                if (fs is not None) or (dt is not None):  # x
-                    raise ValueError("采样参数错误: 当给定T和N时, 请不要指定fs或dt.")
-                else:  # 1
-                    fs = N / T
-            elif (fs is None) and (dt is None):  # x
-                raise ValueError("采样参数错误: 请指定fs或dt其中一个.")
-            elif (T is None) and (N is not None):  # 1, 2
-                pass
-            elif (T is not None) and (N is None):  # 1, 2
-                if fs is not None:  # 1
-                    N = int(T * fs)
-                else:  # 2
-                    N = int(T / dt)
-            else:  # x
-                raise ValueError(
-                    "采样参数错误: 当未给定数据时, 请至少指定T或N其中一个."
-                )
+        self.t_axis = axis  # Signal类特有属性, 用于保存时间坐标轴参数
+        super().__init__(axis=self.t_axis, data=data, name=name, unit=unit, label=label)
 
-        # ------------------------------------------------------------------------------------#
-        # 采样参数初始化, fs为核心参数
-        if fs is not None:  # 1
-            pass
-        elif dt is not None:  # 2
-            fs = 1 / dt
-        elif T is not None:  # 3
-            fs = N / T
-        # ------------------------------------------------------------------------------------#
-        self.t_axis = t_Axis(N=N, dt=1 / fs, t0=t0)
-        super().__init__(
-            axis=self.t_axis, data=data, name=name, unit=unit, label=label
-        )
-        
     @property
-    def __axis__(self):
+    def __axis__(self):# 供类自带方法调用, 防止.axis被修改
         return self.t_axis.copy()
 
     # ----------------------------------------------------------------------------------------#
@@ -497,28 +484,35 @@ class Signal:
         """
         采样时间间隔
         """
-        return self.t_axis.dt
+        return self.__axis__.dt
 
     @property
     def t0(self) -> float:
         """
         信号采样起始时间
         """
-        return self.t_axis.t0
+        return self.__axis__.t0
 
     @property
     def T(self) -> float:
         """
         信号采样时长
         """
-        return self.t_axis.T
+        return self.__axis__.T
+
+    @property
+    def fs(self) -> float:
+        """
+        采样频率
+        """
+        return 1 / self.__axis__.dt
 
     @property
     def f_axis(self) -> f_Axis:
         """
         频率坐标轴
         """
-        return f_Axis(df=1/self.t_axis.T, N=len(self.t_axis), f0=0.0)
+        return f_Axis(df=1 / self.__axis__.T, N=len(self.__axis__), f0=0.0)
 
     @property
     def df(self) -> float:
@@ -527,15 +521,15 @@ class Signal:
         """
         return self.f_axis.df
 
-    @property
-    def fs(self) -> float:
-        """
-        采样频率
-        """
-        return 1 / self.dt
-    
     def plot(self, **kwargs):
         from PySP.Plot import TimeWaveformFunc
-        fig, ax = TimeWaveformFunc(self, **kwargs).show(pattern="return")
-        fig.show()
-        return fig, ax
+        title= f"{self.label}时域波形" if self.label else "时域波形"
+        plot_kwargs = {"title": title}
+        plot_kwargs.update(kwargs)
+        fig, ax = TimeWaveformFunc(self, **plot_kwargs)
+        try:
+            from IPython import display
+            display.display(fig)
+        except Exception:
+            plt.show()
+        plt.close(fig)  # 避免重复显示
