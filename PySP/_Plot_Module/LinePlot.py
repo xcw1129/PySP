@@ -11,19 +11,16 @@
 """
 
 
-
-
-
 from PySP._Assist_Module.Dependencies import Union
 from PySP._Assist_Module.Dependencies import np
 from PySP._Assist_Module.Dependencies import plt
 
 from PySP._Assist_Module.Decorators import InputCheck
 
+from PySP._Signal_Module.core import Axis,f_Axis,Signal
 from PySP._Signal_Module.SignalSampling import Resample
-from PySP._Plot_Module.PlotPlugin import PeakfinderPlugin
 
-from PySP._Signal_Module.core import Signal
+from PySP._Plot_Module.PlotPlugin import PeakfinderPlugin
 from PySP._Plot_Module.core import Plot
 
 
@@ -84,8 +81,8 @@ class LinePlot(Plot):
         self.tasks.append(task)
         return self
 
-    @InputCheck({"Axis": {"ndim": 1}, "Data": {"ndim": 1}})
-    def Spectrum(self, Axis: np.ndarray, Data: np.ndarray, **kwargs):
+    @InputCheck({"Axis": {}, "Data": {"ndim": 1}})
+    def Spectrum(self, Axis: Axis, Data: np.ndarray, **kwargs):
         """
         注册一个谱图的绘制任务。
 
@@ -104,19 +101,20 @@ class LinePlot(Plot):
             返回绘图对象本身，以支持链式调用。
         """
         # 检查数据
-        if Axis.shape != Data.shape:
+        if Axis().shape != Data.shape:
             raise ValueError("Axis和Data必须具有相同的形状")
 
         def _draw_spectrum(ax, data):
             """内部函数：在指定ax上绘制频谱"""
             Axis, Data = data
-            ax.plot(Axis, Data)
+            ax.plot(Axis(), Data)
             ax.grid(
                 axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
             )
 
-        # 任务的kwargs首先继承全局kwargs，然后被调用时传入的kwargs覆盖
+        # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
         task_kwargs = self.kwargs
+        task_kwargs.update({"xlabel": Axis.label})
         task_kwargs.update(kwargs)
 
         task = {
@@ -137,9 +135,9 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
     return fig, ax
 
 
-def FreqSpectrumFunc(Axis: np.ndarray, Data: np.ndarray, **kwargs):
+def FreqSpectrumFunc(Axis: f_Axis, Data: np.ndarray, **kwargs):
     """单谱图绘制函数"""
-    plot_kwargs = {"xlabel": "频率/Hz", "ylabel": "幅值", "yscale": "log"}
+    plot_kwargs = {"yscale": "log"}
     plot_kwargs.update(kwargs)
     fig, ax = (
         LinePlot(**plot_kwargs)
