@@ -144,7 +144,7 @@ def FreqSpectrumFunc(Axis: f_Axis, Data: np.ndarray, **kwargs):
         .Spectrum(Axis, Data)
         .add_plugin_to_task(
             PeakfinderPlugin(
-                distance=len(Axis) // 100, height=0.1 * np.max(Data), prominence=0.1
+                distance=max(len(Axis) // 100, 1), height=0.1 * np.max(Data), prominence=0.1
             )
         )
         .show(pattern="return")
