@@ -1,6 +1,6 @@
 """
 # SpectrumAnalysis
-平稳谱分析模块, 提供了多种基于fft的经典谱分析方法
+平稳谱分析模块
 
 ## 内容
     - class:
@@ -8,7 +8,6 @@
     - function:
         1. window: 生成各类窗函数整周期采样序列
 """
-
 
 
 
@@ -20,7 +19,7 @@ from PySP._Assist_Module.Decorators import InputCheck
 
 from PySP._Plot_Module.LinePlot import FreqSpectrumFunc, TimeWaveformFunc
 
-from PySP._Signal_Module.core import Signal
+from PySP._Signal_Module.core import f_Axis, Signal, Spectra
 from PySP._Analysis_Module.core import Analysis
 
 
@@ -31,28 +30,33 @@ from PySP._Analysis_Module.core import Analysis
 @InputCheck({"num": {"Low": 1}, "padding": {"Low": 1}})
 def window(
     num: int,
-    type: str="汉宁窗",
+    type: str = "汉宁窗",
     func: Optional[Callable] = None,
     padding: Optional[int] = None,
 ) -> np.ndarray:
     """
     生成各类窗函数整周期采样序列
 
-    参数:
-    --------
+    Parameters
+    ----------
     num : int
         采样点数, 输入范围: >=1
-    type : str, 默认: "汉宁窗"
+    type : str, default: "汉宁窗"
         窗函数类型, 输入范围: ["矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗", "自定义窗"]
-    func : Callable, 可选
+    func : Callable, optional
         自定义窗函数
-    padding : int, 可选
+    padding : int, optional
         窗序列双边各零填充点数, 输入范围: >=1
-        
-    返回:
-    --------
+
+    Returns
+    -------
     win_data : np.ndarray
         窗函数采样序列
+
+    Raises
+    ------
+    ValueError
+        输入参数-窗函数类型`type`不在指定范围内
     """
     # 定义窗函数
     window_func = {}  # 标准窗函数表达式字典
@@ -91,19 +95,13 @@ def window(
 
 
 # --------------------------------------------------------------------------------------------#
+
 class SpectrumAnalysis(Analysis):
     """
     平稳信号频谱分析方法
 
-    参数:
-    --------
-    Sig : Signal
-        输入信号
-    isPlot : bool, 默认为False
-        是否绘制分析结果图
-
-    属性：
-    --------
+    Attributes
+    ----------
     Sig : Signal
         输入信号
     isPlot : bool
@@ -111,15 +109,17 @@ class SpectrumAnalysis(Analysis):
     plot_kwargs : dict
         绘图参数
 
-    方法:
-    --------
-    dft(data:np.ndarray) -> np.ndarray
+    Methods
+    -------
+    __init__(Sig: Signal, isPlot: bool = False, **kwargs)
+        初始化分析对象
+    dft(data: np.ndarray) -> np.ndarray
         计算离散周期信号的傅里叶变换
-    ft(data:np.ndarray,fs:float,WinType: str= "汉宁窗") -> np.ndarray
+    ft(data: np.ndarray, fs: float, WinType: str = "汉宁窗") -> np.ndarray
         计算信号傅里叶变换的数值近似
     cft(WinType: str = "汉宁窗") -> np.ndarray
         计算周期信号在0~NΔf范围傅里叶级数谱幅值的数值近似
-    enve_spectra(WinType:str= "汉宁窗") -> np.ndarray
+    enve_spectra(WinType: str = "汉宁窗") -> np.ndarray
         计算信号的包络谱
     """
 
@@ -129,24 +129,34 @@ class SpectrumAnalysis(Analysis):
         isPlot: bool = False,
         **kwargs,
     ):
+        """
+        初始化分析对象
+
+        Parameters
+        ----------
+        Sig : Signal
+            输入信号
+        isPlot : bool, optional
+            是否绘制分析结果图，默认False
+        **kwargs :
+            其他绘图参数
+        """
         super().__init__(Sig=Sig, isPlot=isPlot, **kwargs)
-        # 该分析类的特有初始化
-        # ------------------------------------------------------------------------------------#
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
     @InputCheck({"data": {"ndim": 1}})
-    def dft(data:np.ndarray) -> np.ndarray:
+    def dft(data: np.ndarray) -> np.ndarray:
         """
         计算离散周期信号的傅里叶变换
 
-        参数:
-        --------
+        Parameters
+        ----------
         data : np.ndarray
             离散周期信号序列
-            
-        返回:
-        --------
+
+        Returns
+        -------
         X_f : np.ndarray
             变换结果
         """
@@ -156,24 +166,21 @@ class SpectrumAnalysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @staticmethod
     @InputCheck({"data":{"ndim":1}, "fs":{"OpenLow":0}})
-    def ft(data:np.ndarray,fs:float,WinType: str= "汉宁窗") -> np.ndarray:
+    def ft(data: np.ndarray, fs: float, WinType: str = "汉宁窗") -> np.ndarray:
         """
         计算信号傅里叶变换的数值近似
-        
-        参数:
-        --------
+
+        Parameters
+        ----------
         data : np.ndarray
             离散信号序列
         fs : float
             采样频率
-        WinType : str, 默认为"汉宁窗"
-            加窗类型, 可选:
-                        "矩形窗", "汉宁窗", "海明窗",
-                        "巴特利特窗", "布莱克曼窗",
-                        "自定义窗"
-        
-        返回:
-        --------
+        WinType : str, default: "汉宁窗"
+            加窗类型，可选："矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗", "自定义窗"
+
+        Returns
+        -------
         X_f : np.ndarray
             变换结果
         """
@@ -186,63 +193,56 @@ class SpectrumAnalysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(FreqSpectrumFunc)
-    def cft(self, WinType: str = "汉宁窗") -> np.ndarray:
+    def cft(self, WinType: str = "汉宁窗") -> Spectra:
         """
         计算周期信号在0~NΔf范围傅里叶级数谱幅值的数值近似
 
-        参数:
-        --------
-        WinType : str, 默认为"矩形窗"
-            加窗类型, 可选:
-                        "矩形窗", "汉宁窗", "海明窗",
-                        "巴特利特窗", "布莱克曼窗",
-                        "自定义窗"
+        Parameters
+        ----------
+        WinType : str, default: "汉宁窗"
+            加窗类型，可选："矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗", "自定义窗"
 
-        返回:
-        --------
-        f_Axis : np.ndarray
-            频率轴
-        Amp : np.ndarray
-            单边傅里叶级数谱
+        Returns
+        -------
+        Spectra : Spectra
+            单边傅里叶级数谱对象
         """
+        from PySP._Signal_Module.core import f_Axis, Spectra
         N = self.Sig.N
         X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.fs, WinType=WinType) * self.Sig.df
         Amp = np.abs(X_f)
         # 裁剪为单边余弦谱
-        f_Axis = self.Sig.f_Axis[: N // 2]
-        Amp = 2 * Amp[: len(f_Axis)]  # 余弦傅里叶级数幅值
-        return f_Axis, Amp
+        N_half = N // 2
+        freq_axis = f_Axis(N=N_half, df=self.Sig.df, f0=0.0)
+        Amp = 2 * Amp[:N_half]  # 余弦傅里叶级数幅值
+        return Spectra(axis=freq_axis, data=Amp, name="傅里叶级数谱", unit=self.Sig.unit, label=self.Sig.label)
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(FreqSpectrumFunc)
-    def enve_spectra(self,WinType:str= "汉宁窗") -> np.ndarray:
+    def enve_spectra(self, WinType: str = "汉宁窗") -> Spectra:
         """
         计算信号的包络谱
 
-        参数:
-        --------
-        WinType : str, 默认为"汉宁窗"
-            加窗类型, 可选:
-                        "矩形窗", "汉宁窗", "海明窗",
-                        "巴特利特窗", "布莱克曼窗",
-                        "自定义窗"
-                        
-        返回:
-        --------
-        f_Axis : np.ndarray
-            频率轴
-        Amp : np.ndarray
-            包络谱
+        Parameters
+        ----------
+        WinType : str, default: "汉宁窗"
+            加窗类型，可选："矩形窗", "汉宁窗", "海明窗", "巴特利特窗", "布莱克曼窗", "自定义窗"
+
+        Returns
+        -------
+        Spectra : Spectra
+            包络谱对象
         """
+        from PySP._Signal_Module.core import f_Axis, Spectra
         N = self.Sig.N
         analytic = signal.hilbert(self.Sig.data)
         envelope = np.abs(analytic)
         X_f = SpectrumAnalysis.ft(envelope, self.Sig.fs, WinType=WinType) * self.Sig.df
         Amp = np.abs(X_f)
-        # 裁剪为单边余弦谱
-        f_Axis = self.Sig.f_Axis[: N // 2]
-        Amp = 2 * Amp[: len(f_Axis)]
-        return f_Axis, Amp
+        N_half = N // 2
+        freq_axis = f_Axis(N=N_half, df=self.Sig.df, f0=0.0)
+        Amp = 2 * Amp[:N_half]
+        return Spectra(axis=freq_axis, data=Amp, name="包络谱", unit=self.Sig.unit, label=self.Sig.label)
 
 
 
