@@ -682,7 +682,7 @@ class TestResampleFunction:
         new_fs = original_sig.fs / 2
 
         # --- 执行重采样 ---
-        resampled_sig = Resample(original_sig, fs_resampled=new_fs)
+        resampled_sig = Resample(original_sig, fr=new_fs)
 
         # --- 断言重采样结果 ---
         assert isinstance(resampled_sig, Signal)
@@ -702,7 +702,7 @@ class TestResampleFunction:
         new_fs = fs * 2
 
         # --- 执行重采样 ---
-        resampled_sig = Resample(original_sig, fs_resampled=new_fs)
+        resampled_sig = Resample(original_sig, fr=new_fs)
 
         # --- 断言重采样结果 ---
         assert isinstance(resampled_sig, Signal)
@@ -720,7 +720,7 @@ class TestResampleFunction:
         new_fs = original_sig.fs
 
         # --- 执行重采样 ---
-        resampled_sig = Resample(original_sig, fs_resampled=new_fs)
+        resampled_sig = Resample(original_sig, fr=new_fs)
 
         # --- 断言重采样结果 ---
         assert resampled_sig.fs == new_fs
@@ -738,7 +738,7 @@ class TestResampleFunction:
         new_fs = original_sig.fs
 
         # --- 执行重采样 ---
-        resampled_sig = Resample(original_sig, fs_resampled=new_fs, t0=new_t0, T=new_T)
+        resampled_sig = Resample(original_sig, fr=new_fs, t0=new_t0, T=new_T)
         expected_N = int(new_T * new_fs)  # 计算新的采样点数
 
         # --- 断言重采样结果 ---
@@ -752,12 +752,12 @@ class TestResampleFunction:
         """测试 t0 超出信号范围的重采样"""
         # --- 测试 t0 小于信号起始时间 ---
         with pytest.raises(ValueError, match="起始时间不在信号时间范围内"):
-            Resample(get_test_Signal, fs_resampled=100, t0=-0.1)
+            Resample(get_test_Signal, fr=100, t0=-0.1)
         # --- 测试 t0 大于信号结束时间 ---
         with pytest.raises(ValueError, match="起始时间不在信号时间范围内"):
             Resample(
                 get_test_Signal,
-                fs_resampled=100,
+                fr=100,
                 t0=get_test_Signal.T + get_test_Signal.t0 + 0.1,
             )
 
@@ -768,7 +768,7 @@ class TestResampleFunction:
         with pytest.raises(ValueError, match="重采样时间长度超过信号时间范围"):
             Resample(
                 get_test_Signal,
-                fs_resampled=100,
+                fr=100,
                 t0=get_test_Signal.t0,
                 T=get_test_Signal.T + 0.1,
             )
