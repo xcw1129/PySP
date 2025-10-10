@@ -4,8 +4,9 @@
 
 ## 内容
     - function:
-        1. Resample: 对信号进行任意时间段的重采样
+        1. Resample: 对信号序列 Sig 进行任意时间段的重采样，支持下采样与上采样多种方式。
 """
+
 
 from PySP._Assist_Module.Dependencies import Optional
 from PySP._Assist_Module.Dependencies import np

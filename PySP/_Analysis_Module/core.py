@@ -1,12 +1,11 @@
 """
 # core
-分析处理核心模块, 定义了PySP库中所有信号分析处理方法的基本方法类`Analysis`
+分析处理核心模块
 
 ## 内容
     - class:
         1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
 """
-
 
 
 
@@ -20,19 +19,13 @@ IS_PLOT = False  # 全局默认绘图开关
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
+
 class Analysis:
     """
-    信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
+    信号分析处理方法基类，定义了初始化方法、常用属性和装饰器
 
-    参数:
-    --------
-    Sig : Signal
-        输入信号
-    isPlot : bool, 默认为False
-        是否绘制分析结果图
-
-    属性：
-    --------
+    Attributes
+    ----------
     Sig : Signal
         输入信号
     isPlot : bool
@@ -40,22 +33,51 @@ class Analysis:
     plot_kwargs : dict
         绘图参数
 
-    方法:
-    --------
-    Plot(plot_func)
-        Analysis类专用绘图装饰器, 对方法运行结果进行绘图
+    Methods
+    -------
+    __init__(Sig: Signal, isPlot: bool = False, **kwargs)
+        初始化分析对象
+    Plot(plot_func: callable)
+        Analysis类专用绘图装饰器，对方法运行结果进行绘图
     """
 
     # ----------------------------------------------------------------------------------------#
+
     @InputCheck({"Sig": {}, "isPlot": {}})
     def __init__(self, Sig: Signal, isPlot: bool = IS_PLOT, **kwargs):
+        """
+        初始化分析对象
+
+        Parameters
+        ----------
+        Sig : Signal
+            输入信号
+        isPlot : bool, optional
+            是否绘制分析结果图，默认False
+        **kwargs :
+            其他绘图参数
+        """
         self.Sig = Sig.copy()  # 防止对原信号进行修改
         self.isPlot = isPlot
         self.plot_kwargs = kwargs
 
     # ----------------------------------------------------------------------------------------#
+
     @staticmethod
     def Plot(plot_func: callable):
+        """
+        Analysis类专用绘图装饰器，对方法运行结果进行绘图
+
+        Parameters
+        ----------
+        plot_func : callable
+            用于绘图的函数，需与被装饰方法的返回值格式兼容
+
+        Returns
+        -------
+        decorator : function
+            装饰器函数
+        """
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):
                 res = func(self, *args, **kwargs)

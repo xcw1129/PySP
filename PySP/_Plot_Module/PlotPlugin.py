@@ -1,12 +1,11 @@
 """
 # PlotPlugin
-绘图插件模块, 提供了多种绘图辅助插件, 可与Plot类结合使用以增强绘图功能
+绘图插件模块
 
 ## 内容
     - class:
         1. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
-
 
 
 
@@ -21,29 +20,59 @@ from PySP._Plot_Module.core import PlotPlugin
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
+
 class PeakfinderPlugin(PlotPlugin):
     """
-    峰值查找插件, 用于查找并标注峰值对应的坐标。
+    峰值查找插件，用于查找并标注峰值对应的坐标
+
+    Attributes
+    ----------
+    find_peaks_params : dict
+        传递给 scipy.signal.find_peaks 的参数字典
+
+    Methods
+    -------
+    __init__(**kwargs)
+        初始化峰值查找插件
+    _apply(ax: plt.Axes, data)
+        在指定的子图上查找并标注峰值
     """
+
 
     def __init__(self, **kwargs):
         """
-        初始化峰值查找插件。
+        初始化峰值查找插件
 
-        参数:
-        ---------
+        Parameters
+        ----------
         **kwargs :
-            传递给 `scipy.signal.find_peaks` 函数的参数, 例如:
-            - height: float, 峰值的最小高度。
-            - distance: int, 相邻峰之间的最小水平距离（样本数）。
+            传递给 scipy.signal.find_peaks 的参数，如 height, distance 等
         """
         self.find_peaks_params = kwargs
 
+
     def _apply(self, ax: plt.Axes, data):
-        """在指定的子图上查找并标注峰值"""
+        """
+        在指定的子图上查找并标注峰值
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+            需要标注峰值的子图坐标轴对象
+        data : Signal 或 (Axis, np.ndarray)
+            信号对象或 (坐标轴, 数据) 二元组
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        仅对一维数据有效，非兼容数据类型将跳过
+        """
         # 插件现在作用于单个ax
         if isinstance(data, Signal):
-            Axis = data.t_axis()
+            Axis = data.__axis__()
             Data = data.data
         elif isinstance(data, tuple) and len(data) == 2:
             Axis = data[0]

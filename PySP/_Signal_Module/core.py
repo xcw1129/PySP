@@ -1,11 +1,17 @@
 """
 # core
-信号数据核心模块, 定义了PySP库中数据处理的基本对象类`Signal`
+信号数据核心模块
 
 ## 内容
     - class:
-        1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片、运算比较和numpy函数调用等
+        1. Axis: 通用坐标轴类，用于生成和管理一维均匀采样坐标轴数据
+        2. t_Axis: 时间轴类，用于描述均匀采样的时间坐标轴
+        3. f_Axis: 频率轴类，用于描述均匀采样的频率坐标轴
+        4. Series: 一维信号序列类，绑定坐标轴的信号数据
+        5. Signal: 一维时域信号类，带有时间采样信息
+        6. Spectra: 一维频谱类，带有频率采样信息
 """
+
 
 from PySP._Assist_Module.Dependencies import Optional
 from PySP._Assist_Module.Dependencies import np
