@@ -13,8 +13,8 @@
 
 
 from PySP._Assist_Module.Dependencies import Optional, Callable
-from PySP._Assist_Module.Dependencies import np
-from PySP._Assist_Module.Dependencies import fft, signal
+from PySP._Assist_Module.Dependencies import np, fft
+from PySP._Assist_Module.Dependencies import signal
 
 from PySP._Assist_Module.Decorators import InputCheck
 
@@ -150,7 +150,7 @@ class SpectrumAnalysis(Analysis):
         X_f : np.ndarray
             变换结果
         """
-        X_f=fft.fft(data)
+        X_f=fft.rfft(data)
         return X_f
 
     # ----------------------------------------------------------------------------------------#
@@ -180,7 +180,8 @@ class SpectrumAnalysis(Analysis):
         N= len(data)
         win_data = window(num=N,type=WinType)
         scale = 1 / np.mean(win_data)  # 幅值补偿因子
-        X_f=fft.fft(data*win_data)/fs*scale
+        T=N/fs
+        X_f=fft.fft(data*win_data)*T*scale
         return X_f
 
     # ----------------------------------------------------------------------------------------#

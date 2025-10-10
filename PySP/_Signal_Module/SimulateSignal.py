@@ -8,14 +8,11 @@
 """
 
 
-
-
-
 from PySP._Assist_Module.Dependencies import np, random
 
 from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP._Signal_Module.core import Signal
+from PySP._Signal_Module.core import t_Axis,Signal
 
 # --------------------------------------------------------------------------------------------#
 # -## ----------------------------------------------------------------------------------------#
@@ -33,31 +30,37 @@ def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0.0) -> Signa
     """
     生成仿真含噪准周期信号
 
-    参数:
-    --------
+    Parameters
+    ----------
     fs : float
-        仿真信号采样频率
+        采样频率，单位Hz，输入范围: >0
     T : float
-        仿真信号采样时长
+        信号时长，单位s，输入范围: >0
     CosParams : tuple
-        余弦信号参数元组, 每组参数格式为(f, A, phi)
-    noise : float
-        高斯白噪声方差, 默认为0, 表示无噪声
+        多组余弦信号参数，每组为(f, A, phi)，分别为频率、幅值、初相位。
+        例如：((f1, A1, phi1), (f2, A2, phi2), ...)
+    noise : float, 可选
+        高斯白噪声标准差，默认0.0，输入范围: >=0
 
-    返回:
-    --------
-    Sig : Signal
-        仿真含噪准周期信号
+    Returns
+    -------
+    Signal
+        仿真含噪准周期信号对象
+
+    Raises
+    ------
+    ValueError
+        CosParams参数格式错误（每组需为3元组）
     """
-    Sig = Signal(fs=fs, T=T, label="仿真含噪准周期信号")
+    Sig = Signal(axis=t_Axis(int(np.ceil(T * fs)), fs=fs), label="仿真含噪准周期信号")
     for i, params in enumerate(CosParams):
         if len(params) != 3:
             raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
         f, A, phi = params
         Sig.data += A * np.cos(
-            2 * np.pi * f * Sig.t_axis() + phi
+            2 * np.pi * f * Sig.__axis__() + phi
         )  # 生成任意频率、幅值、初相位的余弦信号
-    Sig.data += random.randn(len(Sig.t_axis)) * noise  # 加入高斯白噪声
+    Sig.data += random.randn(len(Sig.__axis__)) * noise  # 加入高斯白噪声
     return Sig
 
 

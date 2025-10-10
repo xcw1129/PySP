@@ -72,8 +72,9 @@ class Axis:
         unit : str, 可选
             坐标轴数据单位
         """
-        # ._a属性仅为Axis类使用，子类使用.s覆写对应.__a__动态属性供Axis自带方法调用
-        # ._a属性对象初始化后一般不变，可通过._a与.s是否相等判断对象是否被修改
+        # ._a属性仅为Axis类临时使用，子类必须使用.a覆写对应.__a__动态属性供Axis自带方法调用
+        # ._a属性初始化后一般不变，可通过._a与.a是否相等判断属性是否被修改
+        # 所有基于Axis的子类和涉及Axis类数据的函数只允许调用.__a__动态属性获取数据，禁止直接调用.a和._a属性
         self._N = N  # 子类不推荐.N覆写，len()获取长度以保持Axis对象的数组特性
         self._dx = dx
         self._x0 = x0
@@ -353,18 +354,22 @@ class Series:
         else:
             self.data = np.zeros(len(axis), dtype=float)
 
-        self._axis = axis  # ._axis属性仅为Series类使用，子类使用.axis覆写.__axis__动态属性供Series自带方法调用
+        self._axis = axis  # ._axis属性仅为Series类临时使用，子类使用.axis覆写.__axis__动态属性供Series自带方法调用
         self.name = name
         self.unit = unit
         self.label = label
+
+    @property
+    def __axis__(self):
+        return self._axis.copy()
 
     @property
     def N(self):
         return len(self.data)
 
     @property
-    def __axis__(self):  # .__axis__属性需子类重写
-        return self._axis.copy()
+    def L(self):
+        return self.__axis__.lim[1] - self.__axis__.lim[0]
 
     # ----------------------------------------------------------------------------------------#
     # Python内置函数兼容

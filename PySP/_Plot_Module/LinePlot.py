@@ -17,7 +17,7 @@ from PySP._Assist_Module.Dependencies import plt
 
 from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP._Signal_Module.core import Axis,f_Axis,Signal
+from PySP._Signal_Module.core import Axis,t_Axis,f_Axis,Signal
 from PySP._Signal_Module.SignalSampling import Resample
 
 from PySP._Plot_Module.PlotPlugin import PeakfinderPlugin
@@ -59,9 +59,9 @@ class LinePlot(Plot):
                 if not isinstance(S, Signal):
                     raise ValueError("输入数据必须为Signal对象或Signal对象列表")
                 if self.isSampled:
-                    fs_resampled = 2000 / S.T if S.N > 2000 else S.fs
-                    S = Resample(S, type="extreme", fs_resampled=fs_resampled, t0=S.t0)
-                ax.plot(S.t_axis(), S.data, label=S.label)
+                    dt = S.T / 2000 if S.N > 2000 else S.__axis__.__dx__
+                    S = Resample(S, type="extreme", dt=dt, t0=S.t0)
+                ax.plot(S.__axis__, S.data, label=S.label)
             if len(data) > 1:
                 ax.legend(loc="best")
 
