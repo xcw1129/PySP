@@ -9,11 +9,10 @@
 """
 
 
-
 from PySP._Assist_Module.Dependencies import deepcopy
 from PySP._Assist_Module.Dependencies import np
 from PySP._Assist_Module.Dependencies import plt, ticker
-
+from PySP._Assist_Module.Dependencies import deque
 
 from PySP._Assist_Module.Decorators import InputCheck
 
@@ -30,12 +29,12 @@ class PlotPlugin:
     Methods
     -------
     _apply(ax: plt.Axes, data: any) -> None
-        将插件应用于指定的坐标轴。
+        将插件应用于指定分图
     """
 
     def _apply(self, ax: plt.Axes, data):
         """
-        将插件应用于指定的坐标轴。
+        将插件应用于指定分图。
 
         Parameters
         ----------
@@ -85,7 +84,6 @@ class Plot:
         执行所有已注册的绘图任务并显示/返回/保存最终图形
     """
 
-
     @InputCheck(
         {
             "ncols": {"Low": 1},
@@ -113,15 +111,26 @@ class Plot:
         """
         self.figure = None
         self.axes = None
-        self.ncols = ncols
+        self.ncols = ncols# 多图绘制时的子图列数
         self.isSampled = isSampled
-        self._kwargs = kwargs
-        self.tasks = []
+        self._kwargs = kwargs# 全局绘图参数，一般初始化后不再修改
+        self.tasks = deque()# 绘图任务队列，存储所有待绘制的任务
 
     @property
     def kwargs(self):
         return deepcopy(self._kwargs)
+    
+    @property
+    def last_task(self):
+        """返回最新添加的绘图任务接口"""
+        if not self.tasks:
+            raise RuntimeError(
+                "请先添加一个绘图任务 (例如调用 TimeWaveform)，再访问其参数。"
+            )
+        return self.tasks[-1]
 
+    # ----------------------------------------------------------------------------------------#
+    # 内部绘图基本框架方法
     def _setup_figure(self, num_tasks):
         """根据任务数量设置图形和子图"""
         ncols = self.ncols
@@ -131,11 +140,18 @@ class Plot:
         figsize = (base_figsize[0] * ncols, base_figsize[1] * nrows)
         # 创建图形和子图
         self.figure, self.axes = plt.subplots(nrows, ncols, figsize=figsize)
-        if num_tasks == 1:
-            self.axes = np.array([self.axes])
+        # 统一将 axes 转为 1 维 numpy 数组，方便迭代
+        if isinstance(self.axes, (list, tuple)):
+            self.axes = np.array(self.axes).flatten()
         else:
-            self.axes = self.axes.flatten()
+            # 当只创建一个子图时，plt.subplots 返回单个 Axes 对象
+            try:
+                self.axes = np.array(self.axes).flatten()
+            except Exception:
+                self.axes = np.array([self.axes])
 
+    # ----------------------------------------------------------------------------------------#
+    # 子图级图形元素设置方法
     def _setup_title(self, ax, task_kwargs):
         """设置标题"""
         title = task_kwargs.get("title", None)
@@ -143,7 +159,7 @@ class Plot:
             ax.set_title(title)
 
     def _setup_x_axis(self, ax, task_kwargs):
-        # 设置X轴
+        """设置X轴"""
         xlabel = task_kwargs.get("xlabel", None)
         # 设置X轴标签
         ax.set_xlabel(xlabel)
@@ -168,7 +184,7 @@ class Plot:
         ax.set_xlim(xlim[0], xlim[1])
 
     def _setup_y_axis(self, ax, task_kwargs):
-        # 设置Y轴
+        """设置Y轴"""
         ylabel = task_kwargs.get("ylabel", None)
         # 设置Y轴标签
         ax.set_ylabel(ylabel)
@@ -208,7 +224,9 @@ class Plot:
         else:
             raise ValueError("图形未创建，无法保存")
 
-
+    # ----------------------------------------------------------------------------------------#
+    # 绘图个性化修改外部接口方法
+    # 默认修改的绘图任务为最新添加的任务, 保持调用时的可读性
     def set_params_to_task(self, **kwargs) -> "Plot":
         """
         为最新添加的绘图任务设置专属参数
@@ -228,15 +246,10 @@ class Plot:
         RuntimeError
             未添加任何绘图任务时调用本方法
         """
-        if not self.tasks:
-            raise RuntimeError(
-                "请先添加一个绘图任务 (例如调用 TimeWaveform)，再设置其参数。"
-            )
-        self.tasks[-1]["kwargs"].update(kwargs)
+        self.last_task["kwargs"].update(kwargs)
         return self
 
     @InputCheck({"plugin": {}})
-
     def add_plugin_to_task(self, plugin: PlotPlugin) -> "Plot":
         """
         为最新添加的绘图任务添加一个插件
@@ -258,15 +271,38 @@ class Plot:
         TypeError
             插件类型不是 PlotPlugin
         """
-        if not self.tasks:
-            raise RuntimeError(
-                "请先添加一个绘图任务 (例如调用 TimeWaveform)，再为其添加插件。"
-            )
         if not isinstance(plugin, PlotPlugin):
             raise TypeError("插件必须是 PlotPlugin 的实例。")
-        self.tasks[-1]["plugins"].append(plugin)
+        self.last_task["plugins"].append(plugin)
         return self
 
+    # ----------------------------------------------------------------------------------------#
+    # 子类绘图任务注册接口函数实现示例
+    def plot(self,Data, **kwargs):
+        # ------------------------------------------------------------------------------------#
+        # 绘图函数: 通过任务队列传递到绘图引擎
+        def _draw_plot(ax, data):
+            """在指定ax上根据绘图数据data绘图，通过任务队列传递"""
+            pass
+        # ------------------------------------------------------------------------------------#
+        # 绘图个性化设置
+        # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
+        task_kwargs = self.kwargs
+        task_kwargs.update({})
+        task_kwargs.update(kwargs)
+        # ------------------------------------------------------------------------------------#
+        # 注册绘图任务
+        task = {
+            "data": Data,
+            "kwargs": task_kwargs,
+            "function": _draw_plot,
+            "plugins": [],  # 初始化任务专属插件列表
+        }
+        self.tasks.append(task)
+        return self
+
+    # ----------------------------------------------------------------------------------------#
+    # 执行绘图任务总控方法
     @InputCheck(
         {
             "pattern": {"Content": ("plot", "return", "save")},
@@ -276,7 +312,6 @@ class Plot:
             },
         }
     )
-
     def show(self, pattern: str = "plot", filename="Plot.png", save_format="png"):
         """
         执行所有已注册的绘图任务并显示/返回/保存最终图形
@@ -298,31 +333,32 @@ class Plot:
         num_tasks = len(self.tasks)
         if num_tasks == 0:
             return
-
+        # 创建图形和子图
         self._setup_figure(num_tasks)
-
+        # 依次在对应子图上执行每个绘图任务
         for i, ax in enumerate(self.axes):
+            # 如果任务数少于子图数，隐藏多余子图
             if i >= num_tasks:
                 ax.set_visible(False)
                 continue
-
-            task = self.tasks[0]
+            # 获取当前任务的信息
+            # 按 FIFO 原则从队列左端弹出任务
+            task = self.tasks.popleft()
             task_data = task["data"]
             task_kwargs = task["kwargs"]
-            task_plot_function = task["plot_function"]
+            task_function = task["function"]
             task_plugins = task["plugins"]
-
-            if task_data is not None:
-                task_plot_function(ax, task_data)
+            try:
+                task_function(ax, task_data)
                 self._setup_title(ax, task_kwargs)
                 self._setup_x_axis(ax, task_kwargs)
                 self._setup_y_axis(ax, task_kwargs)
                 for plugin in task_plugins:
                     plugin._apply(ax, task_data)
-                self.tasks.pop(0)
-
+            except Exception as e:
+                print(f"绘制第{i+1}个子图时出错: {e}")
+        # 总图调整设置
         self.figure.tight_layout()
-
         if pattern == "plot":
             self.figure.show()
         elif pattern == "return":

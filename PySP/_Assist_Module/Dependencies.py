@@ -3,6 +3,7 @@ import math  # 数学函数
 import os  # 操作系统接口
 from typing import Optional, Callable, Union,Dict, List,Tuple, Any# 类型注解
 from typing import get_origin, get_args # 输入检查
+from collections import deque # 双端队列数据
 from functools import wraps  # 函数装饰器
 import inspect  # 函数检查
 from copy import deepcopy  # 对象复制
