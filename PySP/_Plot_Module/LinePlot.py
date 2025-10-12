@@ -10,13 +10,13 @@
         2. FreqSpectrumFunc: 单谱图绘制函数
 """
 
-
+from turtle import title
 from PySP._Assist_Module.Dependencies import Union
 from PySP._Assist_Module.Dependencies import np
 
 from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP._Signal_Module.core import Axis,f_Axis,Signal,Spectra
+from PySP._Signal_Module.core import Axis, f_Axis, Signal, Spectra
 from PySP._Signal_Module.SignalSampling import Resample
 
 from PySP._Plot_Module.core import Plot
@@ -27,6 +27,7 @@ from PySP._Plot_Module.PlotPlugin import PeakfinderPlugin
 # -## ----------------------------------------------------------------------------------------#
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
+
 
 class LinePlot(Plot):
     """
@@ -39,6 +40,7 @@ class LinePlot(Plot):
     Spectrum(Axis: Axis, Data: np.ndarray, **kwargs) -> LinePlot
         注册一个谱图的绘制任务
     """
+
     @InputCheck({"Sig": {}})
     def timeWaveform(self, Sig: Union[Signal, list], **kwargs):
         """
@@ -61,6 +63,7 @@ class LinePlot(Plot):
         ValueError
             输入数据不是 Signal 对象或 Signal 对象列表
         """
+
         # ------------------------------------------------------------------------------------#
         # 时域波形绘制函数: 通过任务队列传递到绘图引擎
         def _draw_timewaveform(ax, data):
@@ -77,13 +80,20 @@ class LinePlot(Plot):
                 ax.plot(S.__axis__(), S.data, label=S.label)
             if len(data) > 1:
                 ax.legend(loc="best")
+
         # ------------------------------------------------------------------------------------#
         # 时域波形绘制个性化设置
         if not isinstance(Sig, list):
             Sig = [Sig]
         # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
         task_kwargs = self.kwargs
-        task_kwargs.update({"xlabel": Sig[0].t_axis.label, "ylabel": f"{Sig[0].name}/{Sig[0].unit}"})
+        task_kwargs.update(
+            {
+                "xlabel": Sig[0].t_axis.label,
+                "ylabel": f"{Sig[0].name}/{Sig[0].unit}",
+                "title": f"{Sig[0].label}时域波形",
+            }
+        )
         task_kwargs.update(kwargs)
         # ------------------------------------------------------------------------------------#
         # 注册绘图任务
@@ -97,7 +107,6 @@ class LinePlot(Plot):
         return self
 
     @InputCheck({"Axis": {}, "Data": {"ndim": 1}})
-
     def spectrum(self, Spc: Spectra, **kwargs):
         """
         注册一个谱图的绘制任务
@@ -114,6 +123,7 @@ class LinePlot(Plot):
         LinePlot
             返回绘图对象本身，以支持链式调用
         """
+
         # ------------------------------------------------------------------------------------#
         # 频谱绘制函数: 通过任务队列传递到绘图引擎
         def _draw_spectrum(ax, data):
@@ -122,11 +132,18 @@ class LinePlot(Plot):
             ax.grid(
                 axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
             )
+
         # ------------------------------------------------------------------------------------#
         # 频谱绘制个性化设置
         # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
         task_kwargs = self.kwargs
-        task_kwargs.update({"xlabel": Spc.f_axis.label, "ylabel": f"{Spc.name}/{Spc.unit}"})
+        task_kwargs.update(
+            {
+                "xlabel": Spc.f_axis.label,
+                "ylabel": f"{Spc.name}/{Spc.unit}",
+                "title": f"{Spc.label}{Spc.name}谱",
+            },
+        )
         task_kwargs.update(kwargs)
         # ------------------------------------------------------------------------------------#
         # 注册绘图任务
@@ -160,7 +177,9 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
     ax : matplotlib.axes.Axes
         坐标轴对象
     """
-    fig, ax = LinePlot(isSampled=True, **kwargs).timeWaveform(Sig).show(pattern="return")
+    fig, ax = (
+        LinePlot(isSampled=True, **kwargs).timeWaveform(Sig).show(pattern="return")
+    )
     fig.show()
     return fig, ax
 
@@ -183,7 +202,7 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs):
     ax : matplotlib.axes.Axes
         坐标轴对象
     """
-    plot_kwargs = {"yscale": "log"}
+    plot_kwargs = {"yscale": "log", "title": f"{Spc.label}频谱"}
     plot_kwargs.update(kwargs)
     fig, ax = (
         LinePlot(**plot_kwargs)

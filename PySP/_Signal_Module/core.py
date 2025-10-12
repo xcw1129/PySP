@@ -78,17 +78,18 @@ class Axis:
         unit : str, 可选
             坐标轴数据单位
         """
-        # ._a属性仅为Axis类临时使用，子类必须使用.a覆写对应.__a__动态属性供Axis自带方法调用
         # ._a属性初始化后一般不变，可通过._a与.a是否相等判断属性是否被修改
-        # 所有基于Axis的子类和涉及Axis类数据的函数只允许调用.__a__动态属性获取数据，禁止直接调用.a和._a属性
         self._N = N  # 子类不推荐.N覆写，len()获取长度以保持Axis对象的数组特性
         self._dx = dx
         self._x0 = x0
         self.name = name
         self.unit = unit  # 推荐使用标准单位或领域内通用单位
 
+    # ----------------------------------------------------------------------------------------#
+    # 坐标轴数据动态属性，供类自带方法和库内部函数调用
+    # 所有基于Axis的子类和涉及Axis类数据的函数只允许调用.__a__动态属性获取数据，禁止直接调用.a和._a属性
     @property
-    def __N__(self):  # __a__属性需子类重写
+    def __N__(self):
         return self._N
 
     @property
@@ -114,7 +115,9 @@ class Axis:
     def label(self) -> str:
         return f"{self.name}/{self.unit}"
 
-    def copy(self) -> "Axis":
+    # ----------------------------------------------------------------------------------------#
+    # 数组特性支持
+    def copy(self):
         return deepcopy(self)
 
     def __call__(self):
@@ -133,11 +136,10 @@ class Axis:
             return np.array_equal(self.data, other)
         return False
 
-
     # ----------------------------------------------------------------------------------------#
     # Python内置函数兼容
     def __len__(self):
-        return self.__N__
+        return len(self.data)
 
     def __str__(self):
         return f"{type(self).__name__}({self.name}={self.data}{self.unit})"
@@ -244,6 +246,8 @@ class t_Axis(Axis):
         # ------------------------------------------------------------------------------------#
         super().__init__(N=N, dx=1 / fs, x0=t0, unit="s", name="时间")
 
+    # ----------------------------------------------------------------------------------------#
+    # Axis子类动态属性覆写
     @property
     def __dx__(self):
         return 1 / self.fs
@@ -251,7 +255,9 @@ class t_Axis(Axis):
     @property
     def __x0__(self):
         return self.t0
-
+    
+    # ----------------------------------------------------------------------------------------#
+    # t_Axis特有属性
     @property
     def dt(self):
         return 1 / self.fs  # 采样时间间隔
@@ -295,6 +301,8 @@ class f_Axis(Axis):
         self.f0 = f0
         super().__init__(dx=df, N=N, x0=f0, unit="Hz", name="频率")
 
+    # ----------------------------------------------------------------------------------------#
+    # Axis子类动态属性覆写
     @property
     def __dx__(self):
         return self.df
@@ -306,7 +314,7 @@ class f_Axis(Axis):
 
 class Series:
     """
-    一维信号序列类，绑定坐标轴的信号数据
+    绑定坐标轴的一维序列数据类
 
     Attributes
     ----------
@@ -360,11 +368,13 @@ class Series:
         else:
             self.data = np.zeros(len(axis), dtype=float)
 
-        self._axis = axis  # ._axis属性仅为Series类临时使用，子类使用.axis覆写.__axis__动态属性供Series自带方法调用
+        self._axis = axis
         self.name = name
         self.unit = unit
         self.label = label
 
+    # ----------------------------------------------------------------------------------------#
+    # 序列数据动态属性，供类自带方法和库内部函数调用
     @property
     def __axis__(self):
         return self._axis.copy()
@@ -374,7 +384,7 @@ class Series:
         return len(self.data)
 
     @property
-    def L(self):
+    def L(self):# 序列分布长度
         return self.__axis__.lim[1] - self.__axis__.lim[0]
 
     # ----------------------------------------------------------------------------------------#
@@ -611,7 +621,7 @@ class Series:
         from PySP.Plot import LinePlot
         plot_kwargs = { "ylabel": f"{self.name}/{self.unit}"}
         plot_kwargs.update(kwargs)
-        fig, ax = LinePlot(**plot_kwargs).Spectrum(self.__axis__, self.data).show(pattern="return")
+        fig, ax = LinePlot(**plot_kwargs).spectrum(self.__axis__, self.data).show(pattern="return")
         fig.show()
         return fig, ax
 
@@ -668,11 +678,11 @@ class Signal(Series):
         super().__init__(axis=self.t_axis, data=data, name=name, unit=unit, label=label)
 
     @property
-    def __axis__(self):# 供类自带方法调用, 防止.axis被修改
+    def __axis__(self):# 供类自带方法和库内部函数调用, 防止.axis被修改
         return self.t_axis.copy()
 
     # ----------------------------------------------------------------------------------------#
-    # 信号采样参数
+    # 信号采样参数动态属性
     # 采样参数查看可直接通过Signal对象的属性访问, 修改采样参数请通过修改.t_axis属性实现
     @property
     def dt(self) -> float:
@@ -715,13 +725,12 @@ class Signal(Series):
         频率分辨率
         """
         return self.f_axis.df
-
+    
+    # ----------------------------------------------------------------------------------------#
+    # 信号类数据典型分析处理方法
     def plot(self, **kwargs):
         from PySP.Plot import TimeWaveformFunc
-        title= f"{self.label}时域波形" if self.label else "时域波形"
-        plot_kwargs = {"title": title}
-        plot_kwargs.update(kwargs)
-        fig, ax = TimeWaveformFunc(self, **plot_kwargs)
+        fig, ax = TimeWaveformFunc(self, **kwargs)
         try:
             from IPython import display
             display.display(fig)
@@ -782,11 +791,12 @@ class Spectra(Series):
         super().__init__(axis=self.f_axis, data=data, name=name, unit=unit, label=label)
 
     @property
-    def __axis__(self):  # 供类自带方法调用, 防止.axis被修改
+    def __axis__(self):  # 供类自带方法和库内部函数调用, 防止.axis被修改
         return self.f_axis.copy()
 
     # ----------------------------------------------------------------------------------------#
-    # 谱频率轴参数
+    # 谱频率轴参数动态属性
+    # 频率轴参数查看可直接通过Spectra对象的属性访问, 修改频率轴参数请通过修改.f_axis属性实现
     @property
     def T(self) -> float:
         """
@@ -807,17 +817,14 @@ class Spectra(Series):
         频率起始点
         """
         return self.f_axis.f0
-
+    
+    # ----------------------------------------------------------------------------------------#
+    # 频谱类数据典型分析处理方法
     def plot(self, **kwargs):
         from PySP.Plot import FreqSpectrumFunc
-
-        title = f"{self.label}{self.name}谱" if self.name != "" else f"{self.label}频谱"
-        plot_kwargs = {"title": title,  "ylabel": f"{self.name}/{self.unit}"}
-        plot_kwargs.update(kwargs)
-        fig, ax = FreqSpectrumFunc(self.__axis__,self.data, **plot_kwargs)
+        fig, ax = FreqSpectrumFunc(self, **kwargs)
         try:
             from IPython import display
-
             display.display(fig)
         except Exception:
             plt.show()
