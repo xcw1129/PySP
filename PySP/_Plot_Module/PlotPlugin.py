@@ -13,7 +13,7 @@ from PySP._Assist_Module.Dependencies import np
 from PySP._Assist_Module.Dependencies import plt
 from PySP._Assist_Module.Dependencies import signal
 
-from PySP._Signal_Module.core import Signal
+from PySP._Signal_Module.core import Series
 from PySP._Plot_Module.core import PlotPlugin
 
 # --------------------------------------------------------------------------------------------#
@@ -71,12 +71,9 @@ class PeakfinderPlugin(PlotPlugin):
         仅对一维数据有效，非兼容数据类型将跳过
         """
         # 插件现在作用于单个ax
-        if isinstance(data, Signal):
+        if isinstance(data, Series):
             Axis = data.__axis__()
             Data = data.data
-        elif isinstance(data, tuple) and len(data) == 2:
-            Axis = data[0]
-            Data = data[1]
         else:
             # 不兼容插件, 跳过
             return
