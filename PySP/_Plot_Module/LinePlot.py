@@ -178,7 +178,7 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
         坐标轴对象
     """
     fig, ax = (
-        LinePlot(isSampled=True, **kwargs).timeWaveform(Sig).show(pattern="return")
+        LinePlot(isSampled=True).timeWaveform(Sig, **kwargs).show(pattern="return")
     )
     fig.show()
     return fig, ax
@@ -205,8 +205,8 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs):
     plot_kwargs = {"yscale": "log", "title": f"{Spc.label}频谱"}
     plot_kwargs.update(kwargs)
     fig, ax = (
-        LinePlot(**plot_kwargs)
-        .spectrum(Spc)
+        LinePlot()
+        .spectrum(Spc, **plot_kwargs)
         .add_plugin_to_task(
             PeakfinderPlugin(
                 distance=len(Spc) // 100, height=0.1 * np.max(Spc), prominence=0.1
