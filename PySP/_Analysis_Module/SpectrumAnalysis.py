@@ -193,15 +193,15 @@ class SpectrumAnalysis(Analysis):
         Amp = np.abs(X_k)
         # 裁剪为单边余弦谱
         f_axis = self.Sig.f_axis
-        f_axis._N= self.Sig.N // 2  # 频率轴点数取半
+        f_axis.N= self.Sig.N // 2  # 频率轴点数取半
         Amp = 2 * Amp[:len(f_axis)]  # 余弦系数为复数系数的2倍
         return Spectra(axis=f_axis, data=Amp, name="幅值", unit=self.Sig.unit, label=self.Sig.label)
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(FreqSpectrumFunc)
-    def es(self, WinType: str = "汉宁窗") -> Spectra:
+    def esd(self, WinType: str = "汉宁窗") -> Spectra:
         """
-        计算时域窄带信号在0~N/2*Δf范围能量谱的数值近似
+        计算时域窄带信号在0~N/2*Δf范围能量谱密度的数值近似
 
         Parameters
         ----------
@@ -211,16 +211,16 @@ class SpectrumAnalysis(Analysis):
         Returns
         -------
         Spectra : Spectra
-            单边能量谱
+            单边能量谱密度
         """
         X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.fs, WinType=WinType) 
         Amp = np.abs(X_f)
-        ES = (Amp ** 2) * self.Sig.df  # 能量谱
-        # 裁剪为单边能量谱
+        ESD = (Amp ** 2)  # 能量谱密度，单位U^2*t/Hz
+        # 裁剪为单边能量谱密度
         f_axis = self.Sig.f_axis
-        f_axis._N = self.Sig.N // 2  # 频率轴点数取半
-        ES = 2 * ES[:len(f_axis)]
-        return Spectra(axis=f_axis, data=ES, name="能量", unit=self.Sig.unit + "^2*t", label=self.Sig.label)
+        f_axis.N = self.Sig.N // 2  # 频率轴点数取半
+        ESD = 2 * ESD[:len(f_axis)]
+        return Spectra(axis=f_axis, data=ESD, name="能量密度", unit=self.Sig.unit + "^2*t/Hz", label=self.Sig.label)
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(FreqSpectrumFunc)
@@ -246,7 +246,7 @@ class SpectrumAnalysis(Analysis):
         PSD = (np.abs(X_k) ** 2) / self.Sig.df  # 功率谱密度
         # 裁剪为单边功率谱密度
         f_axis = self.Sig.f_axis
-        f_axis._N = self.Sig.N // 2  # 频率轴点数取半
+        f_axis.N = self.Sig.N // 2  # 频率轴点数取半
         PSD = 2 * PSD[:len(f_axis)]
         return Spectra(axis=f_axis, data=PSD, name="功率密度", unit=self.Sig.unit + "^2/Hz", label=self.Sig.label)
 
