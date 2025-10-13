@@ -139,7 +139,7 @@ class LinePlot(Plot):
         task_kwargs = self.kwargs
         task_kwargs.update(
             {
-                "xlabel": Spc.f_axis.label,
+                "xlabel": Spc.f_axis.axislabel,
                 "ylabel": f"{Spc.name}/{Spc.unit}",
                 "title": f"{Spc.label}{Spc.name}谱",
             },
