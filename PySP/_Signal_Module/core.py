@@ -1,11 +1,17 @@
 """
 # core
-信号数据核心模块, 定义了PySP库中数据处理的基本对象类`Signal`
+信号数据核心模块
 
 ## 内容
     - class:
-        1. Signal: 自带采样信息的信号数据类, 支持print、len、数组切片、运算比较和numpy函数调用等
+        1. Axis: 通用坐标轴类，用于生成和管理一维均匀采样坐标轴数据
+        2. t_Axis: 时间轴类，用于描述均匀采样的时间坐标轴
+        3. f_Axis: 频率轴类，用于描述均匀采样的频率坐标轴
+        4. Series: 一维信号序列类，绑定坐标轴的信号数据
+        5. Signal: 一维时域信号类，带有时间采样信息
+        6. Spectra: 一维频谱类，带有频率采样信息
 """
+
 
 from PySP._Assist_Module.Dependencies import Optional
 from PySP._Assist_Module.Dependencies import np
@@ -39,6 +45,8 @@ class Axis:
         坐标轴数据数组
     lim : tuple
         坐标轴数据范围 (min, max)
+    L : float
+        坐标轴分布长度
     label : str
         坐标轴标签 (name/unit)
 
@@ -47,12 +55,6 @@ class Axis:
     copy() -> Axis
         返回坐标轴对象的深拷贝
     """
-    @InputCheck(
-        {
-            "name": {},
-            "unit": {},
-        }
-    )# 其他参数由子类检查
     def __init__(
         self, N: int, dx: float, x0: float = 0.0, name: str = "", unit: str = ""
     ):
@@ -72,17 +74,20 @@ class Axis:
         unit : str, 可选
             坐标轴数据单位
         """
-        # ._a属性仅为Axis类使用，子类使用.s覆写对应.__a__动态属性供Axis自带方法调用
-        # ._a属性对象初始化后一般不变，可通过._a与.s是否相等判断对象是否被修改
-        self._N = N  # 子类不推荐.N覆写，len()获取长度以保持Axis对象的数组特性
+        # ._a属性初始化后一般不变并在子类中重写.a属性，可通过._a与.a是否相等判断属性是否被修改
+        # 仅在需要修改坐标轴参数时调用._a属性，其它一律调用.__a__属性
+        self.N = N  
         self._dx = dx
         self._x0 = x0
         self.name = name
         self.unit = unit  # 推荐使用标准单位或领域内通用单位
 
+    # ----------------------------------------------------------------------------------------#
+    # 坐标轴数据动态属性，供类自带方法和库内部函数调用
+    # 所有基于Axis的子类和涉及Axis类数据的函数只允许调用.__a__动态属性获取数据，禁止直接调用.a和._a属性
     @property
-    def __N__(self):  # __a__属性需子类重写
-        return self._N
+    def __N__(self):
+        return self.N
 
     @property
     def __dx__(self):
@@ -104,10 +109,16 @@ class Axis:
         return (self.__x0__, self.__x0__ + self.__dx__ * self.__N__)  # (x0, x0+N*dx)
 
     @property
-    def label(self) -> str:
+    def L(self):
+        return self.lim[1] - self.lim[0]  # 坐标轴分布长度
+
+    @property
+    def axislabel(self) -> str:
         return f"{self.name}/{self.unit}"
 
-    def copy(self) -> "Axis":
+    # ----------------------------------------------------------------------------------------#
+    # 数组特性支持
+    def copy(self):
         return deepcopy(self)
 
     def __call__(self):
@@ -125,7 +136,6 @@ class Axis:
         elif isinstance(other, np.ndarray):
             return np.array_equal(self.data, other)
         return False
-
 
     # ----------------------------------------------------------------------------------------#
     # Python内置函数兼容
@@ -165,141 +175,9 @@ class Axis:
         return result
 
 
-class t_Axis(Axis):
-    """
-    时间轴类，用于描述均匀采样的时间坐标轴
-
-    Attributes
-    ----------
-    fs : float
-        采样频率
-    t0 : float
-        起始时间
-    dt : float
-        采样间隔
-    T : float
-        采样时长
-
-    Methods
-    -------
-    copy() -> t_Axis
-        返回时间轴对象的深拷贝
-    """
-    @InputCheck(
-        {
-            "N": {"Low": 1},
-            "fs": {"OpenLow": 0.0},
-            "dt": {"OpenLow": 0.0},
-            "T": {"OpenLow": 0.0},
-            "t0": {"CloseLow": 0.0},
-        }
-    )
-    def __init__(
-        self,
-        N: Optional[int] = None,
-        fs: Optional[float] = None,
-        dt: Optional[float] = None,
-        T: Optional[float] = None,
-        t0: float = 0.0,
-    ):
-        """
-        初始化t_Axis对象
-
-        Parameters
-        ----------
-        N : int, 可选
-            采样点数, 输入范围: >=1
-        fs : float, 可选
-            采样频率, 输入范围: >0
-        dt : float, 可选
-            采样间隔, 输入范围: >0
-        T : float, 可选
-            采样时长, 输入范围: >0
-        t0 : float, 可选
-            起始时间, 默认: 0.0
-        """
-        # 输入参数检查
-        if (not [N, fs, dt, T].count(None) == 2) or (
-            fs is not None and dt is not None
-        ):
-            raise ValueError("采样参数输入错误")
-        # ------------------------------------------------------------------------------------#
-        # 采样参数初始化, fs为核心参数
-        if fs is not None:
-            pass
-        elif dt is not None:
-            fs = 1 / dt
-        else:  # 若fs和dt均未指定, 则T和N必定均已指定
-            fs = N / T
-        N = N if N is not None else int(T * fs)
-        self.fs = fs  # 采样频率
-        self.t0 = t0
-        # ------------------------------------------------------------------------------------#
-        super().__init__(N=N, dx=1 / fs, x0=t0, unit="s", name="时间")
-
-    @property
-    def __dx__(self):
-        return 1 / self.fs
-
-    @property
-    def __x0__(self):
-        return self.t0
-
-    @property
-    def dt(self):
-        return 1 / self.fs  # 采样时间间隔
-
-    @property
-    def T(self):  # 仅运行通过dt修改时间轴数据
-        return self.lim[1] - self.lim[0]  # 采样时长
-
-
-class f_Axis(Axis):
-    """
-    频率轴类，用于描述均匀采样的频率坐标轴
-
-    Attributes
-    ----------
-    df : float
-        频率分辨率
-    f0 : float
-        频率起始点
-
-    Methods
-    -------
-    copy() -> f_Axis
-        返回频率轴对象的深拷贝
-    """
-    @InputCheck({"N": {"Low": 1}, "df": {"OpenLow": 0.0}, "f0": {}})
-    def __init__(self, N: int, df: float, f0: float = 0.0):
-        """
-        初始化f_Axis对象
-
-        Parameters
-        ----------
-        N : int
-            频率采样点数, 输入范围: >=1
-        df : float
-            频率分辨率, 输入范围: >0
-        f0 : float, 可选
-            频率起始点, 默认: 0.0
-        """
-        self.df = df
-        self.f0 = f0
-        super().__init__(dx=df, N=N, x0=f0, unit="Hz", name="频率")
-
-    @property
-    def __dx__(self):
-        return self.df
-
-    @property
-    def __x0__(self):
-        return self.f0
-
-
 class Series:
     """
-    一维信号序列类，绑定坐标轴的信号数据
+    绑定坐标轴的一维序列数据类
 
     Attributes
     ----------
@@ -321,7 +199,6 @@ class Series:
     plot(**kwargs)
         绘制信号曲线
     """
-    @InputCheck({"axis": {}, "data": {"ndim": 1}, "name": {}, "unit": {}, "label": {}})
     def __init__(
         self,
         axis: Axis,
@@ -329,7 +206,7 @@ class Series:
         name: str = "",
         unit: str = "",
         label: str = "",
-    ):# 所有基于Axis的子类必须以相同参数初始化，确保Series类的兼容性
+    ):  # 所有基于Series的子类必须以相同参数格式初始化，确保Series类的兼容性
         """
         初始化Series对象
 
@@ -353,18 +230,43 @@ class Series:
         else:
             self.data = np.zeros(len(axis), dtype=float)
 
-        self._axis = axis  # ._axis属性仅为Series类使用，子类使用.axis覆写.__axis__动态属性供Series自带方法调用
+        self._axis = axis  # 子类中重写.axis属性，且仅在需要修改坐标轴参数时调用
         self.name = name
         self.unit = unit
         self.label = label
 
+    # ----------------------------------------------------------------------------------------#
+    # 序列数据动态属性，供类自带方法和库内部函数调用
+    @property
+    def __axis__(self):  # 使后续与axis相关操作与axis具体子类实现解耦
+        axis_copy = self._axis.copy()
+        axis_copy.N = len(self.data)  # 覆写N以确保与data长度一致，直接修改.axis.N属性无效
+        return axis_copy
+
+    # 将.__axis__的属性暴露为Series的属性，方便调用
     @property
     def N(self):
-        return len(self.data)
+        return self.__axis__.__N__
 
     @property
-    def __axis__(self):  # .__axis__属性需子类重写
-        return self._axis.copy()
+    def _dx(self):
+        return self.__axis__.__dx__
+
+    @property
+    def _x0(self):
+        return self.__axis__.__x0__
+
+    @property
+    def L(self):  # 序列分布长度
+        return self.__axis__.L
+
+    @property
+    def lim(self):
+        return self.__axis__.lim
+
+    @property
+    def axislabel(self):
+        return self.__axis__.axislabel
 
     # ----------------------------------------------------------------------------------------#
     # Python内置函数兼容
@@ -598,12 +500,159 @@ class Series:
 
     def plot(self, **kwargs):
         from PySP.Plot import LinePlot
-        plot_kwargs = { "ylabel": f"{self.name}/{self.unit}"}
+
+        plot_kwargs = {"ylabel": f"{self.name}/{self.unit}"}
         plot_kwargs.update(kwargs)
-        fig, ax = LinePlot(**plot_kwargs).Spectrum(self.__axis__, self.data).show(pattern="return")
+        fig, ax = (
+            LinePlot(**plot_kwargs)
+            .spectrum(self.__axis__, self.data)
+            .show(pattern="return")
+        )
         fig.show()
         return fig, ax
 
+class t_Axis(Axis):
+    """
+    时间轴类，用于描述均匀采样的时间坐标轴
+
+    Attributes
+    ----------
+    fs : float
+        采样频率
+    t0 : float
+        起始时间
+    dt : float
+        采样间隔
+    T : float
+        采样时长
+
+    Methods
+    -------
+    copy() -> t_Axis
+        返回时间轴对象的深拷贝
+    """
+    @InputCheck(
+        {
+            "N": {"Low": 1},
+            "fs": {"OpenLow": 0.0},
+            "dt": {"OpenLow": 0.0},
+            "T": {"OpenLow": 0.0},
+            "t0": {"CloseLow": 0.0},
+        }
+    )
+    def __init__(
+        self,
+        N: Optional[int] = None,
+        fs: Optional[float] = None,
+        dt: Optional[float] = None,
+        T: Optional[float] = None,
+        t0: float = 0.0,
+    ):
+        """
+        初始化t_Axis对象
+
+        Parameters
+        ----------
+        N : int, 可选
+            采样点数, 输入范围: >=1
+        fs : float, 可选
+            采样频率, 输入范围: >0
+        dt : float, 可选
+            采样间隔, 输入范围: >0
+        T : float, 可选
+            采样时长, 输入范围: >0
+        t0 : float, 可选
+            起始时间, 默认: 0.0
+        """
+        # 输入参数检查
+        if (not [N, fs, dt, T].count(None) == 2) or (
+            fs is not None and dt is not None
+        ):
+            raise ValueError("采样参数输入错误")
+        # ------------------------------------------------------------------------------------#
+        # 采样参数初始化, fs为核心参数
+        if fs is not None:
+            pass
+        elif dt is not None:
+            fs = 1 / dt
+        else:  # 若fs和dt均未指定, 则T和N必定均已指定
+            fs = N / T
+        N = N if N is not None else int(T * fs)
+        self.fs = fs  # .fs采样频率为核心参数
+        self.t0 = t0
+        # ------------------------------------------------------------------------------------#
+        super().__init__(N=N, dx=1 / fs, x0=t0, unit="s", name="时间")
+
+    # ----------------------------------------------------------------------------------------#
+    # Axis子类动态属性覆写
+    @property
+    def __dx__(self):
+        return 1 / self.fs
+
+    @property
+    def __x0__(self):
+        return self.t0
+    
+    # ----------------------------------------------------------------------------------------#
+    # t_Axis特有属性
+    @property
+    def dt(self):
+        return 1 / self.fs  # 采样时间间隔
+
+    @property
+    def T(self):
+        return self.L  # 采样时长
+
+
+class f_Axis(Axis):
+    """
+    频率轴类，用于描述均匀采样的频率坐标轴
+
+    Attributes
+    ----------
+    df : float
+        频率分辨率
+    f0 : float
+        频率起始点
+
+    Methods
+    -------
+    copy() -> f_Axis
+        返回频率轴对象的深拷贝
+    """
+    @InputCheck({"N": {"Low": 1}, "df": {"OpenLow": 0.0}, "f0": {}})
+    def __init__(self, N: int, df: float, f0: float = 0.0):
+        """
+        初始化f_Axis对象
+
+        Parameters
+        ----------
+        N : int
+            频率采样点数, 输入范围: >=1
+        df : float
+            频率分辨率, 输入范围: >0
+        f0 : float, 可选
+            频率起始点, 默认: 0.0
+        """
+        self.df = df  # .df频率分辨率为核心参数
+        self.f0 = f0
+        super().__init__(dx=df, N=N, x0=f0, unit="Hz", name="频率")
+
+    # ----------------------------------------------------------------------------------------#
+    # Axis子类动态属性覆写
+    @property
+    def __dx__(self):
+        return self.df
+
+    @property
+    def __x0__(self):
+        return self.f0
+    
+    # ----------------------------------------------------------------------------------------#
+    # f_Axis特有属性
+    @property
+    def F(self):
+        return self.L  # 频率分布宽度
 
 class Signal(Series):
     """
@@ -656,61 +705,61 @@ class Signal(Series):
         self.t_axis = axis  # Signal类特有属性, 用于保存时间坐标轴参数
         super().__init__(axis=self.t_axis, data=data, name=name, unit=unit, label=label)
 
-    @property
-    def __axis__(self):# 供类自带方法调用, 防止.axis被修改
-        return self.t_axis.copy()
-
     # ----------------------------------------------------------------------------------------#
-    # 信号采样参数
-    # 采样参数查看可直接通过Signal对象的属性访问, 修改采样参数请通过修改.t_axis属性实现
+    # 信号采样参数动态属性
+    @property
+    def __axis__(self):
+        t_axis_copy = self.t_axis.copy()
+        t_axis_copy.N = len(self.data)
+        return t_axis_copy
+
     @property
     def dt(self) -> float:
         """
         采样时间间隔
         """
-        return self.__axis__.dt
+        return self._dx
 
     @property
     def t0(self) -> float:
         """
         信号采样起始时间
         """
-        return self.__axis__.t0
+        return self._x0
 
     @property
     def T(self) -> float:
         """
         信号采样时长
         """
-        return self.__axis__.T
+        return self.L
 
     @property
     def fs(self) -> float:
         """
         采样频率
         """
-        return 1 / self.__axis__.dt
+        return 1 / self._dx
 
     @property
     def f_axis(self) -> f_Axis:
         """
         频率坐标轴
         """
-        return f_Axis(df=1 / self.__axis__.T, N=len(self.__axis__), f0=0.0)
+        return f_Axis(df=1 / self.L, N=self.N, f0=0.0)
 
     @property
     def df(self) -> float:
         """
         频率分辨率
         """
-        return self.f_axis.df
+        return 1 / self.L
 
+    # ----------------------------------------------------------------------------------------#
+    # 信号类数据典型分析处理方法
     def plot(self, **kwargs):
         from PySP.Plot import TimeWaveformFunc
-        title= f"{self.label}时域波形" if self.label else "时域波形"
-        plot_kwargs = {"title": title}
-        plot_kwargs.update(kwargs)
-        fig, ax = TimeWaveformFunc(self, **plot_kwargs)
+        fig, ax = TimeWaveformFunc(self, **kwargs)
         try:
             from IPython import display
             display.display(fig)
@@ -770,43 +819,49 @@ class Spectra(Series):
         self.f_axis = axis  # Spectra类特有属性, 用于保存频率坐标轴参数
         super().__init__(axis=self.f_axis, data=data, name=name, unit=unit, label=label)
 
-    @property
-    def __axis__(self):  # 供类自带方法调用, 防止.axis被修改
-        return self.f_axis.copy()
-
     # ----------------------------------------------------------------------------------------#
-    # 谱频率轴参数
     @property
-    def T(self) -> float:
-        """
-        采样时长
-        """
-        return 1 / self.f_axis.df
+    def __axis__(self):
+        f_axis_copy = self.f_axis.copy()
+        f_axis_copy.N = len(self.data)
+        return f_axis_copy
 
     @property
     def df(self) -> float:
         """
         频率分辨率
         """
-        return self.f_axis.df
-    
+        return self._dx
+
     @property
     def f0(self) -> float:
         """
         频率起始点
         """
-        return self.f_axis.f0
+        return self._x0
+    
+    @property
+    def F(self) -> float:
+        """
+        频率分布宽度
+        """
+        return self.L
 
+    # 谱频率轴参数动态属性
+    @property
+    def T(self) -> float:
+        """
+        采样时长
+        """
+        return 1 / self._dx
+
+    # ----------------------------------------------------------------------------------------#
+    # 频谱类数据典型分析处理方法
     def plot(self, **kwargs):
         from PySP.Plot import FreqSpectrumFunc
-
-        title = f"{self.label}{self.name}谱" if self.name != "" else f"{self.label}频谱"
-        plot_kwargs = {"title": title,  "ylabel": f"{self.name}/{self.unit}"}
-        plot_kwargs.update(kwargs)
-        fig, ax = FreqSpectrumFunc(self.__axis__,self.data, **plot_kwargs)
+        fig, ax = FreqSpectrumFunc(self, **kwargs)
         try:
             from IPython import display
-
             display.display(fig)
         except Exception:
             plt.show()

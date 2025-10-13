@@ -11,3 +11,4 @@
 
 from ._Analysis_Module.core import *
 from ._Analysis_Module.SpectrumAnalysis import *
+from ._Analysis_Module.ModeAnalysis import *  

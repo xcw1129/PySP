@@ -4,10 +4,8 @@
 
 ## 内容
     - function:
-        1. Resample: 对信号进行任意时间段的重采样
+        1. Resample: 对信号序列 Sig 进行任意时间段的重采样，支持下采样与上采样多种方式。
 """
-
-
 
 
 from PySP._Assist_Module.Dependencies import Optional
@@ -15,122 +13,117 @@ from PySP._Assist_Module.Dependencies import np
 
 from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP._Signal_Module.core import Signal,t_Axis
-
+from PySP._Signal_Module.core import t_Axis, Signal
 
 # --------------------------------------------------------------------------------------------#
-# -## ----------------------------------------------------------------------------------------#
-# -----## ------------------------------------------------------------------------------------#
-# ---------## --------------------------------------------------------------------------------#
-@InputCheck(
-    {
-        "Sig": {},
-        "type": {"Content": ["spacing", "fft", "extreme"]},
-        "fs_resampled": {"OpenLow": 0},
-        "T": {"OpenLow": 0},
-    }
-)
+@InputCheck({"Sig": {}, "type": {"Content": ["spacing", "fft", "extreme"]},"dx":{},"x0":{},"L":{}})
 def Resample(
     Sig: Signal,
     type: str = "spacing",
-    fs_resampled: Optional[float] = None,
-    t0: Optional[float] = 0.0,
+    dt: Optional[float] = None,
+    t0: Optional[float] = None,
     T: Optional[float] = None,
 ) -> Signal:
     """
-    对信号进行任意时间段的重采样
+    对信号序列 Sig 进行任意时间段的重采样，支持下采样与上采样多种方式。
 
-    参数:
-    --------
+    Parameters
+    ----------
     Sig : Signal
-        输入信号
-    type : str, 可选
-        重采样方法, 可选'fft', 'extreme', 'spacing', 默认为'spacing'
-    fs_resampled : float, 可选
-        重采样频率
+        输入信号对象。
+    type : str, 默认 'spacing'
+        重采样方法，支持：
+        - 'spacing'：等间隔直接抽取（时域抽取）
+        - 'fft'：频域重采样（支持上采样与下采样）
+        - 'extreme'：极值法（仅下采样）
+    dt : float, 可选
+        重采样后的采样间隔，若为 None 则与原信号一致。
     t0 : float, 可选
-        重采样起始时间
+        重采样起始点，若为 None 则与原信号起点一致。
     T : float, 可选
-        重采样时间长度, 默认为None, 表示重采样到信号结束
+        重采样区间长度，若为 None 则采样至信号末尾。
 
-    返回:
-    --------
-    Sig_resampled : Signal
-        重采样后的信号
+    Returns
+    -------
+    Signal
+        重采样后的信号对象。
+
+    Raises
+    ------
+    ValueError
+        - 重采样起始点或长度超出原信号范围
+        - 极值法采样点数计算错误
+        - 不支持的重采样方法
     """
+    if dt is None:
+        dt = Sig.__axis__.__dx__
+    if t0 is None:
+        t0 = Sig.__axis__.__x0__
     # 获取重采样起始点的索引
-    if not Sig.t0 <= t0 < (Sig.T + Sig.t0):
-        raise ValueError("起始时间不在信号时间范围内")
+    if not Sig.__axis__.__x0__ <= t0 < (Sig.T + Sig.__axis__.__x0__):
+        raise ValueError("重采样起始点不在序列轴范围内")
     else:
-        start_idx = int((t0 - Sig.t0) / Sig.dt)
-    # 获取重采样片段
+        start_idx = int((t0 - Sig.__axis__.__x0__) / Sig.__axis__.__dx__)
+    # 获取重采样数据片段 data2rs
     if T is None:
-        data_resampled = Sig.data[start_idx:]
-    elif T + t0 > Sig.T + Sig.t0:
-        raise ValueError("重采样时间长度超过信号时间范围")
+        data2rs = Sig.data[start_idx:]
+    elif T + t0 > Sig.T + Sig.__axis__.__x0__:
+        raise ValueError("重采样长度超出序列轴范围")
     else:
-        N_resampled = int(T / (Sig.dt))  # N = T/dt
-        data_resampled = Sig.data[start_idx : start_idx + N_resampled]
+        N2rs = int(np.ceil(T / (Sig.__axis__.__dx__)))  # N = L / dx，向上取整
+        data2rs = Sig.data[start_idx : start_idx + N2rs]
     # 获取重采样点数
-    if fs_resampled is None:
-        fs_resampled = Sig.fs
-    N_in = len(data_resampled)
-    N_out = int(N_in * Sig.dt * fs_resampled)
+    N_in = len(data2rs)
+    ratio2rs = Sig.__axis__.__dx__ / dt
+    N_out = int(N_in * ratio2rs)  # N_out = N_in * (dx_in / dx_out)
     # ----------------------------------------------------------------------------------------#
     # 对信号片段进行重采样
-    if Sig.fs > fs_resampled:  # 下采样
+    if ratio2rs < 1:  # 下采样
         if type == "fft":
-            F_x = np.fft.fft(data_resampled)  # 傅里叶变换
-            # 频谱裁剪
+            # 频域下采样：傅里叶变换后裁剪高频分量
+            F_x = np.fft.fft(data2rs)
             keep = N_out // 2
             F_x_cut = np.zeros(N_out, dtype=complex)
             F_x_cut[:keep] = F_x[:keep]
             F_x_cut[-keep:] = F_x[-keep:]
-            data_resampled = np.fft.ifft(F_x_cut).real
-            # 调整重采样信号幅值
-            ratio = fs_resampled / Sig.fs
-            data_resampled *= ratio  # 调整幅值
-        # ------------------------------------------------------------------------------------#
+            data2rs = np.fft.ifft(F_x_cut).real
+            data2rs *= ratio2rs  # 幅值修正
         elif type == "extreme":
-            # 时域极值法采样
+            # 极值法下采样：每段取极大/极小值
             idxs = np.linspace(0, N_in - 1, (N_out // 2) + 1, dtype=int)
             new_data = []
             for i in range((N_out // 2)):
-                seg = data_resampled[idxs[i] : idxs[i + 1]]
+                seg = data2rs[idxs[i] : idxs[i + 1]]
                 new_data.append(np.min(seg))
                 new_data.append(np.max(seg))
-            # 保证采样点数为N_out
+            # 保证采样点数为 N_out
             if N_out == len(new_data):
                 pass
             elif N_out - len(new_data) == 1:
-                new_data.append(data_resampled[-1])
+                new_data.append(data2rs[-1])
             else:
                 raise ValueError("极值法采样点数计算错误")
-            data_resampled = np.array(new_data)
-        # ------------------------------------------------------------------------------------#
+            data2rs = np.array(new_data)
         elif type == "spacing":
-            # 时域直接抽取
+            # 等间隔直接抽取
             idxs = np.linspace(0, N_in, N_out, dtype=int, endpoint=False)
-            data_resampled = data_resampled[idxs]
+            data2rs = data2rs[idxs]
         else:
-            raise ValueError("重采样方法仅支持'fft', 'extreme', 'spacing'")
-    elif Sig.fs < fs_resampled:  # 上采样
+            raise ValueError("下采样方法仅支持'fft', 'extreme', 'spacing'")
+    elif ratio2rs > 1:  # 上采样
         if type != "fft":
-            raise ValueError("仅支持fft方法进行过采样")
-        F_x = np.fft.fft(data_resampled)  # 傅里叶变换
-        # 频谱填充
+            raise ValueError("仅支持fft方法进行上采样")
+        # 频域上采样：傅里叶变换后补零扩展
+        F_x = np.fft.fft(data2rs)
         F_x_pad = np.zeros(N_out, dtype=complex)
         F_x_pad[: N_in // 2] = F_x[: N_in // 2]
         F_x_pad[-N_in // 2 :] = F_x[-N_in // 2 :]
-        data_resampled = np.fft.ifft(F_x_pad).real
-        # 调整重采样信号幅值
-        ratio = fs_resampled / Sig.fs
-        data_resampled *= ratio  # 调整幅值
+        data2rs = np.fft.ifft(F_x_pad).real
+        data2rs *= ratio2rs  # 幅值修正
     else:
         pass  # 采样频率相同, 不进行重采样
 
-    return Signal(axis=t_Axis(N=len(data_resampled), fs=fs_resampled, t0=t0), data=data_resampled, name=Sig.name, unit=Sig.unit, label=Sig.label)
-
+    return Signal(axis=t_Axis(len(data2rs), dt=dt, t0=t0), data=data2rs, name=Sig.name, unit=Sig.unit)
 
 
 __all__ = ["Resample"]
