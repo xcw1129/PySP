@@ -46,7 +46,7 @@ class Analysis:
     @InputCheck({"Sig": {}, "isPlot": {}})
     def __init__(self, Sig: Signal, isPlot: bool = IS_PLOT, **kwargs):
         """
-        初始化分析对象
+        初始化分析方法
 
         Parameters
         ----------

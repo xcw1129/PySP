@@ -202,7 +202,7 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs):
     ax : matplotlib.axes.Axes
         坐标轴对象
     """
-    plot_kwargs = {"yscale": "log", "title": f"{Spc.label}频谱"}
+    plot_kwargs = {"yscale": "log"}
     plot_kwargs.update(kwargs)
     fig, ax = (
         LinePlot()
