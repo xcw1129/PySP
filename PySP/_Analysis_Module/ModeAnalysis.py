@@ -1,13 +1,13 @@
 """
 # ModeAnalysis
-模态分解方法模块，包含经验模态分解 (EMD) 和变分模态分解 (VMD) 等。
+模态分析方法模块
 
 ## 内容
     - class:
-        1. EMD: 经验模态分解与集合经验模态分解方法。
-        2. VMD: 变分模态分解方法。
+        1. EMDAnalysis: 经验模态分解(EMD)与集合经验模态分解(EEMD)方法
+        2. VMDAnalysis: 变分模态分解(VMD)方法
     - function:
-        1. select_mode: 筛选模态分量。
+        1. select_mode: 筛选模态分量
 """
 from PySP._Assist_Module.Dependencies import np
 from PySP._Assist_Module.Dependencies import signal, fft, stats, interpolate
@@ -16,29 +16,32 @@ from PySP._Signal_Module.core import Signal
 from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
 
-
+# --------------------------------------------------------------------------------------------#
+# -## ----------------------------------------------------------------------------------------#
+# -----## ------------------------------------------------------------------------------------#
+# ---------## --------------------------------------------------------------------------------#
 def select_mode(data: np.ndarray, method: str, num: int) -> np.ndarray:
     """
-    根据指定方法筛选IMF分量。
+    根据指定方法筛选IMF分量
 
     Parameters
     ----------
     data : np.ndarray
-        输入的多个IMF分量。
+        输入的多个IMF分量
     method : str
-        筛选方法，可选 "kur" (峭度), "corr" (相关系数), "enve_entropy" (包络熵)。
+        筛选方法, 可选 "kur" (峭度), "corr" (相关系数), "enve_entropy" (包络熵)
     num : int
-        筛选的IMF个数。
+        筛选的IMF个数
 
     Returns
     -------
     np.ndarray
-        筛选出的IMF分量的索引。
+        筛选出的IMF分量的索引
 
     Raises
     ------
     ValueError
-        无效的模态筛选方法。
+        无效的模态筛选方法
     """
     if method == "kur":
         kur = np.zeros(len(data))
@@ -67,57 +70,57 @@ def select_mode(data: np.ndarray, method: str, num: int) -> np.ndarray:
     return select
 
 
+# --------------------------------------------------------------------------------------------#
 class EMDAnalysis(Analysis):
     """
-    经验模态分解 (EMD) 和集合经验模态分解 (EEMD) 分析模块。
-
-    该模块提供了经验模态分解 (EMD) 和集合经验模态分解 (EEMD)
-    等信号分解方法，用于将复杂信号分解为一系列本征模态函数 (IMF)。
+    经验模态分解 (EMD) 和集合经验模态分解 (EEMD) 分析方法
 
     Attributes
     ----------
     Sig : Signal
-        输入信号对象。
+        输入信号对象
     isPlot : bool
-        是否绘制分析结果图。
+        是否绘制分析结果图
     plot_kwargs : dict
-        绘图参数。
+        绘图参数
     Dec_stopcriteria : str
-        EMD分解终止准则, 可选 "c1", "c2", "c3"，默认为 "c1"。
+        EMD分解终止准则, 可选 "c1", "c2", "c3"，默认为 "c1"
     asy_toler : float
-        IMF判定的不对称容忍度, 默认为 0.01。
+        IMF判定的不对称容忍度, 默认为 0.01
     sifting_times : int
-        单次sifting提取IMF的最大迭代次数, 默认为 8。
+        单次sifting提取IMF的最大迭代次数, 默认为 8
     neighbors : int
-        Sifting查找零极点的邻域点数, 默认为 5。
+        Sifting查找零极点的邻域点数, 默认为 5
     zerothreshold : float
-        Sifting查找零点时的变化阈值, 默认为 1e-6。
+        Sifting查找零点时的变化阈值, 默认为 1e-6
     extremum_threshold : float
-        Sifting查找极值点的变化阈值, 默认为 1e-7。
+        Sifting查找极值点的变化阈值, 默认为 1e-7
     End_envelop : bool
-        Sifting上下包络是否使用首尾点, 默认为 False。
+        Sifting上下包络是否使用首尾点, 默认为 False
         
     Methods
     -------
-    emd(max_Dectimes: int = 5, **kwargs) -> tuple
-        对输入信号进行EMD分解，得到IMF分量和残余分量。
-    eemd(ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5, **kwargs) -> tuple
-        对输入信号进行EEMD分解，得到IMF分量和残余分量。
+    __init__(Sig: Signal, plot: bool = False, **kwargs)
+        初始化EMD分析对象
+    emd(max_Dectimes: int = 5) -> tuple
+        对输入信号进行EMD分解
+    eemd(ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5) -> tuple
+        对输入信号进行EEMD分解
     """
-
+    # ----------------------------------------------------------------------------------------#
     @InputCheck({"Sig": {}})
     def __init__(self, Sig: Signal, plot: bool = False, **kwargs):
         """
-        初始化EMD分析对象。
+        初始化EMD分析对象
 
         Parameters
         ----------
         Sig : Signal
-            输入信号对象。
+            输入信号对象
         plot : bool, optional
-            是否绘制分析结果图, 默认为 False。
+            是否绘制分析结果图, 默认为 False
         **kwargs : dict
-            其他参数，用于配置EMD分解的细节。
+            其他参数，用于配置EMD分解的细节
         """
         super().__init__(Sig=Sig, isPlot=plot, **kwargs)
         self.Dec_stopcriteria = kwargs.get("Dec_stopcriteria", "c1")
@@ -128,21 +131,9 @@ class EMDAnalysis(Analysis):
         self.extremum_threshold = kwargs.get("extremum_threshold", 1e-7)
         self.End_envelop = kwargs.get("End_envelop", False)
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _hilbert(data: np.ndarray) -> np.ndarray:
-        """
-        计算数据的希尔伯特变换。
-
-        Parameters
-        ----------
-        data : np.ndarray
-            输入数据。
-
-        Returns
-        -------
-        np.ndarray
-            希尔伯特变换结果。
-        """
         x = np.array(data)
         fft_x = fft.fft(data)
         positive = fft_x[: len(fft_x) // 2] * 2
@@ -152,22 +143,8 @@ class EMDAnalysis(Analysis):
         hat_x = np.imag(fft.ifft(fft_s))
         return hat_x
 
-    def _HTinsvector(self, data: np.array, **kwargs) -> tuple:
-        """
-        根据希尔伯特变换计算信号瞬时幅度、瞬时频率。
-
-        Parameters
-        ----------
-        data : np.array
-            输入信号。
-        **kwargs : dict
-            绘图参数，如 figsize, xlim, ylim。
-
-        Returns
-        -------
-        tuple
-            (np.ndarray) 瞬时幅度, (np.ndarray) 瞬时频率。
-        """
+    # ----------------------------------------------------------------------------------------#
+    def _HTinsvector(self, data: np.array) -> tuple:
         fs = self.Sig.fs
         Vector = data + 1j * signal.hilbert(data)
         Amp = np.abs(Vector)
@@ -176,21 +153,20 @@ class EMDAnalysis(Analysis):
         Fre = np.gradient(Phase, 1 / fs) / (2 * np.pi)
         return Amp, Fre
 
-    def emd(self, max_Dectimes: int = 5, **kwargs) -> tuple:
+    # ----------------------------------------------------------------------------------------#
+    def emd(self, max_Dectimes: int = 5) -> tuple:
         """
-        对输入信号进行EMD分解，得到IMF分量和残余分量。
+        对输入信号进行EMD分解
 
         Parameters
         ----------
         max_Dectimes : int, optional
-            最大分解次数, 默认为 5。
-        **kwargs : dict
-            绘图参数。
+            最大分解次数, 默认为 5
 
         Returns
         -------
         tuple
-            (np.ndarray) EMD分解出的IMF分量, (np.ndarray) 分解后的残余分量。
+            (np.ndarray) EMD分解出的IMF分量, (np.ndarray) 分解后的残余分量
         """
         data = self.Sig.data
         fs = self.Sig.fs
@@ -215,27 +191,26 @@ class EMDAnalysis(Analysis):
 
         return IMFs, Residue
 
+    # ----------------------------------------------------------------------------------------#
     def eemd(
-        self, ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5, **kwargs
+        self, ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5
     ) -> tuple:
         """
-        对输入信号进行EEMD分解，得到IMF分量和残余分量。
+        对输入信号进行EEMD分解
 
         Parameters
         ----------
         ensemble_times : int, optional
-            集成次数, 默认为 100。
+            集成次数, 默认为 100
         noise : float, optional
-            随机噪声强度，即正态分布标准差大小, 默认为 0.2。
+            随机噪声强度，即正态分布标准差大小, 默认为 0.2
         max_Dectimes : int, optional
-            单次EMD最大分解次数, 默认为 5。
-        **kwargs : dict
-            绘图参数。
+            单次EMD最大分解次数, 默认为 5
 
         Returns
         -------
         tuple
-            (np.ndarray) EEMD分解出的IMF分量, (np.ndarray) 分解后的残余分量。
+            (np.ndarray) EEMD分解出的IMF分量, (np.ndarray) 分解后的残余分量
         """
         data = self.Sig.data
         fs = self.Sig.fs
@@ -266,32 +241,13 @@ class EMDAnalysis(Analysis):
 
         return enIMFs, Residue
 
+    # ----------------------------------------------------------------------------------------#
     def _extractIMF(
         self,
         data: np.ndarray,
         fs: float,
         max_iterations: int = 10,
-        **kwargs,
     ) -> np.ndarray:
-        """
-        提取IMF分量。
-
-        Parameters
-        ----------
-        data : np.ndarray
-            待提取IMF分量的数据。
-        fs : float
-            采样频率。
-        max_iterations : int, optional
-            最大迭代次数, 默认为 10。
-        **kwargs : dict
-            绘图参数。
-
-        Returns
-        -------
-        np.ndarray
-            提取出的IMF分量。
-        """
         DatatoSift = data.copy()
         for n in range(max_iterations):
             res = self._isIMF(DatatoSift)
@@ -304,20 +260,8 @@ class EMDAnalysis(Analysis):
                     DatatoSift = DatatoSift - res[1][2]
         return DatatoSift
 
+    # ----------------------------------------------------------------------------------------#
     def _isIMF(self, data: np.ndarray) -> tuple:
-        """
-        判断输入数据是否为IMF分量。
-
-        Parameters
-        ----------
-        data : np.ndarray
-            输入数据。
-
-        Returns
-        -------
-        tuple
-            (bool) 判断结果, (np.ndarray) 上包络线, (np.ndarray) 下包络线, (np.ndarray) 均值线, (str) 不满足的条件。
-        """
         N = len(data)
         max_index, min_index = self._search_localextrum(
             data, neighbors=self.neighbors, threshold=self.extremum_threshold
@@ -352,6 +296,7 @@ class EMDAnalysis(Analysis):
         else:
             return (False, envelop, unsatisfied)
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _search_zerocrossing(
         data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6
@@ -369,6 +314,7 @@ class EMDAnalysis(Analysis):
         zero_index = zero_index[diff > threshold]
         return zero_index
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _search_localextrum(
         data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6
@@ -384,6 +330,7 @@ class EMDAnalysis(Analysis):
 
         return max_index, min_index
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _Dec_stopcriteria(
         raw: np.ndarray, residue: np.ndarray, criteria: str = "c1"
@@ -406,6 +353,7 @@ class EMDAnalysis(Analysis):
         else:
             raise ValueError("Invalid criteria")
 
+    # ----------------------------------------------------------------------------------------#
     def _Sift_stopcriteria(
         self,
         data: np.ndarray,
@@ -452,47 +400,49 @@ class EMDAnalysis(Analysis):
         return fault
 
 
+# --------------------------------------------------------------------------------------------#
 class VMDAnalysis(Analysis):
     """
-    变分模态分解 (VMD) 分析模块。
-
-    该模块提供了变分模态分解 (VMD) 方法，用于将复杂信号分解为一系列模态分量。
+    变分模态分解 (VMD) 分析方法
 
     Attributes
     ----------
     Sig : Signal
-        输入信号对象。
+        输入信号对象
     isPlot : bool
-        是否绘制分析结果图。
+        是否绘制分析结果图
     plot_kwargs : dict
-        绘图参数。
+        绘图参数
     vmd_tol : float
-        VMD分解迭代停止阈值, 默认为 1e-6。
+        VMD分解迭代停止阈值, 默认为 1e-6
     wc_initmethod : str
-        VMD分解初始化中心频率的方法, 可选 "uniform", "log", "octave", "linearrandom", "lograndom", "zero"，默认为 "log"。
+        VMD分解初始化中心频率的方法, 可选 "uniform", "log", "octave", "linearrandom", "lograndom", "zero"，默认为 "log"
     vmd_DCmethod : str
-        VMD分解直流分量的方法, 可选 "Sift_mean", "emd_resdiue", "moving_average"，默认为 "Sift_mean"。
+        VMD分解直流分量的方法, 可选 "Sift_mean", "emd_resdiue", "moving_average"，默认为 "Sift_mean"
     vmd_extend : bool
-        VMD分解前是否进行双边半延拓, 默认为 True。
+        VMD分解前是否进行双边半延拓, 默认为 True
         
     Methods
     -------
-    vmd(k_num: int, iterations: int = 100, bw: float = 200, tau: float = 0.5, DC: bool = False, **kwargs) -> tuple
-        对输入信号进行VMD分解，得到IMF分量和对应的中心频率。
+    __init__(Sig: Signal, plot: bool = False, **kwargs)
+        初始化VMD分析对象
+    vmd(k_num: int, iterations: int = 100, bw: float = 200, tau: float = 0.5, DC: bool = False) -> tuple
+        对输入信号进行VMD分解
     """
+    # ----------------------------------------------------------------------------------------#
     @InputCheck({"Sig": {}})
     def __init__(self, Sig: Signal, plot: bool = False, **kwargs):
         """
-        初始化VMD分析对象。
+        初始化VMD分析对象
 
         Parameters
         ----------
         Sig : Signal
-            输入信号对象。
+            输入信号对象
         plot : bool, optional
-            是否绘制分析结果图, 默认为 False。
+            是否绘制分析结果图, 默认为 False
         **kwargs : dict
-            其他参数，用于配置VMD分解的细节。
+            其他参数，用于配置VMD分解的细节
         """
         super().__init__(Sig=Sig, isPlot=plot, **kwargs)
         self.vmd_tol = kwargs.get("vmd_tol", 1e-6)
@@ -500,6 +450,7 @@ class VMDAnalysis(Analysis):
         self.vmd_DCmethod = kwargs.get("vmd_DCmethod", "Sift_mean")
         self.vmd_extend = kwargs.get("vmd_extend", True)
 
+    # ----------------------------------------------------------------------------------------#
     def vmd(
         self,
         k_num: int,
@@ -507,35 +458,32 @@ class VMDAnalysis(Analysis):
         bw: float = 200,
         tau: float = 0.5,
         DC: bool = False,
-        **kwargs,
     ) -> tuple:
         """
-        对输入信号进行VMD分解，得到IMF分量和对应的中心频率。
+        对输入信号进行VMD分解
 
         Parameters
         ----------
         k_num : int
-            指定分解的模态数。
+            指定分解的模态数
         iterations : int, optional
-            VMD迭代次数, 默认为 100。
+            VMD迭代次数, 默认为 100
         bw : float, optional
-            模态的限制带宽, 默认为 200。
+            模态的限制带宽, 默认为 200
         tau : float, optional
-            拉格朗日乘子的更新步长, 默认为 0.5。
+            拉格朗日乘子的更新步长, 默认为 0.5
         DC : bool, optional
-            是否将分解的第一个模态固定为直流分量, 默认为 False。
-        **kwargs : dict
-            绘图参数。
+            是否将分解的第一个模态固定为直流分量, 默认为 False
 
         Returns
         -------
         tuple
-            (np.ndarray) VMD分解出的IMF分量, (np.ndarray) 分解后的中心频率。
+            (np.ndarray) VMD分解出的IMF分量, (np.ndarray) 分解后的中心频率
 
         Raises
         ------
         ValueError
-            VMD迭代得到的u_hat存在负频率项。
+            VMD迭代得到的u_hat存在负频率项
         """
         data = self.Sig.data
         fs = self.Sig.fs
@@ -600,45 +548,15 @@ class VMDAnalysis(Analysis):
 
         return u, fc
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _fre_centerG(data: np.ndarray, f: np.ndarray) -> np.ndarray:
-        """
-        计算频谱的重心频率。
-
-        Parameters
-        ----------
-        data : np.ndarray
-            输入数据。
-        f : np.ndarray
-            输入数据的频率轴。
-
-        Returns
-        -------
-        np.ndarray
-            频谱的重心频率。
-        """
         return np.dot(f, np.abs(data) ** 2) / np.sum(np.abs(data) ** 2)
 
+    # ----------------------------------------------------------------------------------------#
     def _get_DC(
         self, data: np.ndarray, method: str, windowsize: int = 100
     ) -> np.ndarray:
-        """
-        计算输入数据的直流分量。
-
-        Parameters
-        ----------
-        data : np.ndarray
-            输入数据。
-        method : str
-            计算直流分量的方法，可选 "Sift_mean", "emd_resdiue", "moving_average"。
-        windowsize : int, optional
-            若为移动平均方法，需要指定窗长, 默认为 100。
-
-        Returns
-        -------
-        np.ndarray
-            提取的直流分量。
-        """
         temp_sig = Signal(axis=self.Sig.axis, data=data)
         emd_analyzer = EMDAnalysis(temp_sig)
         if method == "Sift_mean":
@@ -651,35 +569,15 @@ class VMDAnalysis(Analysis):
             DC = np.zeros_like(data)
         return DC
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _WiennerFilter(data: np.ndarray, w_Axis: np.ndarray, alpha: float):
-        """
-        根据输入的频谱数据进行维纳滤波。
-
-        Parameters
-        ----------
-        data : np.ndarray
-            频谱数据，需低于Nyquist频率。
-        w_Axis : np.ndarray
-            频率轴，需低于Nyquist频率。
-        alpha : float
-            Wiener滤波器参数。
-
-        Returns
-        -------
-        np.ndarray
-            维纳滤波后的频谱数据。
-
-        Raises
-        ------
-        ValueError
-            数据长度与频率轴长度不一致。
-        """
         if len(data) != len(w_Axis):
             raise ValueError("数据长度与频率轴长度不一致")
         filtered_data = data / (1 + alpha * w_Axis**2)
         return filtered_data
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _vmd_stoppage(old, new, threshold):
         down = np.sum(np.square(np.abs(old)), axis=1)
@@ -690,6 +588,7 @@ class VMDAnalysis(Analysis):
         cov_sum = np.sum(cov)
         return cov_sum < threshold
 
+    # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _vmd_wcinit(
         data: np.ndarray, fs: float, K: int, method: str = "zero"
