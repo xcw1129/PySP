@@ -145,7 +145,7 @@ class EMDAnalysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     def _HTinsvector(self, data: np.array) -> tuple:
-        fs = self.Sig.fs
+        fs = self.Sig.t_axis.fs
         Vector = data + 1j * signal.hilbert(data)
         Amp = np.abs(Vector)
         Phase = np.angle(Vector)
@@ -169,7 +169,7 @@ class EMDAnalysis(Analysis):
             (np.ndarray) EMD分解出的IMF分量, (np.ndarray) 分解后的残余分量
         """
         data = self.Sig.data
-        fs = self.Sig.fs
+        fs = self.Sig.t_axis.fs
         datatoDec = np.array(data)
         IMFs = []
         Residue = datatoDec.copy()
@@ -213,7 +213,7 @@ class EMDAnalysis(Analysis):
             (np.ndarray) EEMD分解出的IMF分量, (np.ndarray) 分解后的残余分量
         """
         data = self.Sig.data
-        fs = self.Sig.fs
+        fs = self.Sig.t_axis.fs
         datatoDec = np.array(data)
         N = len(datatoDec)
         enIMFs = np.zeros((max_Dectimes, N))
@@ -486,7 +486,7 @@ class VMDAnalysis(Analysis):
             VMD迭代得到的u_hat存在负频率项
         """
         data = self.Sig.data
-        fs = self.Sig.fs
+        fs = self.Sig.t_axis.fs
         N = len(data)
         extend_data = np.concatenate(
             (data[N // 2 : 1 : -1], data, data[-1 : N // 2 : -1])

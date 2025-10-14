@@ -185,15 +185,15 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边系数幅值谱
         """
-        w= window(num=self.Sig.N, type=WinType)
+        w= window(num=len(self.Sig), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
         # 由DFT计算傅里叶级数系数
-        X_k = SpectrumAnalysis.dft(self.Sig.data * w) / self.Sig.N  # DFT/N
+        X_k = SpectrumAnalysis.dft(self.Sig.data * w) / len(self.Sig)  # DFT/N
         X_k = X_k * scale  # 幅值补偿
         Amp = np.abs(X_k)
         # 裁剪为单边余弦谱
         f_axis = self.Sig.f_axis
-        f_axis.N= self.Sig.N // 2  # 频率轴点数取半
+        f_axis.N= len(self.Sig) // 2  # 频率轴点数取半
         Amp = 2 * Amp[:len(f_axis)]  # 余弦系数为复数系数的2倍
         return Spectra(axis=f_axis, data=Amp, name="幅值", unit=self.Sig.unit, label=self.Sig.label)
 
@@ -213,12 +213,12 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边能量谱密度
         """
-        X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.fs, WinType=WinType) 
+        X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.t_axis.fs, WinType=WinType) 
         Amp = np.abs(X_f)
         ESD = (Amp ** 2)  # 能量谱密度，单位U^2*t/Hz
         # 裁剪为单边能量谱密度
         f_axis = self.Sig.f_axis
-        f_axis.N = self.Sig.N // 2  # 频率轴点数取半
+        f_axis.N = len(self.Sig) // 2  # 频率轴点数取半
         ESD = 2 * ESD[:len(f_axis)]
         return Spectra(axis=f_axis, data=ESD, name="能量密度", unit=self.Sig.unit + "^2*t/Hz", label=self.Sig.label)
 
@@ -238,15 +238,15 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边功率谱密度
         """
-        w= window(num=self.Sig.N, type=WinType)
+        w= window(num=len(self.Sig), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
         # 由DFT计算功率谱密度
-        X_k = SpectrumAnalysis.dft(self.Sig.data * w) / self.Sig.N  # DFT/N
+        X_k = SpectrumAnalysis.dft(self.Sig.data * w) / len(self.Sig)  # DFT/N
         X_k = X_k * scale  # 幅值补偿
-        PSD = (np.abs(X_k) ** 2) / self.Sig.df  # 功率谱密度
+        PSD = (np.abs(X_k) ** 2) / self.Sig.f_axis.df  # 功率谱密度
         # 裁剪为单边功率谱密度
         f_axis = self.Sig.f_axis
-        f_axis.N = self.Sig.N // 2  # 频率轴点数取半
+        f_axis.N = len(self.Sig) // 2  # 频率轴点数取半
         PSD = 2 * PSD[:len(f_axis)]
         return Spectra(axis=f_axis, data=PSD, name="功率密度", unit=self.Sig.unit + "^2/Hz", label=self.Sig.label)
 
@@ -266,13 +266,13 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             包络谱
         """
-        N = self.Sig.N
+        N = len(self.Sig)
         analytic = signal.hilbert(self.Sig.data)
         envelope = np.abs(analytic)
-        X_f = SpectrumAnalysis.ft(envelope, self.Sig.fs, WinType=WinType) * self.Sig.df
+        X_f = SpectrumAnalysis.ft(envelope, self.Sig.t_axis.fs, WinType=WinType) * self.Sig.f_axis.df
         Amp = np.abs(X_f)
         N_half = N // 2
-        freq_axis = f_Axis(N=N_half, df=self.Sig.df, f0=0.0)
+        freq_axis = f_Axis(N=N_half, df=self.Sig.f_axis.df, f0=0.0)
         Amp = 2 * Amp[:N_half]
         return Spectra(axis=freq_axis, data=Amp, name="包络", unit=self.Sig.unit, label=self.Sig.label)
 

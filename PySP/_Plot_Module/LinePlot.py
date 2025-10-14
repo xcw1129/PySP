@@ -72,9 +72,9 @@ class LinePlot(Plot):
                 if not isinstance(S, Signal):
                     raise ValueError("输入数据必须为Signal对象或Signal对象列表")
                 if self.isSampled:
-                    dt = S.T / 2000 if S.N > 2000 else S.__axis__.__dx__
-                    S = Resample(S, type="extreme", dt=dt, t0=S.t0)
-                ax.plot(S.__axis__(), S.data, label=S.label)
+                    dt = S.t_axis.T / 2000 if len(S) > 2000 else S.t_axis.dt
+                    S = Resample(S, type="extreme", dt=dt, t0=S.t_axis.t0)
+                ax.plot(S.t_axis(), S.data, label=S.label)
             if len(data) > 1:
                 ax.legend(loc="best")
 
@@ -137,8 +137,8 @@ class LinePlot(Plot):
         task_kwargs = self.kwargs
         task_kwargs.update(
             {
-                "xlabel": Spc.axislabel,
-                "xlim": Spc.lim,
+                "xlabel": Spc.f_axis.label,
+                "xlim": Spc.f_axis.lim,
                 "ylabel": f"{Spc.name}/{Spc.unit}",
                 "title": f"{Spc.label}{Spc.name}谱",
             },

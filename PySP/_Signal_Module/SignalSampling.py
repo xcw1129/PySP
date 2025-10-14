@@ -56,25 +56,25 @@ def Resample(
         - 不支持的重采样方法
     """
     if dt is None:
-        dt = Sig.__axis__.__dx__
+        dt = Sig.t_axis.dt
     if t0 is None:
-        t0 = Sig.__axis__.__x0__
+        t0 = Sig.t_axis.t0
     # 获取重采样起始点的索引
-    if not Sig.__axis__.__x0__ <= t0 < (Sig.T + Sig.__axis__.__x0__):
+    if not Sig.t_axis.t0 <= t0 < (Sig.t_axis.T + Sig.t_axis.t0):
         raise ValueError("重采样起始点不在序列轴范围内")
     else:
-        start_idx = int((t0 - Sig.__axis__.__x0__) / Sig.__axis__.__dx__)
+        start_idx = int((t0 - Sig.t_axis.t0) / Sig.t_axis.dt)
     # 获取重采样数据片段 data2rs
     if T is None:
         data2rs = Sig.data[start_idx:]
-    elif T + t0 > Sig.T + Sig.__axis__.__x0__:
+    elif T + t0 > Sig.t_axis.T + Sig.t_axis.t0:
         raise ValueError("重采样长度超出序列轴范围")
     else:
-        N2rs = int(np.ceil(T / (Sig.__axis__.__dx__)))  # N = L / dx，向上取整
+        N2rs = int(np.ceil(T / (Sig.t_axis.dt)))  # N = L / dx，向上取整
         data2rs = Sig.data[start_idx : start_idx + N2rs]
     # 获取重采样点数
     N_in = len(data2rs)
-    ratio2rs = Sig.__axis__.__dx__ / dt
+    ratio2rs = Sig.t_axis.dt / dt
     N_out = int(N_in * ratio2rs)  # N_out = N_in * (dx_in / dx_out)
     # ----------------------------------------------------------------------------------------#
     # 对信号片段进行重采样
