@@ -160,60 +160,72 @@ class Plot:
 
     def _setup_x_axis(self, ax, task_kwargs):
         """设置X轴"""
-        xlabel = task_kwargs.get("xlabel", None)
         # 设置X轴标签
+        xlabel = task_kwargs.get("xlabel", None)
         ax.set_xlabel(xlabel)
-        xlim = task_kwargs.get("xlim", (None, None))
         # 设置X轴范围
+        ax.margins(x=0)  # 设置X轴出血边边距为0
+        cur_xlim = ax.get_xlim()
+        xlim = task_kwargs.get("xlim", cur_xlim)
         ax.set_xlim(xlim[0], xlim[1])
-        # 设置X轴出血边边距为0
-        ax.margins(x=0)
+        # 设置X轴刻度
         xticks = task_kwargs.get("xticks", None)
         if xticks is not None:
-            # 设置X轴刻度
             ax.set_xticks(xticks)
         else:
-            cur_xlim = ax.get_xlim()
             # 设置11个均匀分布的刻度
             ax.set_xticks(
-                np.linspace(cur_xlim[0], cur_xlim[1], 11)
+                np.linspace(xlim[0], xlim[1], 11, endpoint=True)
             )
         # 设置X轴刻度格式
-        ax.xaxis.set_major_formatter(
-            ticker.FormatStrFormatter("%.2f")
-        )
+        sf = ticker.ScalarFormatter(
+            useMathText=True
+        )  # 设置科学计数法显示，指数放到坐标轴右部
+        sf.set_powerlimits((-3, 3))
+        ax.xaxis.set_major_formatter(sf)
 
     def _setup_y_axis(self, ax, task_kwargs):
         """设置Y轴"""
-        ylabel = task_kwargs.get("ylabel", None)
         # 设置Y轴标签
+        ylabel = task_kwargs.get("ylabel", None)
         ax.set_ylabel(ylabel)
-        yticks = task_kwargs.get("yticks", None)
-        ynbins = task_kwargs.get("nticks", 5)
+        # 设置Y轴刻度格式
         yscale = task_kwargs.get("yscale", "linear")
+        ax.set_yscale(yscale)
         # 设置Y轴范围
-        ylim = task_kwargs.get("ylim", (None, None))
+        cur_ylim = ax.get_ylim()
+        if yscale == "log":
+            cur_ylim = (max(cur_ylim[0], 1e-8), max(cur_ylim[1], 1e-8))
+        ax.margins(y=0.15)
+        ylim = task_kwargs.get("ylim", cur_ylim)
         ax.set_ylim(ylim[0], ylim[1])
         # 设置Y轴刻度
-        if yticks is not None:
-            ax.set_yticks(yticks)
-        elif yscale == "log":
-            # 设置为对数刻度
-            ax.set_yscale("log")
+        yticks = task_kwargs.get("yticks", None)
+        if yscale == "log":  # 对数刻度下强制自动刻度
+            # 主刻度：每10倍一个主刻度
+            ax.yaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=12))
+            # 次刻度：每10倍区间内插9个小刻度（2~9倍）
+            ax.yaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=np.arange(2, 10), numticks=100))
+            # 主刻度格式：科学计数法
+            ax.yaxis.set_major_formatter(ticker.LogFormatterSciNotation())
+            # 注释：主刻度为10的整数次幂，小刻度为2~9倍
         else:
-            cur_ylim = ax.get_ylim()
-            # 设置指定数量的均匀分布刻度（范围缩小以提供出血边）
-            ax.set_yticks(
-                np.linspace(
-                    cur_ylim[0] + 0.1 * (cur_ylim[1] - cur_ylim[0]),
-                    cur_ylim[1] - 0.1 * (cur_ylim[1] - cur_ylim[0]),
-                    ynbins,
+            ynbins = task_kwargs.get("nticks", 5)
+            if yticks is not None:
+                ax.set_yticks(yticks)
+            else:
+                # 设置指定数量的均匀分布刻度（范围缩小以提供出血边）
+                ax.set_yticks(
+                    np.linspace(
+                        ylim[0] + 0.1 * (ylim[1] - ylim[0]),
+                        ylim[1] - 0.1 * (ylim[1] - ylim[0]),
+                        ynbins,
+                    )
                 )
-            )
-        # 设置Y轴刻度格式
-        sf = ticker.ScalarFormatter(useMathText=True)  # 设置科学计数法显示，指数放到坐标轴顶部
-        sf.set_powerlimits((-3, 3))  # 仅在绝对值小于1e-3或大于1e3时才用科学计数法
-        ax.yaxis.set_major_formatter(sf)
+            # 设置Y轴刻度格式
+            sf = ticker.ScalarFormatter(useMathText=True)
+            sf.set_powerlimits((-3, 3))
+            ax.yaxis.set_major_formatter(sf)
 
     def _save_figure(self, filename, save_format):
         """保存图形"""

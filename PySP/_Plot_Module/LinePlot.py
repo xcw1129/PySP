@@ -68,9 +68,6 @@ class LinePlot(Plot):
         # 时域波形绘制函数: 通过任务队列传递到绘图引擎
         def _draw_timewaveform(ax, data):
             """内部函数：在指定ax上绘制时域波形"""
-            ax.grid(
-                axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
-            )
             for S in data:
                 if not isinstance(S, Signal):
                     raise ValueError("输入数据必须为Signal对象或Signal对象列表")
@@ -90,6 +87,7 @@ class LinePlot(Plot):
         task_kwargs.update(
             {
                 "xlabel": Sig[0].axislabel,
+                "xlim": Sig[0].lim,
                 "ylabel": f"{Sig[0].name}/{Sig[0].unit}",
                 "title": f"{Sig[0].label}时域波形",
             }
@@ -129,9 +127,9 @@ class LinePlot(Plot):
         def _draw_spectrum(ax, data):
             """内部函数：在指定ax上绘制频谱"""
             ax.plot(data.__axis__(), data.data)
-            ax.grid(
-                axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
-            )
+            # ax.grid(
+            #     axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
+            # )
 
         # ------------------------------------------------------------------------------------#
         # 频谱绘制个性化设置
@@ -140,6 +138,7 @@ class LinePlot(Plot):
         task_kwargs.update(
             {
                 "xlabel": Spc.axislabel,
+                "xlim": Spc.lim,
                 "ylabel": f"{Spc.name}/{Spc.unit}",
                 "title": f"{Spc.label}{Spc.name}谱",
             },
