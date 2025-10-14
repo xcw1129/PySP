@@ -119,7 +119,7 @@ class Plot:
     @property
     def kwargs(self):
         return deepcopy(self._kwargs)
-    
+
     @property
     def last_task(self):
         """返回最新添加的绘图任务接口"""
@@ -163,6 +163,9 @@ class Plot:
         xlabel = task_kwargs.get("xlabel", None)
         # 设置X轴标签
         ax.set_xlabel(xlabel)
+        xlim = task_kwargs.get("xlim", (None, None))
+        # 设置X轴范围
+        ax.set_xlim(xlim[0], xlim[1])
         # 设置X轴出血边边距为0
         ax.margins(x=0)
         xticks = task_kwargs.get("xticks", None)
@@ -179,9 +182,6 @@ class Plot:
         ax.xaxis.set_major_formatter(
             ticker.FormatStrFormatter("%.2f")
         )
-        xlim = task_kwargs.get("xlim", (None, None))
-        # 设置X轴范围
-        ax.set_xlim(xlim[0], xlim[1])
 
     def _setup_y_axis(self, ax, task_kwargs):
         """设置Y轴"""
@@ -191,6 +191,9 @@ class Plot:
         yticks = task_kwargs.get("yticks", None)
         ynbins = task_kwargs.get("nticks", 5)
         yscale = task_kwargs.get("yscale", "linear")
+        # 设置Y轴范围
+        ylim = task_kwargs.get("ylim", (None, None))
+        ax.set_ylim(ylim[0], ylim[1])
         # 设置Y轴刻度
         if yticks is not None:
             ax.set_yticks(yticks)
@@ -211,9 +214,6 @@ class Plot:
         sf = ticker.ScalarFormatter(useMathText=True)  # 设置科学计数法显示，指数放到坐标轴顶部
         sf.set_powerlimits((-3, 3))  # 仅在绝对值小于1e-3或大于1e3时才用科学计数法
         ax.yaxis.set_major_formatter(sf)
-        # 设置Y轴范围
-        ylim = task_kwargs.get("ylim", (None, None))
-        ax.set_ylim(ylim[0], ylim[1])
 
     def _save_figure(self, filename, save_format):
         """保存图形"""
