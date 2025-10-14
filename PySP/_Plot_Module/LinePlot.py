@@ -86,8 +86,8 @@ class LinePlot(Plot):
         task_kwargs = self.kwargs
         task_kwargs.update(
             {
-                "xlabel": Sig[0].axislabel,
-                "xlim": Sig[0].lim,
+                "xlabel": Sig[0].t_axis.label,
+                "xlim": Sig[0].t_axis.lim,
                 "ylabel": f"{Sig[0].name}/{Sig[0].unit}",
                 "title": f"{Sig[0].label}时域波形",
             }
