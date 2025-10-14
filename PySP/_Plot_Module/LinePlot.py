@@ -16,7 +16,7 @@ from PySP._Assist_Module.Dependencies import np
 
 from PySP._Assist_Module.Decorators import InputCheck
 
-from PySP._Signal_Module.core import Axis, f_Axis, Signal, Spectra
+from PySP._Signal_Module.core import Signal, Spectra
 from PySP._Signal_Module.SignalSampling import Resample
 
 from PySP._Plot_Module.core import Plot
@@ -89,7 +89,7 @@ class LinePlot(Plot):
         task_kwargs = self.kwargs
         task_kwargs.update(
             {
-                "xlabel": Sig[0].t_axis.label,
+                "xlabel": Sig[0].axislabel,
                 "ylabel": f"{Sig[0].name}/{Sig[0].unit}",
                 "title": f"{Sig[0].label}时域波形",
             }
@@ -139,7 +139,7 @@ class LinePlot(Plot):
         task_kwargs = self.kwargs
         task_kwargs.update(
             {
-                "xlabel": Spc.f_axis.axislabel,
+                "xlabel": Spc.axislabel,
                 "ylabel": f"{Spc.name}/{Spc.unit}",
                 "title": f"{Spc.label}{Spc.name}谱",
             },
