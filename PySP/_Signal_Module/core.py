@@ -113,7 +113,7 @@ class Axis:
         return self.lim[1] - self.lim[0]  # 坐标轴分布长度
 
     @property
-    def axislabel(self) -> str:
+    def label(self) -> str:
         return f"{self.name}/{self.unit}"
 
     # ----------------------------------------------------------------------------------------#
@@ -230,7 +230,7 @@ class Series:
         else:
             self.data = np.zeros(len(axis), dtype=float)
 
-        self._axis = axis  # 子类中重写.axis属性，且仅在需要修改坐标轴参数时调用
+        self._axis = axis.copy()  # 子类中重写.axis属性，且仅在需要修改坐标轴参数时调用
         self.name = name
         self.unit = unit
         self.label = label
@@ -241,32 +241,8 @@ class Series:
     def __axis__(self):  # 使后续与axis相关操作与axis具体子类实现解耦
         axis_copy = self._axis.copy()
         axis_copy.N = len(self.data)  # 覆写N以确保与data长度一致，直接修改.axis.N属性无效
+        self._axis.N = len(self.data)  # 保持.axis.N属性与data长度一致，此处为唯一修改.axis的场所
         return axis_copy
-
-    # 将.__axis__的属性暴露为Series的属性，方便调用
-    @property
-    def N(self):
-        return self.__axis__.__N__
-
-    @property
-    def _dx(self):
-        return self.__axis__.__dx__
-
-    @property
-    def _x0(self):
-        return self.__axis__.__x0__
-
-    @property
-    def L(self):  # 序列分布长度
-        return self.__axis__.L
-
-    @property
-    def lim(self):
-        return self.__axis__.lim
-
-    @property
-    def axislabel(self):
-        return self.__axis__.axislabel
 
     # ----------------------------------------------------------------------------------------#
     # Python内置函数兼容
@@ -277,7 +253,7 @@ class Series:
         return self.__str__()
 
     def __len__(self) -> int:
-        return self.N
+        return len(self.data)
 
     # ----------------------------------------------------------------------------------------#
     # 支持数组切片索引
@@ -597,7 +573,7 @@ class t_Axis(Axis):
     # t_Axis特有属性
     @property
     def dt(self):
-        return 1 / self.fs  # 采样时间间隔
+        return self.__dx__  # 采样时间间隔
 
     @property
     def T(self):
@@ -653,6 +629,10 @@ class f_Axis(Axis):
     @property
     def F(self):
         return self.L  # 频率分布宽度
+    
+    @property
+    def T(self):
+        return 1 / self.__dx__  # 等效时间窗长度
 
 class Signal(Series):
     """
@@ -702,7 +682,7 @@ class Signal(Series):
         label : str, 可选
             信号标签
         """
-        self.t_axis = axis  # Signal类特有属性, 用于保存时间坐标轴参数
+        self.t_axis = axis.copy()  # Signal类特有属性, 用于保存时间坐标轴参数
         super().__init__(axis=self.t_axis, data=data, name=name, unit=unit, label=label)
 
     # ----------------------------------------------------------------------------------------#
@@ -711,49 +691,15 @@ class Signal(Series):
     def __axis__(self):
         t_axis_copy = self.t_axis.copy()
         t_axis_copy.N = len(self.data)
+        self.t_axis.N = len(self.data)
         return t_axis_copy
-
-    @property
-    def dt(self) -> float:
-        """
-        采样时间间隔
-        """
-        return self._dx
-
-    @property
-    def t0(self) -> float:
-        """
-        信号采样起始时间
-        """
-        return self._x0
-
-    @property
-    def T(self) -> float:
-        """
-        信号采样时长
-        """
-        return self.L
-
-    @property
-    def fs(self) -> float:
-        """
-        采样频率
-        """
-        return 1 / self._dx
 
     @property
     def f_axis(self) -> f_Axis:
         """
         频率坐标轴
         """
-        return f_Axis(df=1 / self.L, N=self.N, f0=0.0)
-
-    @property
-    def df(self) -> float:
-        """
-        频率分辨率
-        """
-        return 1 / self.L
+        return f_Axis(df=1 / self.__axis__.L, N=self.__axis__.__N__, f0=0.0)
 
     # ----------------------------------------------------------------------------------------#
     # 信号类数据典型分析处理方法
@@ -816,7 +762,7 @@ class Spectra(Series):
         label : str, 可选
             频谱标签
         """
-        self.f_axis = axis  # Spectra类特有属性, 用于保存频率坐标轴参数
+        self.f_axis = axis.copy()  # Spectra类特有属性, 用于保存频率坐标轴参数
         super().__init__(axis=self.f_axis, data=data, name=name, unit=unit, label=label)
 
     # ----------------------------------------------------------------------------------------#
@@ -824,39 +770,39 @@ class Spectra(Series):
     def __axis__(self):
         f_axis_copy = self.f_axis.copy()
         f_axis_copy.N = len(self.data)
+        self.f_axis.N = len(self.data)
         return f_axis_copy
-
-    @property
-    def df(self) -> float:
-        """
-        频率分辨率
-        """
-        return self._dx
-
-    @property
-    def f0(self) -> float:
-        """
-        频率起始点
-        """
-        return self._x0
-    
-    @property
-    def F(self) -> float:
-        """
-        频率分布宽度
-        """
-        return self.L
-
-    # 谱频率轴参数动态属性
-    @property
-    def T(self) -> float:
-        """
-        采样时长
-        """
-        return 1 / self._dx
 
     # ----------------------------------------------------------------------------------------#
     # 频谱类数据典型分析处理方法
+    def halfCut(self):
+        """
+        返回单边谱
+
+        Returns
+        -------
+        Spectra
+            单边频谱对象
+        """
+        N = len(self.data)
+        if N % 2 == 0:  # 偶数点
+            half_N = N // 2 + 1
+            half_data = self.data[:half_N]
+            half_data[1:-1] *= 2  # 除直流和奈奎斯特频率外乘2
+        else:  # 奇数点
+            half_N = (N + 1) // 2
+            half_data = self.data[:half_N]
+            half_data[1:] *= 2  # 除直流外乘2
+
+        half_f_axis = f_Axis(df=self.__axis__.__dx__, N=half_N, f0=self.__axis__.__x0__)
+        return Spectra(
+            axis=half_f_axis,
+            data=half_data,
+            name=self.name,
+            unit=self.unit,
+            label=self.label,
+        )
+    
     def plot(self, **kwargs):
         from PySP.Plot import FreqSpectrumFunc
         fig, ax = FreqSpectrumFunc(self, **kwargs)
