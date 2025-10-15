@@ -5,8 +5,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="pysp-xcw",  # 包名
-    version="7.5.1",      # 版本号
-    author="Xiong Chengwen",   # 作者
+    version="7.5.1",  # 版本号
+    author="Xiong Chengwen",  # 作者
     author_email="xcw1824@outlook.com",  # 作者邮箱
     description="Various classic and modern signal analysis and processing algorithms are implemented.",
     long_description=long_description,
@@ -27,7 +27,13 @@ setup(
         "scipy>=1.7.0",
         "matplotlib>=3.4.0",
     ],
-    keywords=["signal processing", "spectral analysis", "time-frequency analysis", "feature extraction", "signal decomposition"],
+    keywords=[
+        "signal processing",
+        "spectral analysis",
+        "time-frequency analysis",
+        "feature extraction",
+        "signal decomposition",
+    ],
     project_urls={
         "Bug Tracker": "https://github.com/xcw1129/PySP/issues",
         "Source Code": "https://github.com/xcw1129/PySP",
