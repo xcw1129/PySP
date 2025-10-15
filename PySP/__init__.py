@@ -7,7 +7,7 @@
     - PySP.Analysis: 谱分析、特征提取和分解等信号处理模块
 """
 
-__version__ = "7.5.0"
+__version__ = "7.5.1"
 
 from . import Signal
 from . import Plot
