@@ -16,7 +16,10 @@ from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Signal_Module.core import t_Axis, Signal
 
 # --------------------------------------------------------------------------------------------#
-@InputCheck({"Sig": {}, "type": {"Content": ["spacing", "fft", "extreme"]},"dx":{},"x0":{},"L":{}})
+# --------------------------------------------------------------------------------#
+# ------------------------------------------------------------------------#
+# ----------------------------------------------------------------#
+@InputCheck({"Sig": {}, "type": {"Content": ["spacing", "fft", "extreme"]},"dt":{},"t0":{},"T":{}})
 def Resample(
     Sig: Signal,
     type: str = "spacing",
@@ -31,7 +34,7 @@ def Resample(
     ----------
     Sig : Signal
         输入信号对象。
-    type : str, 默认 'spacing'
+    type : str, 默认: 'spacing'
         重采样方法，支持：
         - 'spacing'：等间隔直接抽取（时域抽取）
         - 'fft'：频域重采样（支持上采样与下采样）
@@ -76,7 +79,7 @@ def Resample(
     N_in = len(data2rs)
     ratio2rs = Sig.t_axis.dt / dt
     N_out = int(N_in * ratio2rs)  # N_out = N_in * (dx_in / dx_out)
-    # ----------------------------------------------------------------------------------------#
+    # --------------------------------------------------------------------------------#
     # 对信号片段进行重采样
     if ratio2rs < 1:  # 下采样
         if type == "fft":

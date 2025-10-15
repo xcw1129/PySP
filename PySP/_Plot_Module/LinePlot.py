@@ -10,7 +10,6 @@
         2. FreqSpectrumFunc: 单谱图绘制函数
 """
 
-from turtle import title
 from PySP._Assist_Module.Dependencies import Union
 from PySP._Assist_Module.Dependencies import np
 
@@ -24,9 +23,9 @@ from PySP._Plot_Module.PlotPlugin import PeakfinderPlugin
 
 
 # --------------------------------------------------------------------------------------------#
-# -## ----------------------------------------------------------------------------------------#
-# -----## ------------------------------------------------------------------------------------#
-# ---------## --------------------------------------------------------------------------------#
+# --------------------------------------------------------------------------------#
+# ------------------------------------------------------------------------#
+# ----------------------------------------------------------------#
 
 
 class LinePlot(Plot):
@@ -35,9 +34,9 @@ class LinePlot(Plot):
 
     Methods
     -------
-    TimeWaveform(Sig: Union[Signal, list], **kwargs) -> LinePlot
+    timeWaveform(Sig: Union[Signal, list], **kwargs) -> LinePlot
         注册一个时域波形图的绘制任务
-    Spectrum(Axis: Axis, Data: np.ndarray, **kwargs) -> LinePlot
+    spectrum(Spc: Spectra, **kwargs) -> LinePlot
         注册一个谱图的绘制任务
     """
 
@@ -104,7 +103,7 @@ class LinePlot(Plot):
         self.tasks.append(task)
         return self
 
-    @InputCheck({"Axis": {}, "Data": {"ndim": 1}})
+    @InputCheck({"Spc": {}})
     def spectrum(self, Spc: Spectra, **kwargs):
         """
         注册一个谱图的绘制任务

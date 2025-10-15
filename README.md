@@ -422,6 +422,24 @@ This complete example demonstrates:
 - **Professional Visualization** - Plotting features optimized for signal processing
 - **Easy Extension** - Plugin and inheritance mechanisms make feature extension simple
 
+## Lint 和 Docstring 规范检查
+
+本仓库使用 Ruff 统一代码风格与文档字符串规范（pydocstyle，NumPy 风格）。
+
+- 直接检查与自动修复：
+  - 安装 Ruff 后，在仓库根目录执行：
+    - 检查: ruff check .
+    - 自动修复: ruff check . --fix
+    - 格式化: ruff format .
+
+- 提交时自动检查（推荐）：
+  - 安装 pre-commit 并在本仓库启用：
+    1) 安装: pip install pre-commit
+    2) 安装钩子: pre-commit install
+    3) 手动触发: pre-commit run --all-files
+
+Ruff 与 pydocstyle 的规则配置见 pyproject.toml，已启用 NumPy 风格并忽略少量与项目实践不冲突的规则（如 D105、D107、D203、D212）。
+
 ## 许可证 | License
 
 MIT
