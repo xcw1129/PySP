@@ -10,17 +10,12 @@
         2. FreqSpectrumFunc: 单谱图绘制函数
 """
 
-from PySP._Assist_Module.Dependencies import Union
-from PySP._Assist_Module.Dependencies import np
-
 from PySP._Assist_Module.Decorators import InputCheck
-
-from PySP._Signal_Module.core import Signal, Spectra
-from PySP._Signal_Module.SignalSampling import Resample
-
+from PySP._Assist_Module.Dependencies import Union, np
 from PySP._Plot_Module.core import Plot
 from PySP._Plot_Module.PlotPlugin import PeakfinderPlugin
-
+from PySP._Signal_Module.core import Signal, Spectra
+from PySP._Signal_Module.SignalSampling import Resample
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#

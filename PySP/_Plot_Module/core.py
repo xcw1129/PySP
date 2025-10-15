@@ -9,13 +9,8 @@
 """
 
 
-from PySP._Assist_Module.Dependencies import deepcopy
-from PySP._Assist_Module.Dependencies import np
-from PySP._Assist_Module.Dependencies import plt, ticker
-from PySP._Assist_Module.Dependencies import deque
-
 from PySP._Assist_Module.Decorators import InputCheck
-
+from PySP._Assist_Module.Dependencies import deepcopy, deque, np, plt, ticker
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#

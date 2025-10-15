@@ -10,16 +10,11 @@
 """
 
 
-from PySP._Assist_Module.Dependencies import Optional, Callable
-from PySP._Assist_Module.Dependencies import np, fft
-from PySP._Assist_Module.Dependencies import signal
-
-from PySP._Assist_Module.Decorators import InputCheck
-
-from PySP._Plot_Module.LinePlot import FreqSpectrumFunc
-
-from PySP._Signal_Module.core import f_Axis,Spectra
 from PySP._Analysis_Module.core import Analysis
+from PySP._Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Dependencies import Callable, Optional, fft, np, signal
+from PySP._Plot_Module.LinePlot import FreqSpectrumFunc
+from PySP._Signal_Module.core import Spectra, f_Axis
 
 
 # --------------------------------------------------------------------------------------------#
@@ -120,6 +115,7 @@ class SpectrumAnalysis(Analysis):
     enve_spectra(WinType: str = "汉宁窗") -> np.ndarray
         计算信号的包络谱
     """
+
     # ----------------------------------------------------------------------------------------#
     @staticmethod
     @InputCheck({"data": {"ndim": 1}})
@@ -213,7 +209,7 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边能量谱密度
         """
-        X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.t_axis.fs, WinType=WinType) 
+        X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.t_axis.fs, WinType=WinType)
         Amp = np.abs(X_f)
         ESD = (Amp ** 2)  # 能量谱密度，单位U^2*t/Hz
         # 裁剪为单边能量谱密度

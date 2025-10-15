@@ -13,12 +13,8 @@
 """
 
 
-from PySP._Assist_Module.Dependencies import Optional
-from PySP._Assist_Module.Dependencies import np
-from PySP._Assist_Module.Dependencies import plt
-from PySP._Assist_Module.Dependencies import deepcopy
-
 from PySP._Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Dependencies import Optional, deepcopy, np, plt
 
 
 # --------------------------------------------------------------------------------------------#
@@ -55,6 +51,7 @@ class Axis:
     copy() -> Axis
         返回坐标轴对象的深拷贝
     """
+
     def __init__(
         self, N: int, dx: float, x0: float = 0.0, name: str = "", unit: str = ""
     ):
@@ -75,7 +72,7 @@ class Axis:
             坐标轴数据单位
         """
         # ._a属性初始化后一般不变并在子类中重写.a属性，可通过._a与.a是否相等判断属性是否被修改
-        self.N = N  
+        self.N = N
         self._dx = dx
         self._x0 = x0
         self.name = name
@@ -197,6 +194,7 @@ class Series:
     plot(**kwargs)
         绘制信号曲线
     """
+
     def __init__(
         self,
         axis: Axis,
@@ -505,6 +503,7 @@ class t_Axis(Axis):
     copy() -> t_Axis
         返回时间轴对象的深拷贝
     """
+
     @InputCheck(
         {
             "N": {"Low": 1},
@@ -566,7 +565,7 @@ class t_Axis(Axis):
     @property
     def __x0__(self):
         return self.t0
-    
+
     # --------------------------------------------------------------------------------#
     # t_Axis特有属性
     @property
@@ -594,6 +593,7 @@ class f_Axis(Axis):
     copy() -> f_Axis
         返回频率轴对象的深拷贝
     """
+
     @InputCheck({"N": {"Low": 1}, "df": {"OpenLow": 0.0}, "f0": {}})
     def __init__(self, N: int, df: float, f0: float = 0.0):
         """
@@ -621,13 +621,13 @@ class f_Axis(Axis):
     @property
     def __x0__(self):
         return self.f0
-    
+
     # --------------------------------------------------------------------------------#
     # f_Axis特有属性
     @property
     def F(self):
         return self.L  # 频率分布宽度
-    
+
     @property
     def T(self):
         return 1 / self.__dx__  # 等效时间窗长度
@@ -656,6 +656,7 @@ class Signal(Series):
     plot(**kwargs)
         绘制时域波形
     """
+
     def __init__(
         self,
         axis: t_Axis,
@@ -736,6 +737,7 @@ class Spectra(Series):
     plot(**kwargs)
         绘制频谱曲线
     """
+
     def __init__(
         self,
         axis: f_Axis,
@@ -800,7 +802,7 @@ class Spectra(Series):
             unit=self.unit,
             label=self.label,
         )
-    
+
     def plot(self, **kwargs):
         from PySP.Plot import FreqSpectrumFunc
         fig, ax = FreqSpectrumFunc(self, **kwargs)

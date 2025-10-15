@@ -1,5 +1,4 @@
-from PySP._Assist_Module.Dependencies import resources
-from PySP._Assist_Module.Dependencies import font_manager, plt, cycler
+from PySP._Assist_Module.Dependencies import cycler, font_manager, plt, resources
 
 font_name = None
 try:

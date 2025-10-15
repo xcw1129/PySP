@@ -9,11 +9,10 @@
 
 
 
-from PySP._Assist_Module.Dependencies import np, random
-
 from PySP._Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Dependencies import np, random
+from PySP._Signal_Module.core import Signal, t_Axis
 
-from PySP._Signal_Module.core import t_Axis,Signal
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#

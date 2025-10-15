@@ -1,3 +1,4 @@
+# ruff: noqa: F403
 """
 # PySP.Signal: 信号数据生成、封装和预处理模块
 

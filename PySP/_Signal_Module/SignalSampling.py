@@ -8,12 +8,10 @@
 """
 
 
-from PySP._Assist_Module.Dependencies import Optional
-from PySP._Assist_Module.Dependencies import np
-
 from PySP._Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Dependencies import Optional, np
+from PySP._Signal_Module.core import Signal, t_Axis
 
-from PySP._Signal_Module.core import t_Axis, Signal
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#

@@ -9,12 +9,11 @@
     - function:
         1. select_mode: 筛选模态分量
 """
-from PySP._Assist_Module.Dependencies import np
-from PySP._Assist_Module.Dependencies import signal, fft, stats, interpolate
-
-from PySP._Signal_Module.core import Signal
 from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
+from PySP._Assist_Module.Dependencies import fft, interpolate, np, signal, stats
+from PySP._Signal_Module.core import Signal
+
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#
@@ -107,6 +106,7 @@ class EMDAnalysis(Analysis):
     eemd(ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5) -> tuple
         对输入信号进行EEMD分解
     """
+
     # ----------------------------------------------------------------------------------------#
     @InputCheck({"Sig": {}})
     def __init__(self, Sig: Signal, plot: bool = False, **kwargs):
@@ -134,7 +134,6 @@ class EMDAnalysis(Analysis):
     # ----------------------------------------------------------------------------------------#
     @staticmethod
     def _hilbert(data: np.ndarray) -> np.ndarray:
-        x = np.array(data)
         fft_x = fft.fft(data)
         positive = fft_x[: len(fft_x) // 2] * 2
         negative = fft_x[len(fft_x) // 2 :] * 0
@@ -251,7 +250,7 @@ class EMDAnalysis(Analysis):
         DatatoSift = data.copy()
         for n in range(max_iterations):
             res = self._isIMF(DatatoSift)
-            if res[0] == True:
+            if res[0]:
                 return DatatoSift
             else:
                 if res[2] == "极值点不足，无法提取IMF分量":
@@ -429,6 +428,7 @@ class VMDAnalysis(Analysis):
     vmd(k_num: int, iterations: int = 100, bw: float = 200, tau: float = 0.5, DC: bool = False) -> tuple
         对输入信号进行VMD分解
     """
+
     # ----------------------------------------------------------------------------------------#
     @InputCheck({"Sig": {}})
     def __init__(self, Sig: Signal, plot: bool = False, **kwargs):

@@ -9,12 +9,9 @@
 
 
 
-from PySP._Assist_Module.Dependencies import np
-from PySP._Assist_Module.Dependencies import plt
-from PySP._Assist_Module.Dependencies import signal
-
-from PySP._Signal_Module.core import Series
+from PySP._Assist_Module.Dependencies import np, plt, signal
 from PySP._Plot_Module.core import PlotPlugin
+from PySP._Signal_Module.core import Series
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#
@@ -37,7 +34,6 @@ class PeakfinderPlugin(PlotPlugin):
     _apply(ax: plt.Axes, data)
         在指定的子图上查找并标注峰值
     """
-
 
     def __init__(self, **kwargs):
         """
@@ -64,7 +60,7 @@ class PeakfinderPlugin(PlotPlugin):
 
         Returns
         -------
-    None
+        None
 
         Notes
         -----

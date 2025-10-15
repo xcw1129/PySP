@@ -9,8 +9,6 @@
 
 __version__ = "7.5.1"
 
-from . import Signal
-from . import Plot
-from . import Analysis
-from . import _plot_init
-__all__ = ['Signal', 'Plot', 'Analysis']
+from . import Analysis, Plot, Signal, _plot_init
+
+__all__ = ["Signal", "Plot", "Analysis", "_plot_init"]

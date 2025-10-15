@@ -1,3 +1,4 @@
+# ruff: noqa: F403
 """
 # PySP.Analysis: 谱分析、特征提取和分解等信号处理模块
 
@@ -10,5 +11,5 @@
 """
 
 from ._Analysis_Module.core import *
+from ._Analysis_Module.ModeAnalysis import *
 from ._Analysis_Module.SpectrumAnalysis import *
-from ._Analysis_Module.ModeAnalysis import *  
