@@ -7,8 +7,6 @@
         1. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
 
-
-
 from PySP._Assist_Module.Dependencies import np, plt, signal
 from PySP._Plot_Module.core import PlotPlugin
 from PySP._Signal_Module.core import Series
@@ -17,6 +15,7 @@ from PySP._Signal_Module.core import Series
 # --------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------#
 # ----------------------------------------------------------------#
+
 
 class PeakfinderPlugin(PlotPlugin):
     """
@@ -46,7 +45,6 @@ class PeakfinderPlugin(PlotPlugin):
         """
         self.find_peaks_params = kwargs
 
-
     def _apply(self, ax: plt.Axes, data):
         """
         在指定的子图上查找并标注峰值
@@ -74,9 +72,7 @@ class PeakfinderPlugin(PlotPlugin):
             # 不兼容插件, 跳过
             return
         # 寻找峰值
-        peak_idx, _ = signal.find_peaks(
-            np.abs(Data - np.mean(Data)), **self.find_peaks_params
-        )
+        peak_idx, _ = signal.find_peaks(np.abs(Data - np.mean(Data)), **self.find_peaks_params)
         if peak_idx.size > 0:
             peak_idx = peak_idx.astype(int)
             peak_Data = Data[peak_idx]
@@ -92,7 +88,6 @@ class PeakfinderPlugin(PlotPlugin):
                     color="red",
                     size=16,
                 )
-
 
 
 __all__ = ["PeakfinderPlugin"]

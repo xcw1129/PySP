@@ -12,9 +12,6 @@
         4. auto_update_target_module: 自动更新本文件开头指定的目标模块文件的模块注释（支持多个文件）
 """
 
-
-
-
 import ast
 import os
 import re
@@ -71,9 +68,7 @@ class DocstringGenerator:
         self.functions = []
 
     def parse_file(self) -> None:
-        """
-        解析Python文件，提取类和函数信息
-        """
+        """解析Python文件，提取类和函数信息"""
         try:
             with open(self.file_path, "r", encoding="utf-8") as f:
                 content = f.read()
@@ -108,18 +103,14 @@ class DocstringGenerator:
             print(f"解析文件时出错: {e}")
 
     def _is_top_level(self, node) -> bool:
-        """
-        判断节点是否为顶级节点（不在其他类或函数内部）
-        """
+        """判断节点是否为顶级节点（不在其他类或函数内部）"""
         for parent in ast.walk(self.tree):
             if hasattr(parent, "body") and node in parent.body:
                 # 如果父节点是Module，则为顶级节点
                 return isinstance(parent, ast.Module)
         return False
 
-    def generate_docstring(
-        self, module_name: str = None, module_description: str = None
-    ) -> str:
+    def generate_docstring(self, module_name: str = None, module_description: str = None) -> str:
         """
         生成模块级注释文档字符串
 
@@ -149,25 +140,21 @@ class DocstringGenerator:
             docstring_parts.append("    - class:")
             for i, class_info in enumerate(self.classes, 1):
                 class_desc = self._extract_brief_description(class_info["docstring"])
-                docstring_parts.append(
-                    f'        {i}. {class_info["name"]}: {class_desc}'
-                )
+                docstring_parts.append(f"        {i}. {class_info['name']}: {class_desc}")
 
         # 添加函数信息
         if self.functions:
             docstring_parts.append("    - function:")
             for i, func_info in enumerate(self.functions, 1):
                 func_desc = self._extract_brief_description(func_info["docstring"])
-                docstring_parts.append(f'        {i}. {func_info["name"]}: {func_desc}')
+                docstring_parts.append(f"        {i}. {func_info['name']}: {func_desc}")
 
         docstring_parts.append('"""')
 
         return "\n".join(docstring_parts)
 
     def _extract_brief_description(self, docstring: str) -> str:
-        """
-        从docstring中提取简要描述（第一行非空内容）
-        """
+        """从docstring中提取简要描述（第一行非空内容）"""
         if not docstring:
             return "待添加描述"
 
@@ -186,9 +173,7 @@ class DocstringGenerator:
 
         return "待添加描述"
 
-    def update_file(
-        self, module_name: str = None, module_description: str = None
-    ) -> None:
+    def update_file(self, module_name: str = None, module_description: str = None) -> None:
         """
         更新文件的模块注释
 
@@ -247,9 +232,7 @@ def extract_docstring(node) -> str:
     return ""
 
 
-def generate_module_docstring(
-    file_path: str, module_name: str = None, module_description: str = None
-) -> str:
+def generate_module_docstring(file_path: str, module_name: str = None, module_description: str = None) -> str:
     """
     生成指定文件的模块级注释文档
 
@@ -319,7 +302,6 @@ def update_file_docstring(content: str, new_docstring: str) -> str:
                     break
 
         # 重构内容
-        before_docstring = "\n".join(lines[:start_idx])
         after_docstring = "\n".join(lines[docstring_end:])
 
         if filepath_comment:
@@ -338,9 +320,7 @@ def update_file_docstring(content: str, new_docstring: str) -> str:
 
 
 def auto_update_target_module():
-    """
-    自动更新本文件开头指定的目标模块文件的模块注释（支持多个文件）
-    """
+    """自动更新本文件开头指定的目标模块文件的模块注释（支持多个文件）"""
     current_dir = os.path.dirname(__file__)
     for filename, module_desc in TARGET_MODULES.items():
         target_path = os.path.join(current_dir, filename)

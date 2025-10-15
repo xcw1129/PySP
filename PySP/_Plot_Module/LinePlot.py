@@ -170,9 +170,7 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
     ax : matplotlib.axes.Axes
         坐标轴对象
     """
-    fig, ax = (
-        LinePlot(isSampled=True).timeWaveform(Sig, **kwargs).show(pattern="return")
-    )
+    fig, ax = LinePlot(isSampled=True).timeWaveform(Sig, **kwargs).show(pattern="return")
     fig.show()
     return fig, ax
 
@@ -201,9 +199,7 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs):
         LinePlot()
         .spectrum(Spc, **plot_kwargs)
         .add_plugin_to_task(
-            PeakfinderPlugin(
-                distance=max(len(Spc) // 100, 1), height=0.1 * np.max(Spc), prominence=0.1
-            )
+            PeakfinderPlugin(distance=max(len(Spc) // 100, 1), height=0.1 * np.max(Spc), prominence=0.1)
         )
         .show(pattern="return")
     )

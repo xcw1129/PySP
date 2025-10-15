@@ -7,8 +7,6 @@
         1. Analysis: 信号分析处理方法基类, 定义了初始化方法、常用属性和装饰器
 """
 
-
-
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Signal_Module.core import Signal
 
@@ -19,6 +17,7 @@ IS_PLOT = False  # 全局默认绘图开关
 # --------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------#
 # ----------------------------------------------------------------#
+
 
 class Analysis:
     """
@@ -78,6 +77,7 @@ class Analysis:
         decorator : function
             装饰器函数
         """
+
         def plot_decorator(func):
             def wrapper(self, *args, **kwargs):
                 res = func(self, *args, **kwargs)

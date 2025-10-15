@@ -1,8 +1,13 @@
-from .Dependencies import np
-from .Dependencies import Union
-from .Dependencies import inspect
-from .Dependencies import wraps
-from .Dependencies import get_origin, get_args
+"""
+# Decorators
+输入检查与绘图联动装饰器。
+
+## 内容
+    - InputCheck: 依据规则校验函数/方法的入参
+    - Plot: 将函数输出联动到绘图函数
+"""
+
+from .Dependencies import Union, get_args, get_origin, inspect, np, wraps
 
 
 # --------------------------------------------------------------------------------------------#
@@ -10,11 +15,12 @@ from .Dependencies import get_origin, get_args
 # -----## ------------------------------------------------------------------------------------#
 # ---------## --------------------------------------------------------------------------------#
 def InputCheck(*var_checks):
+    """根据 JSON 规则校验入参类型与取值范围。"""
+
     # 根据json输入生成对应的变量检查装饰器
     def decorator(func):
         @wraps(func)  # 保留原函数的元信息：函数名、参数列表、注释文档、模块信息等
         def wrapper(*args, **kwargs):
-
             # --------------------------------------------------------------------------------#
             # 获取函数输入变量
             target = func.__func__ if isinstance(func, staticmethod) else func
@@ -23,9 +29,7 @@ def InputCheck(*var_checks):
             if "kwargs" not in Vars.parameters:
                 for var_name in kwargs:
                     if var_name not in Vars.parameters:
-                        raise TypeError(
-                            f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"
-                        )
+                        raise TypeError((f"输入变量{var_name}={kwargs[var_name]}不在函数{func.__name__}的参数列表中"))
             bound_args = Vars.bind(*args, **kwargs)
             bound_args.apply_defaults()
             # 获取变量的类型注解
@@ -42,18 +46,23 @@ def InputCheck(*var_checks):
                 if var_value is not None:
                     # 处理 Union 类型
                     if get_origin(var_type) is Union:
-                        valid_types = [
-                            t for t in get_args(var_type) if t is not type(None)
-                        ]
-                        isvalid=[isinstance(var_value, t) for t in valid_types]
+                        valid_types = [t for t in get_args(var_type) if t is not type(None)]
+                        isvalid = [isinstance(var_value, t) for t in valid_types]
                         if not any(isvalid):
                             raise TypeError(
-                                f"输入变量 '{var_name}' 类型不为要求的 {', '.join([t.__name__ for t in valid_types])}, 实际为 {type(var_value).__name__}"
+                                (
+                                    f"输入变量 '{var_name}' 类型不为要求的"
+                                    f" {', '.join([t.__name__ for t in valid_types])}, "
+                                    f"实际为 {type(var_value).__name__}"
+                                )
                             )
                     # 检查其它输入值类型是否为预设类型
                     elif var_type and not isinstance(var_value, var_type):
                         raise TypeError(
-                            f"输入变量 '{var_name}' 类型不为要求的 {var_type.__name__}, 实际为 {type(var_value).__name__}"
+                            (
+                                f"输入变量 '{var_name}' 类型不为要求的 {var_type.__name__}, "
+                                f"实际为 {type(var_value).__name__}"
+                            )
                         )
                     else:
                         pass
@@ -65,7 +74,10 @@ def InputCheck(*var_checks):
                         if "ndim" in var_cond:
                             if var_value.ndim != var_cond["ndim"]:
                                 raise ValueError(
-                                    f"输入array数组 '{var_name}' 维度不为要求的 {var_cond['ndim']}, 实际为{var_value.ndim}"
+                                    (
+                                        f"输入array数组 '{var_name}' 维度不为要求的 {var_cond['ndim']}, "
+                                        f"实际为{var_value.ndim}"
+                                    )
                                 )
                     # ------------------------------------------------------------------------#
                     # int类
@@ -74,13 +86,13 @@ def InputCheck(*var_checks):
                         if "Low" in var_cond:
                             if not (var_cond["Low"] <= var_value):
                                 raise ValueError(
-                                    f"输入int变量 '{var_name}' 小于要求的下界 {var_cond['Low']}, 实际为{var_value}"
+                                    (f"输入int变量 '{var_name}' 小于要求的下界 {var_cond['Low']}, 实际为{var_value}")
                                 )
                         # 条件2：上界检查
                         if "High" in var_cond:
                             if not (var_value <= var_cond["High"]):
                                 raise ValueError(
-                                    f"输入int变量 '{var_name}' 大于要求的上界 {var_cond['High']}, 实际为{var_value}"
+                                    (f"输入int变量 '{var_name}' 大于要求的上界 {var_cond['High']}, 实际为{var_value}")
                                 )
                     # ------------------------------------------------------------------------#
                     # float类
@@ -89,25 +101,37 @@ def InputCheck(*var_checks):
                         if "CloseLow" in var_cond:
                             if not (var_cond["CloseLow"] <= var_value):
                                 raise ValueError(
-                                    f"输入float变量 '{var_name}' 小于要求的下界 {var_cond['CloseLow']}, 实际为{var_value}"
+                                    (
+                                        f"输入float变量 '{var_name}' 小于要求的下界 {var_cond['CloseLow']}, "
+                                        f"实际为{var_value}"
+                                    )
                                 )
                         # 条件2：闭上界检查
                         if "CloseHigh" in var_cond:
                             if not (var_value <= var_cond["CloseHigh"]):
                                 raise ValueError(
-                                    f"输入float变量 '{var_name}' 大于要求的上界 {var_cond['CloseHigh']}, 实际为{var_value}"
+                                    (
+                                        f"输入float变量 '{var_name}' 大于要求的上界 {var_cond['CloseHigh']}, "
+                                        f"实际为{var_value}"
+                                    )
                                 )
                         # 条件3：开下界检查
                         if "OpenLow" in var_cond:
                             if not (var_cond["OpenLow"] < var_value):
                                 raise ValueError(
-                                    f"输入float变量 '{var_name}' 小于或等于要求的下界 {var_cond['OpenLow']}, 实际为{var_value}"
+                                    (
+                                        f"输入float变量 '{var_name}' 小于或等于要求的下界 {var_cond['OpenLow']}, "
+                                        f"实际为{var_value}"
+                                    )
                                 )
                         # 条件4：开上界检查
                         if "OpenHigh" in var_cond:
                             if not (var_value < var_cond["OpenHigh"]):
                                 raise ValueError(
-                                    f"输入float变量 '{var_name}' 大于或等于要求的上界 {var_cond['OpenHigh']}, 实际为{var_value}"
+                                    (
+                                        f"输入float变量 '{var_name}' 大于或等于要求的上界 {var_cond['OpenHigh']}, "
+                                        f"实际为{var_value}"
+                                    )
                                 )
                     # ------------------------------------------------------------------------#
                     # str类
@@ -116,11 +140,15 @@ def InputCheck(*var_checks):
                         if "Content" in var_cond:
                             if var_value not in var_cond["Content"]:
                                 raise ValueError(
-                                    f"输入str变量 '{var_name}' 不在要求的范围 {var_cond['Content']}, 实际为{var_value}"
+                                    (
+                                        f"输入str变量 '{var_name}' 不在要求的范围 {var_cond['Content']}, "
+                                        f"实际为{var_value}"
+                                    )
                                 )
                     # ------------------------------------------------------------------------#
                     # Signal类
                     from PySP.Signal import Signal
+
                     if isinstance(var_value, Signal):
                         pass
             return func(*args, **kwargs)  # 检查通过，执行函数
@@ -131,14 +159,14 @@ def InputCheck(*var_checks):
 
 
 def Plot(plot_func: callable):
+    """将被装饰函数的返回结果，传递给指定绘图函数。"""
+
     def plot_decorator(func):
         def wrapper(*args, **kwargs):  # 该装饰器一般最外层
             res = func(*args, **kwargs)  # 执行函数取得绘图数据,其他装饰器在此执行
             plot = kwargs.get("plot", False)  # 默认该装饰器不绘图
             if plot:
-                plot_func(
-                    *res, **kwargs
-                )  # 所有绘图设置参数均通过kwargs传递,包括plot_save
+                plot_func(*res, **kwargs)  # 所有绘图设置参数均通过kwargs传递,包括plot_save
             return res
 
         return wrapper

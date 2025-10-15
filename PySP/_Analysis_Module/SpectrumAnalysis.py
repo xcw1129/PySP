@@ -9,7 +9,6 @@
         1. window: 生成各类窗函数整周期采样序列
 """
 
-
 from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import Callable, Optional, fft, np, signal
@@ -61,9 +60,7 @@ def window(
         np.less_equal(n, (num - 1) / 2), 2 * n / (num - 1), 2 - 2 * n / (num - 1)
     )
     window_func["布莱克曼窗"] = (
-        lambda n: 0.42
-        - 0.5 * np.cos(2 * np.pi * n / (num - 1))
-        + 0.08 * np.cos(4 * np.pi * n / (num - 1))
+        lambda n: 0.42 - 0.5 * np.cos(2 * np.pi * n / (num - 1)) + 0.08 * np.cos(4 * np.pi * n / (num - 1))
     )
     window_func["自定义窗"] = func
     # ----------------------------------------------------------------------------------------#
@@ -82,9 +79,7 @@ def window(
     w = window_func[type](n)
     # 进行零填充（如果指定了填充长度）
     if padding is not None:
-        w = np.pad(
-            w, padding, mode="constant"
-        )  # 双边各填充padding点, 共延长2*padding点
+        w = np.pad(w, padding, mode="constant")  # 双边各填充padding点, 共延长2*padding点
     return w
 
 
@@ -133,12 +128,12 @@ class SpectrumAnalysis(Analysis):
         X_f : np.ndarray
             DFT变换结果
         """
-        y_k=fft.rfft(data)
+        y_k = fft.rfft(data)
         return y_k
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    @InputCheck({"data":{"ndim":1}, "fs":{"OpenLow":0}})
+    @InputCheck({"data": {"ndim": 1}, "fs": {"OpenLow": 0}})
     def ft(data: np.ndarray, fs: float, WinType: str = "汉宁窗") -> np.ndarray:
         """
         计算时域窄带信号在0~N/2*Δf范围傅里叶变换的数值近似
@@ -157,12 +152,12 @@ class SpectrumAnalysis(Analysis):
         X_f : np.ndarray
             变换结果
         """
-        w = window(num=len(data),type=WinType)
+        w = window(num=len(data), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
-        dt=1 / fs
+        dt = 1 / fs
         # 由DFT近似计算傅里叶变换
-        X_f=SpectrumAnalysis.dft(data*w)*dt
-        X_f=X_f*scale  # 幅值补偿
+        X_f = SpectrumAnalysis.dft(data * w) * dt
+        X_f = X_f * scale  # 幅值补偿
         return X_f
 
     # ----------------------------------------------------------------------------------------#
@@ -181,7 +176,7 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边系数幅值谱
         """
-        w= window(num=len(self.Sig), type=WinType)
+        w = window(num=len(self.Sig), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
         # 由DFT计算傅里叶级数系数
         X_k = SpectrumAnalysis.dft(self.Sig.data * w) / len(self.Sig)  # DFT/N
@@ -189,8 +184,8 @@ class SpectrumAnalysis(Analysis):
         Amp = np.abs(X_k)
         # 裁剪为单边余弦谱
         f_axis = self.Sig.f_axis
-        f_axis.N= len(self.Sig) // 2  # 频率轴点数取半
-        Amp = 2 * Amp[:len(f_axis)]  # 余弦系数为复数系数的2倍
+        f_axis.N = len(self.Sig) // 2  # 频率轴点数取半
+        Amp = 2 * Amp[: len(f_axis)]  # 余弦系数为复数系数的2倍
         return Spectra(axis=f_axis, data=Amp, name="幅值", unit=self.Sig.unit, label=self.Sig.label)
 
     # ----------------------------------------------------------------------------------------#
@@ -211,11 +206,11 @@ class SpectrumAnalysis(Analysis):
         """
         X_f = SpectrumAnalysis.ft(self.Sig.data, self.Sig.t_axis.fs, WinType=WinType)
         Amp = np.abs(X_f)
-        ESD = (Amp ** 2)  # 能量谱密度，单位U^2*t/Hz
+        ESD = Amp**2  # 能量谱密度，单位U^2*t/Hz
         # 裁剪为单边能量谱密度
         f_axis = self.Sig.f_axis
         f_axis.N = len(self.Sig) // 2  # 频率轴点数取半
-        ESD = 2 * ESD[:len(f_axis)]
+        ESD = 2 * ESD[: len(f_axis)]
         return Spectra(axis=f_axis, data=ESD, name="能量密度", unit=self.Sig.unit + "^2*t/Hz", label=self.Sig.label)
 
     # ----------------------------------------------------------------------------------------#
@@ -234,7 +229,7 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边功率谱密度
         """
-        w= window(num=len(self.Sig), type=WinType)
+        w = window(num=len(self.Sig), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
         # 由DFT计算功率谱密度
         X_k = SpectrumAnalysis.dft(self.Sig.data * w) / len(self.Sig)  # DFT/N
@@ -243,7 +238,7 @@ class SpectrumAnalysis(Analysis):
         # 裁剪为单边功率谱密度
         f_axis = self.Sig.f_axis
         f_axis.N = len(self.Sig) // 2  # 频率轴点数取半
-        PSD = 2 * PSD[:len(f_axis)]
+        PSD = 2 * PSD[: len(f_axis)]
         return Spectra(axis=f_axis, data=PSD, name="功率密度", unit=self.Sig.unit + "^2/Hz", label=self.Sig.label)
 
     # ----------------------------------------------------------------------------------------#

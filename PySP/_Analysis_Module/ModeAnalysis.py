@@ -9,6 +9,7 @@
     - function:
         1. select_mode: 筛选模态分量
 """
+
 from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import fft, interpolate, np, signal, stats
@@ -96,7 +97,7 @@ class EMDAnalysis(Analysis):
         Sifting查找极值点的变化阈值, 默认为 1e-7
     End_envelop : bool
         Sifting上下包络是否使用首尾点, 默认为 False
-        
+
     Methods
     -------
     __init__(Sig: Signal, plot: bool = False, **kwargs)
@@ -191,9 +192,7 @@ class EMDAnalysis(Analysis):
         return IMFs, Residue
 
     # ----------------------------------------------------------------------------------------#
-    def eemd(
-        self, ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5
-    ) -> tuple:
+    def eemd(self, ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5) -> tuple:
         """
         对输入信号进行EEMD分解
 
@@ -230,9 +229,7 @@ class EMDAnalysis(Analysis):
                     break
             IMFs = np.array(IMFs)
             if len(IMFs) < max_Dectimes:
-                IMFs = np.concatenate(
-                    (IMFs, np.zeros((max_Dectimes - len(IMFs), N))), axis=0
-                )
+                IMFs = np.concatenate((IMFs, np.zeros((max_Dectimes - len(IMFs), N))), axis=0)
             enIMFs += IMFs
 
         enIMFs /= ensemble_times
@@ -297,14 +294,10 @@ class EMDAnalysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    def _search_zerocrossing(
-        data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6
-    ) -> int:
+    def _search_zerocrossing(data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6) -> int:
         _data = np.array(data)
         num = neighbors // 2
-        _data[1:-1] = np.where(
-            _data[1:-1] == 0, 1e-10, _data[1:-1]
-        )
+        _data[1:-1] = np.where(_data[1:-1] == 0, 1e-10, _data[1:-1])
         zero_index = np.diff(np.sign(_data)) != 0
         zero_index = np.append(zero_index, False)
         zero_index = np.where(zero_index)[0]
@@ -315,9 +308,7 @@ class EMDAnalysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    def _search_localextrum(
-        data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6
-    ) -> np.ndarray:
+    def _search_localextrum(data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6) -> np.ndarray:
         num = neighbors // 2
         max_index = signal.argrelextrema(data, np.greater, order=num)[0]
         min_index = signal.argrelextrema(data, np.less, order=num)[0]
@@ -331,9 +322,7 @@ class EMDAnalysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    def _Dec_stopcriteria(
-        raw: np.ndarray, residue: np.ndarray, criteria: str = "c1"
-    ) -> bool:
+    def _Dec_stopcriteria(raw: np.ndarray, residue: np.ndarray, criteria: str = "c1") -> bool:
         if criteria == "c1":
             if np.max(np.abs(residue)) < np.max(np.abs(raw)) * 0.01:
                 return True
@@ -369,19 +358,13 @@ class EMDAnalysis(Analysis):
 
         if condition2 is False:
             extrumNO = len(max_index) + len(min_index)
-            zeroNO = len(
-                self._search_zerocrossing(
-                    data, neighbors=self.neighbors, threshold=self.zerothreshold
-                )
-            )
+            zeroNO = len(self._search_zerocrossing(data, neighbors=self.neighbors, threshold=self.zerothreshold))
             if np.abs(extrumNO - zeroNO) <= 1:
                 condition2 = True
 
         if condition3 is False:
             if self.End_envelop:
-                if np.all(data[max_index[1:-1]] >= 0) and np.all(
-                    data[min_index[1:-1]] <= 0
-                ):
+                if np.all(data[max_index[1:-1]] >= 0) and np.all(data[min_index[1:-1]] <= 0):
                     condition3 = True
             else:
                 if np.all(data[max_index] >= 0) and np.all(data[min_index] <= 0):
@@ -420,7 +403,7 @@ class VMDAnalysis(Analysis):
         VMD分解直流分量的方法, 可选 "Sift_mean", "emd_resdiue", "moving_average"，默认为 "Sift_mean"
     vmd_extend : bool
         VMD分解前是否进行双边半延拓, 默认为 True
-        
+
     Methods
     -------
     __init__(Sig: Signal, plot: bool = False, **kwargs)
@@ -488,9 +471,7 @@ class VMDAnalysis(Analysis):
         data = self.Sig.data
         fs = self.Sig.t_axis.fs
         N = len(data)
-        extend_data = np.concatenate(
-            (data[N // 2 : 1 : -1], data, data[-1 : N // 2 : -1])
-        )
+        extend_data = np.concatenate((data[N // 2 : 1 : -1], data, data[-1 : N // 2 : -1]))
         _N = len(extend_data)
         if self.vmd_extend is False:
             extend_data = data
@@ -554,9 +535,7 @@ class VMDAnalysis(Analysis):
         return np.dot(f, np.abs(data) ** 2) / np.sum(np.abs(data) ** 2)
 
     # ----------------------------------------------------------------------------------------#
-    def _get_DC(
-        self, data: np.ndarray, method: str, windowsize: int = 100
-    ) -> np.ndarray:
+    def _get_DC(self, data: np.ndarray, method: str, windowsize: int = 100) -> np.ndarray:
         temp_sig = Signal(axis=self.Sig.axis, data=data)
         emd_analyzer = EMDAnalysis(temp_sig)
         if method == "Sift_mean":
@@ -590,9 +569,7 @@ class VMDAnalysis(Analysis):
 
     # ----------------------------------------------------------------------------------------#
     @staticmethod
-    def _vmd_wcinit(
-        data: np.ndarray, fs: float, K: int, method: str = "zero"
-    ) -> np.ndarray:
+    def _vmd_wcinit(data: np.ndarray, fs: float, K: int, method: str = "zero") -> np.ndarray:
         if method == "uniform":
             wc = np.linspace(0, fs / 2, K)
         elif method == "log":
@@ -603,13 +580,12 @@ class VMDAnalysis(Analysis):
             wc = np.random.rand(K) * fs / 2
             wc = np.sort(wc)
         elif method == "lograndom":
-            wc = np.exp(
-                np.log(fs / 2) + (np.log(0.5) - np.log(fs / 2)) * np.random.rand(K)
-            )
+            wc = np.exp(np.log(fs / 2) + (np.log(0.5) - np.log(fs / 2)) * np.random.rand(K))
             wc = np.sort(wc)
         else:
             wc = np.zeros(K)
         return wc
+
 
 __all__ = [
     "EMDAnalysis",

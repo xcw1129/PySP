@@ -2,8 +2,9 @@
 line-length = 120
 target-version = "py39"
 exclude = [
-  "pysp_xcw.egg-info",
+  "_Assist_Module",
   "__pycache__",
+  "_plot_init_.py",
 ]
 
 [tool.ruff.lint]
@@ -16,9 +17,6 @@ select = [
 ]
 ignore = [
   "D105",  # allow missing docstring for magic methods (e.g., __repr__)
-  "D107",  # allow missing docstring in __init__ (covered by class docstring)
-  "D102",  # allow missing docstring in public methods/properties to reduce noise
-  "D203",  # one-blank-line-before-class (conflicts with D211)
   "D212",  # multi-line-summary-first-line (we prefer summary on second line; use D213)
   "D205",  # summary line blank line after (project docstrings often start with title blocks)
   "D400",  # first line should end with a period (allow Chinese titles without period)

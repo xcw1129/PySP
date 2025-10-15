@@ -7,8 +7,6 @@
         1. Periodic: 生成仿真含噪准周期信号
 """
 
-
-
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import np, random
 from PySP._Signal_Module.core import Signal, t_Axis
@@ -55,14 +53,11 @@ def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0.0) -> Signa
     Sig = Signal(axis=t_Axis(int(np.ceil(T * fs)), fs=fs), label="仿真含噪准周期信号")
     for i, params in enumerate(CosParams):
         if len(params) != 3:
-            raise ValueError(f"CosParams参数中, 第{i+1}组余弦系数格式错误")
+            raise ValueError(f"CosParams参数中, 第{i + 1}组余弦系数格式错误")
         f, A, phi = params
-        Sig.data += A * np.cos(
-            2 * np.pi * f * Sig.t_axis() + phi
-        )  # 生成任意频率、幅值、初相位的余弦信号
+        Sig.data += A * np.cos(2 * np.pi * f * Sig.t_axis() + phi)  # 生成任意频率、幅值、初相位的余弦信号
     Sig.data += random.randn(len(Sig.t_axis)) * noise  # 加入高斯白噪声
     return Sig
-
 
 
 __all__ = ["Periodic"]

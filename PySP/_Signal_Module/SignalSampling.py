@@ -7,7 +7,6 @@
         1. Resample: 对信号序列 Sig 进行任意时间段的重采样，支持下采样与上采样多种方式。
 """
 
-
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import Optional, np
 from PySP._Signal_Module.core import Signal, t_Axis
@@ -17,7 +16,7 @@ from PySP._Signal_Module.core import Signal, t_Axis
 # --------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------#
 # ----------------------------------------------------------------#
-@InputCheck({"Sig": {}, "type": {"Content": ["spacing", "fft", "extreme"]},"dt":{},"t0":{},"T":{}})
+@InputCheck({"Sig": {}, "type": {"Content": ["spacing", "fft", "extreme"]}, "dt": {}, "t0": {}, "T": {}})
 def Resample(
     Sig: Signal,
     type: str = "spacing",

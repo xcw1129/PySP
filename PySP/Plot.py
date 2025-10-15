@@ -16,4 +16,3 @@
 from ._Plot_Module.core import *
 from ._Plot_Module.LinePlot import *
 from ._Plot_Module.PlotPlugin import *
-

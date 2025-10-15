@@ -8,7 +8,6 @@
         2. Plot: 绘图类, 实现通用绘图框架, 供绘图方法继承并实现具体绘图逻辑.
 """
 
-
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import deepcopy, deque, np, plt, ticker
 
@@ -16,6 +15,7 @@ from PySP._Assist_Module.Dependencies import deepcopy, deque, np, plt, ticker
 # --------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------#
 # ----------------------------------------------------------------#
+
 
 class PlotPlugin:
     """
@@ -47,6 +47,7 @@ class PlotPlugin:
 
 
 # --------------------------------------------------------------------------------------------#
+
 
 class Plot:
     """
@@ -85,7 +86,6 @@ class Plot:
             "isSampled": {},
         }
     )
-
     def __init__(
         self,
         ncols: int = 1,
@@ -106,22 +106,28 @@ class Plot:
         """
         self.figure = None
         self.axes = None
-        self.ncols = ncols# 多图绘制时的子图列数
+        self.ncols = ncols  # 多图绘制时的子图列数
         self.isSampled = isSampled
-        self._kwargs = kwargs# 全局绘图参数，一般初始化后不再修改
-        self.tasks = deque()# 绘图任务队列，存储所有待绘制的任务
+        self._kwargs = kwargs  # 全局绘图参数，一般初始化后不再修改
+        self.tasks = deque()  # 绘图任务队列，存储所有待绘制的任务
 
     @property
     def kwargs(self):
+        """
+        获取全局绘图参数的副本。
+
+        Returns
+        -------
+        dict
+            全局绘图参数的深拷贝，防止外部修改原始参数。
+        """
         return deepcopy(self._kwargs)
 
     @property
     def last_task(self):
         """返回最新添加的绘图任务接口"""
         if not self.tasks:
-            raise RuntimeError(
-                "请先添加一个绘图任务 (例如调用 TimeWaveform)，再访问其参数。"
-            )
+            raise RuntimeError("请先添加一个绘图任务 (例如调用 TimeWaveform)，再访问其参数。")
         return self.tasks[-1]
 
     # --------------------------------------------------------------------------------#
@@ -169,13 +175,9 @@ class Plot:
             ax.set_xticks(xticks)
         else:
             # 设置11个均匀分布的刻度
-            ax.set_xticks(
-                np.linspace(xlim[0], xlim[1], 11, endpoint=True)
-            )
+            ax.set_xticks(np.linspace(xlim[0], xlim[1], 11, endpoint=True))
         # 设置X轴刻度格式
-        sf = ticker.ScalarFormatter(
-            useMathText=True
-        )  # 设置科学计数法显示，指数放到坐标轴右部
+        sf = ticker.ScalarFormatter(useMathText=True)  # 设置科学计数法显示，指数放到坐标轴右部
         sf.set_powerlimits((-3, 3))
         ax.xaxis.set_major_formatter(sf)
 
@@ -285,12 +287,29 @@ class Plot:
 
     # ----------------------------------------------------------------------------------------#
     # 子类绘图任务注册接口函数实现示例
-    def plot(self,Data, **kwargs):
+    def plot(self, Data, **kwargs):
+        """
+        注册一个绘图任务到任务队列。
+
+        Parameters
+        ----------
+        Data : any
+            绘图所需的数据。
+        **kwargs :
+            任务专属的绘图参数，将覆盖全局参数。
+
+        Returns
+        -------
+        Plot
+            返回绘图对象本身，以支持链式调用。
+        """
+
         # ------------------------------------------------------------------------------------#
         # 绘图函数: 通过任务队列传递到绘图引擎
         def _draw_plot(ax, data):
             """在指定ax上根据绘图数据data绘图，通过任务队列传递"""
             pass
+
         # ------------------------------------------------------------------------------------#
         # 绘图个性化设置
         # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
@@ -314,9 +333,7 @@ class Plot:
         {
             "pattern": {"Content": ("plot", "return", "save")},
             "filename": {},
-            "save_format": {
-                "Content": ("png", "jpg", "jpeg", "tiff", "bmp", "pdf", "svg")
-            },
+            "save_format": {"Content": ("png", "jpg", "jpeg", "tiff", "bmp", "pdf", "svg")},
         }
     )
     def show(self, pattern: str = "plot", filename="Plot.png", save_format="png"):
@@ -363,7 +380,7 @@ class Plot:
                 for plugin in task_plugins:
                     plugin._apply(ax, task_data)
             except Exception as e:
-                print(f"绘制第{i+1}个子图时出错: {e}")
+                print(f"绘制第{i + 1}个子图时出错: {e}")
         # 总图调整设置
         self.figure.tight_layout()
         if pattern == "plot":

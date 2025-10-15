@@ -12,7 +12,6 @@
         6. Spectra: 一维频谱类，带有频率采样信息
 """
 
-
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import Optional, deepcopy, np, plt
 
@@ -52,9 +51,7 @@ class Axis:
         返回坐标轴对象的深拷贝
     """
 
-    def __init__(
-        self, N: int, dx: float, x0: float = 0.0, name: str = "", unit: str = ""
-    ):
+    def __init__(self, N: int, dx: float, x0: float = 0.0, name: str = "", unit: str = ""):
         """
         初始化Axis对象
 
@@ -94,29 +91,74 @@ class Axis:
 
     @property
     def data(self) -> np.ndarray:
-        # 坐标轴数据动态生成
-        return (
-            self.__x0__ + np.arange(self.__N__) * self.__dx__
-        )  # x=[x0,x0+dx,x0+2dx,...,x0+(N-1)dx]
+        """
+        返回坐标轴数据数组。
+
+        Returns
+        -------
+        np.ndarray
+            坐标轴数据数组。
+        """
+        return self.__x0__ + np.arange(self.__N__) * self.__dx__  # x=[x0,x0+dx,x0+2dx,...,x0+(N-1)dx]
 
     @property
     def lim(self) -> tuple:
+        """
+        返回坐标轴数据范围 (min, max)。
+
+        Returns
+        -------
+        tuple
+            坐标轴数据范围 (min, max)。
+        """
         return (self.__x0__, self.__x0__ + self.__dx__ * self.__N__)  # (x0, x0+N*dx)
 
     @property
     def L(self):
+        """
+        返回坐标轴分布长度。
+
+        Returns
+        -------
+        float
+            坐标轴分布长度。
+        """
         return self.lim[1] - self.lim[0]  # 坐标轴分布长度
 
     @property
     def label(self) -> str:
+        """
+        返回坐标轴标签 (name/unit)。
+
+        Returns
+        -------
+        str
+            坐标轴标签。
+        """
         return f"{self.name}/{self.unit}"
 
     # --------------------------------------------------------------------------------#
     # 数组特性支持
     def copy(self):
+        """
+        返回信号序列对象的深拷贝。
+
+        Returns
+        -------
+        Series
+            信号序列对象的深拷贝。
+        """
         return deepcopy(self)
 
     def __call__(self):
+        """
+        直接返回坐标轴数据。
+
+        Returns
+        -------
+        np.ndarray
+            坐标轴数据。
+        """
         return self.data  # Axis()返回.data属性，方便直接调用
 
     def __eq__(self, other) -> bool:  # 坐标轴数据类型信号意义上的相等比较
@@ -275,49 +317,33 @@ class Series:
     def __gt__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
-                raise ValueError(
-                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
-                )
+                raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
         return self.data > (other.data if isinstance(other, type(self)) else other)
 
     def __lt__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
-                raise ValueError(
-                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
-                )
+                raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
         return self.data < (other.data if isinstance(other, type(self)) else other)
 
     def __ge__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
-                raise ValueError(
-                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
-                )
+                raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
         return self.data >= (other.data if isinstance(other, type(self)) else other)
 
     def __le__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
-                raise ValueError(
-                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较"
-                )
+                raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
         return self.data <= (other.data if isinstance(other, type(self)) else other)
 
     # --------------------------------------------------------------------------------#
@@ -325,13 +351,9 @@ class Series:
     def __add__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
-                raise ValueError(
-                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法运算"
-                )
+                raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法运算")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
             data=self.data + (other.data if isinstance(other, type(self)) else other),
@@ -342,13 +364,9 @@ class Series:
     def __sub__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
-                raise ValueError(
-                    f"{type(self).__name__}对象的坐标轴参数不一致, 无法运算"
-                )
+                raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法运算")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
             data=self.data - (other.data if isinstance(other, type(self)) else other),
@@ -367,9 +385,7 @@ class Series:
             if self.__axis__ != other.__axis__:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
             data=self.data * (other.data if isinstance(other, type(self)) else other),
@@ -382,9 +398,7 @@ class Series:
             if self.__axis__ != other.__axis__:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
-            raise TypeError(
-                f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作"
-            )
+            raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
             data=self.data / (other.data if isinstance(other, type(self)) else other),
@@ -396,12 +410,8 @@ class Series:
         return self.__mul__(other)
 
     def __rtruediv__(self, other):
-        if not isinstance(
-            other, (int, float, complex)
-        ):  # array和Series对象默认调用other.__truediv__方法
-            raise TypeError(
-                f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作"
-            )
+        if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__truediv__方法
+            raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
             data=other / self.data,
@@ -412,20 +422,14 @@ class Series:
     def __pow__(self, other):
         return type(self)(
             axis=self.__axis__,
-            data=np.power(
-                self.data, other.data if isinstance(other, type(self)) else other
-            ),
+            data=np.power(self.data, other.data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
         )
 
     def __rpow__(self, other):
-        if not isinstance(
-            other, (int, float, complex)
-        ):  # array和Series对象默认调用other.__pow__方法
-            raise TypeError(
-                f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作"
-            )
+        if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__pow__方法
+            raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
             data=np.power(other, self.data),
@@ -455,9 +459,7 @@ class Series:
         # 保持返回类型一致
         def package(result):
             if isinstance(result, np.ndarray) and result.shape == self.data.shape:
-                return type(self)(
-                    axis=self.__axis__, data=result, name=self.name, unit=self.unit
-                )
+                return type(self)(axis=self.__axis__, data=result, name=self.name, unit=self.unit)
             else:
                 return result
 
@@ -468,20 +470,38 @@ class Series:
             return package(result)
 
     def copy(self):
+        """
+        返回信号序列对象的深拷贝。
+
+        Returns
+        -------
+        Series
+            信号序列对象的深拷贝。
+        """
         return deepcopy(self)
 
     def plot(self, **kwargs):
+        """
+        绘制信号曲线。
+
+        Parameters
+        ----------
+        **kwargs : dict, optional
+            传递给绘图函数的其他关键字参数。
+
+        Returns
+        -------
+        tuple
+            (fig, ax) matplotlib图形和坐标轴对象。
+        """
         from PySP.Plot import LinePlot
 
         plot_kwargs = {"ylabel": f"{self.name}/{self.unit}"}
         plot_kwargs.update(kwargs)
-        fig, ax = (
-            LinePlot(**plot_kwargs)
-            .spectrum(self.__axis__, self.data)
-            .show(pattern="return")
-        )
+        fig, ax = LinePlot(**plot_kwargs).spectrum(self.__axis__, self.data).show(pattern="return")
         fig.show()
         return fig, ax
+
 
 class t_Axis(Axis):
     """
@@ -538,9 +558,7 @@ class t_Axis(Axis):
             起始时间, 默认: 0.0
         """
         # 输入参数检查
-        if (not [N, fs, dt, T].count(None) == 2) or (
-            fs is not None and dt is not None
-        ):
+        if (not [N, fs, dt, T].count(None) == 2) or (fs is not None and dt is not None):
             raise ValueError("采样参数输入错误")
         # ----------------------------------------------------------------#
         # 采样参数初始化, fs为核心参数
@@ -570,10 +588,26 @@ class t_Axis(Axis):
     # t_Axis特有属性
     @property
     def dt(self):
+        """
+        返回采样时间间隔。
+
+        Returns
+        -------
+        float
+            采样时间间隔。
+        """
         return self.__dx__  # 采样时间间隔
 
     @property
     def T(self):
+        """
+        返回采样时长。
+
+        Returns
+        -------
+        float
+            采样时长。
+        """
         return self.L  # 采样时长
 
 
@@ -626,11 +660,28 @@ class f_Axis(Axis):
     # f_Axis特有属性
     @property
     def F(self):
+        """
+        返回频率分布宽度。
+
+        Returns
+        -------
+        float
+            频率分布宽度。
+        """
         return self.L  # 频率分布宽度
 
     @property
     def T(self):
+        """
+        返回等效时间窗长度。
+
+        Returns
+        -------
+        float
+            等效时间窗长度（1/df）。
+        """
         return 1 / self.__dx__  # 等效时间窗长度
+
 
 class Signal(Series):
     """
@@ -695,18 +746,30 @@ class Signal(Series):
 
     @property
     def f_axis(self) -> f_Axis:
-        """
-        频率坐标轴
-        """
+        """频率坐标轴"""
         return f_Axis(df=1 / self.__axis__.L, N=self.__axis__.__N__, f0=0.0)
 
     # --------------------------------------------------------------------------------#
     # 信号类数据典型分析处理方法
     def plot(self, **kwargs):
+        """
+        绘制时域波形。
+
+        Parameters
+        ----------
+        **kwargs : dict, optional
+            传递给绘图函数的其他关键字参数。
+
+        Returns
+        -------
+        None
+        """
         from PySP.Plot import TimeWaveformFunc
+
         fig, ax = TimeWaveformFunc(self, **kwargs)
         try:
             from IPython import display
+
             display.display(fig)
         except Exception:
             plt.show()
@@ -804,10 +867,24 @@ class Spectra(Series):
         )
 
     def plot(self, **kwargs):
+        """
+        绘制频谱曲线。
+
+        Parameters
+        ----------
+        **kwargs : dict, optional
+            传递给绘图函数的其他关键字参数。
+
+        Returns
+        -------
+        None
+        """
         from PySP.Plot import FreqSpectrumFunc
+
         fig, ax = FreqSpectrumFunc(self, **kwargs)
         try:
             from IPython import display
+
             display.display(fig)
         except Exception:
             plt.show()
