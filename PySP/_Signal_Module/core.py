@@ -102,7 +102,7 @@ class Axis:
         return (self._x0, self._x0 + self._dx * self.N)  # (x0, x0+N*dx)
 
     @property
-    def L(self):
+    def L(self) -> float:
         """
         返回坐标轴分布长度。
 
@@ -127,7 +127,7 @@ class Axis:
 
     # --------------------------------------------------------------------------------#
     # 数组特性支持
-    def copy(self):
+    def copy(self) -> "Axis":
         """
         返回信号序列对象的深拷贝。
 
@@ -273,7 +273,7 @@ class Series:
     @property
     def data(self) -> np.ndarray:
         """序列数据array数组"""
-        return self._data
+        return self._data.copy()
 
     # --------------------------------------------------------------------------------#
     # Python内置函数兼容
@@ -289,6 +289,25 @@ class Series:
     # --------------------------------------------------------------------------------#
     # 支持数组切片索引
     def __getitem__(self, index):
+        # 标量索引直接返回 array 元素
+        if isinstance(index, (int, np.integer)):
+            return self._data[index]
+        # 仅当为标准slice且步长为正整数时，返回Series
+        if isinstance(index, slice):
+            start, stop, step = index.indices(len(self._data))
+            # 判断是否为均匀切片
+            if step > 0:
+                # 均匀切片，返回Series
+                new_data = self._data[index]
+                new_axis = self.__axis__
+                new_axis.N = len(range(start, stop, step))
+                new_axis._dx = self.__axis__._dx * step
+                new_axis._x0 = self.__axis__._x0 + start * self.__axis__._dx
+                return type(self)(axis=new_axis, data=new_data, name=self.name, unit=self.unit, label=self.label)
+            else:
+                # 负步长或0步长，直接返回array
+                return self._data[index]
+        # 其它情况（如花式索引、布尔索引等）直接返回array
         return self._data[index]
 
     def __setitem__(self, index, value):
@@ -461,7 +480,7 @@ class Series:
 
     # --------------------------------------------------------------------------------#
     # Series序列数据典型方法
-    def copy(self):
+    def copy(self) -> "Series":
         """
         返回信号序列对象的深拷贝。
 
@@ -472,7 +491,7 @@ class Series:
         """
         return deepcopy(self)
 
-    def plot(self, **kwargs):
+    def plot(self, **kwargs) -> tuple:
         """
         绘制信号曲线。
 
@@ -486,13 +505,7 @@ class Series:
         tuple
             (fig, ax) matplotlib图形和坐标轴对象。
         """
-        from PySP.Plot import LinePlot
-
-        plot_kwargs = {"ylabel": f"{self.name}/{self.unit}"}
-        plot_kwargs.update(kwargs)
-        fig, ax = LinePlot(**plot_kwargs).spectrum(self.__axis__, self._data).show(pattern="return")
-        fig.show()
-        return fig, ax
+        return None  # 待实现
 
 
 class t_Axis(Axis):
@@ -566,22 +579,24 @@ class t_Axis(Axis):
     # t_Axis公开属性映射到基类核心参数，支持读写
     @property
     def fs(self) -> float:
-        """采样频率 (Hz)"""
+        """采样频率 (Hz), 修改同步至 dt"""
         return 1.0 / self._dx
 
-    @InputCheck({"fs": {"OpenLow": 0.0}})
     @fs.setter
     def fs(self, value: float):
+        if value <= 0:
+            raise ValueError("fs 必须大于 0")
         self._dx = 1.0 / float(value)
 
     @property
     def dt(self) -> float:
-        """采样间隔 (s)"""
+        """采样间隔 (s), 修改同步至 fs"""
         return self._dx
 
-    @InputCheck({"dt": {"OpenLow": 0.0}})
     @dt.setter
     def dt(self, value: float):
+        if value <= 0:
+            raise ValueError("dt 必须大于 0")
         self._dx = float(value)
 
     @property
@@ -589,19 +604,20 @@ class t_Axis(Axis):
         """起始时间 (s)"""
         return self._x0
 
-    @InputCheck({"t0": {"CloseLow": 0.0}})
     @t0.setter
     def t0(self, value: float):
+        # t0 可为负数或零，无需严格检查
         self._x0 = float(value)
 
     @property
     def T(self) -> float:
-        """采样时长 (s), 修改以调整N"""
+        """采样时长 (s), 修改同步至 N"""
         return self.N * self.dt
 
-    @InputCheck({"T": {"OpenLow": 0.0}})
     @T.setter
     def T(self, value: float):
+        if value <= 0:
+            raise ValueError("T 必须大于 0")
         # 固定 dt，调整 N
         self.N = max(1, int(value / self.dt))
 
@@ -647,8 +663,9 @@ class f_Axis(Axis):
         return self._dx
 
     @df.setter
-    @InputCheck({"df": {"OpenLow": 0.0}})
     def df(self, value: float):
+        if value <= 0:
+            raise ValueError("df 必须大于 0")
         self._dx = float(value)
 
     @property
@@ -656,30 +673,32 @@ class f_Axis(Axis):
         """频率起始点 (Hz)"""
         return self._x0
 
-    @InputCheck({"f0": {"CloseLow": 0.0}})
     @f0.setter
     def f0(self, value: float):
+        # f0 可为负数或零，无需严格检查
         self._x0 = float(value)
 
     @property
     def F(self) -> float:
-        """频率分布宽度 (Hz)"""
+        """频率分布宽度 (Hz), 修改同步至 N"""
         return self.N * self._dx  # 频率分布宽度
 
-    @InputCheck({"F": {"OpenLow": 0.0}})
     @F.setter
     def F(self, value: float):
+        if value <= 0:
+            raise ValueError("F 必须大于 0")
         # 固定 df，调整 N
-        self.N = int(value / self._dx)
+        self.N = max(1, int(value / self._dx))
 
     @property
     def T(self) -> float:
-        """等效时间窗长度 (s), 修改以调整 df"""
+        """等效时间窗长度 (s), 修改同步至 df"""
         return 1.0 / self._dx
 
-    @InputCheck({"T": {"OpenLow": 0.0}})
     @T.setter
     def T(self, value: float):
+        if value <= 0:
+            raise ValueError("T 必须大于 0")
         # 固定 N，调整 df
         self._dx = 1.0 / float(value)
 
@@ -750,7 +769,7 @@ class Signal(Series):
 
     # --------------------------------------------------------------------------------#
     # 信号类数据典型分析处理方法
-    def plot(self, **kwargs):
+    def plot(self, **kwargs) -> tuple:
         """
         绘制时域波形。
 
@@ -835,7 +854,7 @@ class Spectra(Series):
 
     # --------------------------------------------------------------------------------#
     # 频谱类数据典型分析处理方法
-    def halfCut(self):
+    def halfCut(self) -> "Spectra":
         """
         返回单边谱
 
@@ -863,7 +882,7 @@ class Spectra(Series):
             label=self.label,
         )
 
-    def plot(self, **kwargs):
+    def plot(self, **kwargs) -> None:
         """
         绘制频谱曲线。
 

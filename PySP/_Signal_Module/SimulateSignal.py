@@ -55,8 +55,8 @@ def Periodic(fs: float, T: float, CosParams: tuple, noise: float = 0.0) -> Signa
         if len(params) != 3:
             raise ValueError(f"CosParams参数中, 第{i + 1}组余弦系数格式错误")
         f, A, phi = params
-        Sig.data += A * np.cos(2 * np.pi * f * Sig.t_axis() + phi)  # 生成任意频率、幅值、初相位的余弦信号
-    Sig.data += random.randn(len(Sig.t_axis)) * noise  # 加入高斯白噪声
+        Sig += A * np.cos(2 * np.pi * f * Sig.t_axis() + phi)  # 生成任意频率、幅值、初相位的余弦信号
+    Sig += random.randn(len(Sig)) * noise  # 加入高斯白噪声
     return Sig
 
 
