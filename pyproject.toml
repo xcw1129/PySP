@@ -5,6 +5,7 @@ exclude = [
   "_Assist_Module",
   "__pycache__",
   "_plot_init_.py",
+  "*.ipynb",
 ]
 
 [tool.ruff.lint]
