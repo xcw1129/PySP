@@ -112,7 +112,7 @@ class Plot:
         self.tasks = deque()  # 绘图任务队列，存储所有待绘制的任务
 
     @property
-    def kwargs(self):
+    def kwargs(self) -> dict:
         """
         获取全局绘图参数的副本。
 
@@ -124,7 +124,7 @@ class Plot:
         return deepcopy(self._kwargs)
 
     @property
-    def last_task(self):
+    def last_task(self) -> dict:
         """返回最新添加的绘图任务接口"""
         if not self.tasks:
             raise RuntimeError("请先添加一个绘图任务 (例如调用 TimeWaveform)，再访问其参数。")
@@ -287,7 +287,7 @@ class Plot:
 
     # ----------------------------------------------------------------------------------------#
     # 子类绘图任务注册接口函数实现示例
-    def plot(self, Data, **kwargs):
+    def plot(self, Data, **kwargs) -> "Plot":
         """
         注册一个绘图任务到任务队列。
 
@@ -336,7 +336,7 @@ class Plot:
             "save_format": {"Content": ("png", "jpg", "jpeg", "tiff", "bmp", "pdf", "svg")},
         }
     )
-    def show(self, pattern: str = "plot", filename="Plot.png", save_format="png"):
+    def show(self, pattern: str = "plot", filename="Plot.png", save_format="png") -> tuple:
         """
         执行所有已注册的绘图任务并显示/返回/保存最终图形
 

@@ -36,7 +36,7 @@ class LinePlot(Plot):
     """
 
     @InputCheck({"Sig": {}})
-    def timeWaveform(self, Sig: Union[Signal, list], **kwargs):
+    def timeWaveform(self, Sig: Union[Signal, list], **kwargs) -> "LinePlot":
         """
         注册一个时域波形图的绘制任务
 
@@ -99,7 +99,7 @@ class LinePlot(Plot):
         return self
 
     @InputCheck({"Spc": {}})
-    def spectrum(self, Spc: Spectra, **kwargs):
+    def spectrum(self, Spc: Spectra, **kwargs) -> "LinePlot":
         """
         注册一个谱图的绘制任务
 
@@ -152,7 +152,7 @@ class LinePlot(Plot):
 
 # --------------------------------------------------------------------------------------------#
 # LinePlot类绘图方法函数形式调用接口
-def TimeWaveformFunc(Sig: Signal, **kwargs):
+def TimeWaveformFunc(Sig: Signal, **kwargs) -> tuple:
     """
     单信号时域波形图绘制函数
 
@@ -175,7 +175,7 @@ def TimeWaveformFunc(Sig: Signal, **kwargs):
     return fig, ax
 
 
-def FreqSpectrumFunc(Spc: Spectra, **kwargs):
+def FreqSpectrumFunc(Spc: Spectra, **kwargs) -> tuple:
     """
     单频谱绘制函数
 
