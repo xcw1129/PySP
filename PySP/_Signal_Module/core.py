@@ -278,8 +278,6 @@ class Series:
     @property
     def __axis__(self):  # 使后续与axis相关操作与axis具体子类实现解耦
         axis_copy = self._axis.copy()
-        axis_copy.N = len(self.data)  # 覆写N以确保与data长度一致，直接修改.axis.N属性无效
-        self._axis.N = len(self.data)
         return axis_copy
 
     # --------------------------------------------------------------------------------#
@@ -359,6 +357,7 @@ class Series:
             data=self.data + (other.data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
+            label=self.label,
         )
 
     def __sub__(self, other):
@@ -372,6 +371,7 @@ class Series:
             data=self.data - (other.data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
+            label=self.label,
         )
 
     def __radd__(self, other):
@@ -391,6 +391,7 @@ class Series:
             data=self.data * (other.data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
+            label=self.label,
         )
 
     def __truediv__(self, other):
@@ -404,6 +405,7 @@ class Series:
             data=self.data / (other.data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
+            label=self.label,
         )
 
     def __rmul__(self, other):
@@ -412,12 +414,7 @@ class Series:
     def __rtruediv__(self, other):
         if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__truediv__方法
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
-        return type(self)(
-            axis=self.__axis__,
-            data=other / self.data,
-            name=self.name,
-            unit=self.unit,
-        )
+        return type(self)(axis=self.__axis__, data=other / self.data, name=self.name, unit=self.unit, label=self.label)
 
     def __pow__(self, other):
         return type(self)(
@@ -425,16 +422,14 @@ class Series:
             data=np.power(self.data, other.data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
+            label=self.label,
         )
 
     def __rpow__(self, other):
         if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__pow__方法
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
-            axis=self.__axis__,
-            data=np.power(other, self.data),
-            name=self.name,
-            unit=self.unit,
+            axis=self.__axis__, data=np.power(other, self.data), name=self.name, unit=self.unit, label=self.label
         )
 
     # --------------------------------------------------------------------------------#
@@ -740,14 +735,12 @@ class Signal(Series):
     @property
     def __axis__(self):
         t_axis_copy = self.t_axis.copy()
-        t_axis_copy.N = len(self.data)
-        self.t_axis.N = len(self.data)
         return t_axis_copy
 
     @property
     def f_axis(self) -> f_Axis:
         """频率坐标轴"""
-        return f_Axis(df=1 / self.__axis__.L, N=self.__axis__.__N__, f0=0.0)
+        return f_Axis(df=1 / self.t_axis.T, N=self.t_axis.N)
 
     # --------------------------------------------------------------------------------#
     # 信号类数据典型分析处理方法
@@ -832,8 +825,6 @@ class Spectra(Series):
     @property
     def __axis__(self):
         f_axis_copy = self.f_axis.copy()
-        f_axis_copy.N = len(self.data)
-        self.f_axis.N = len(self.data)
         return f_axis_copy
 
     # --------------------------------------------------------------------------------#
@@ -857,7 +848,7 @@ class Spectra(Series):
             half_data = self.data[:half_N]
             half_data[1:] *= 2  # 除直流外乘2
 
-        half_f_axis = f_Axis(df=self.__axis__.__dx__, N=half_N, f0=self.__axis__.__x0__)
+        half_f_axis = f_Axis(df=self.f_axis.df, N=half_N)
         return Spectra(
             axis=half_f_axis,
             data=half_data,
