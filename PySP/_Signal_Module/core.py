@@ -68,7 +68,7 @@ class Axis:
         unit : str, 可选
             坐标轴数据单位
         """
-        # ._a属性初始化后一般不变并在子类中重写.a属性，可通过._a与.a是否相等判断属性是否被修改
+        # Axis类核心维护参数
         self.N = N
         self._dx = dx
         self._x0 = x0
@@ -76,19 +76,7 @@ class Axis:
         self.unit = unit  # 推荐使用标准单位或领域内通用单位
 
     # --------------------------------------------------------------------------------#
-    # 坐标轴属性动态属性，供Axis自带方法调用，实现与具体子类解耦
-    @property
-    def __N__(self):
-        return self.N
-
-    @property
-    def __dx__(self):
-        return self._dx
-
-    @property
-    def __x0__(self):
-        return self._x0
-
+    # Axis类动态可读属性
     @property
     def data(self) -> np.ndarray:
         """
@@ -99,7 +87,7 @@ class Axis:
         np.ndarray
             坐标轴数据数组。
         """
-        return self.__x0__ + np.arange(self.__N__) * self.__dx__  # x=[x0,x0+dx,x0+2dx,...,x0+(N-1)dx]
+        return self._x0 + np.arange(self.N) * self._dx  # x=[x0,x0+dx,x0+2dx,...,x0+(N-1)dx]
 
     @property
     def lim(self) -> tuple:
@@ -111,7 +99,7 @@ class Axis:
         tuple
             坐标轴数据范围 (min, max)。
         """
-        return (self.__x0__, self.__x0__ + self.__dx__ * self.__N__)  # (x0, x0+N*dx)
+        return (self._x0, self._x0 + self._dx * self.N)  # (x0, x0+N*dx)
 
     @property
     def L(self):
@@ -164,9 +152,9 @@ class Axis:
     def __eq__(self, other) -> bool:  # 坐标轴数据类型信号意义上的相等比较
         if isinstance(other, type(self)):
             if (
-                self.__N__ == other.__N__
-                and self.__dx__ == other.__dx__
-                and self.__x0__ == other.__x0__
+                self.N == other.N
+                and self._dx == other._dx
+                and self._x0 == other._x0
                 and self.unit == other.unit  # 额外检查单位是否一致
             ):
                 return True
@@ -177,7 +165,7 @@ class Axis:
     # --------------------------------------------------------------------------------#
     # Python内置函数兼容
     def __len__(self):
-        return self.__N__
+        return self.N
 
     def __str__(self):
         return f"{type(self).__name__}({self.name}={self.data}{self.unit})"
@@ -262,53 +250,60 @@ class Series:
             信号标签
         """
         if data is not None:
-            self.data = np.asarray(deepcopy(data))
+            self._data = np.asarray(deepcopy(data))
             if len(data) != len(axis):
                 raise ValueError(f"数据长度={len(data)}与坐标轴长度={len(axis)}不匹配")
         else:
-            self.data = np.zeros(len(axis), dtype=float)
+            self._data = np.zeros(len(axis), dtype=float)
 
-        self._axis = axis.copy()  # 子类中重写.axis属性，且仅在需要修改坐标轴参数时调用
+        self.axis = axis.copy()  # 子类中重写.axis属性
         self.name = name
         self.unit = unit
         self.label = label
 
     # --------------------------------------------------------------------------------#
-    # 序列数据动态属性，供类自带方法和库内部函数调用
+    # 数轴动态属性，供类自带方法调用
     @property
     def __axis__(self):  # 使后续与axis相关操作与axis具体子类实现解耦
-        axis_copy = self._axis.copy()
+        axis_copy = self.axis.copy()
         return axis_copy
+
+    # --------------------------------------------------------------------------------#
+    # 序列数据动态属性，暴露给用户调用，不支持直接修改防止axis与data不匹配
+    @property
+    def data(self) -> np.ndarray:
+        """序列数据array数组"""
+        return self._data
 
     # --------------------------------------------------------------------------------#
     # Python内置函数兼容
     def __str__(self) -> str:
-        return f"{type(self).__name__}[{self.label}]({self.name}={self.data}{self.unit}, {self.__axis__})"
+        return f"{type(self).__name__}[{self.label}]({self.name}={self._data}{self.unit}, {self.__axis__})"
 
     def __repr__(self) -> str:
         return self.__str__()
 
     def __len__(self) -> int:
-        return len(self.data)
+        return len(self._data)
 
     # --------------------------------------------------------------------------------#
     # 支持数组切片索引
     def __getitem__(self, index):
-        return self.data[index]
+        return self._data[index]
 
     def __setitem__(self, index, value):
-        self.data[index] = value
+        self._data[index] = value
 
     # --------------------------------------------------------------------------------#
     # 支持比较操作
     def __eq__(self, other) -> bool:
         if isinstance(other, type(self)):
             if self.__axis__ == other.__axis__:
-                return np.array_equal(self.data, other.data)
+                return np.array_equal(self._data, other._data)
         elif isinstance(other, np.ndarray):
-            return np.array_equal(self.data, other)
+            return np.array_equal(self._data, other)
         elif isinstance(other, (int, float, complex)):
-            return np.all(self.data == other)
+            return np.all(self._data == other)
         else:
             return False
 
@@ -318,7 +313,7 @@ class Series:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self.data > (other.data if isinstance(other, type(self)) else other)
+        return self._data > (other._data if isinstance(other, type(self)) else other)
 
     def __lt__(self, other):
         if isinstance(other, type(self)):
@@ -326,7 +321,7 @@ class Series:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self.data < (other.data if isinstance(other, type(self)) else other)
+        return self._data < (other._data if isinstance(other, type(self)) else other)
 
     def __ge__(self, other):
         if isinstance(other, type(self)):
@@ -334,7 +329,7 @@ class Series:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self.data >= (other.data if isinstance(other, type(self)) else other)
+        return self._data >= (other._data if isinstance(other, type(self)) else other)
 
     def __le__(self, other):
         if isinstance(other, type(self)):
@@ -342,7 +337,7 @@ class Series:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
         if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self.data <= (other.data if isinstance(other, type(self)) else other)
+        return self._data <= (other._data if isinstance(other, type(self)) else other)
 
     # --------------------------------------------------------------------------------#
     # 支持算术运算
@@ -354,7 +349,7 @@ class Series:
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self.data + (other.data if isinstance(other, type(self)) else other),
+            data=self._data + (other._data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -368,7 +363,7 @@ class Series:
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self.data - (other.data if isinstance(other, type(self)) else other),
+            data=self._data - (other._data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -388,7 +383,7 @@ class Series:
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self.data * (other.data if isinstance(other, type(self)) else other),
+            data=self._data * (other._data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -402,7 +397,7 @@ class Series:
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self.data / (other.data if isinstance(other, type(self)) else other),
+            data=self._data / (other._data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -414,12 +409,12 @@ class Series:
     def __rtruediv__(self, other):
         if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__truediv__方法
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
-        return type(self)(axis=self.__axis__, data=other / self.data, name=self.name, unit=self.unit, label=self.label)
+        return type(self)(axis=self.__axis__, data=other / self._data, name=self.name, unit=self.unit, label=self.label)
 
     def __pow__(self, other):
         return type(self)(
             axis=self.__axis__,
-            data=np.power(self.data, other.data if isinstance(other, type(self)) else other),
+            data=np.power(self._data, other._data if isinstance(other, type(self)) else other),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -429,31 +424,31 @@ class Series:
         if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__pow__方法
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
-            axis=self.__axis__, data=np.power(other, self.data), name=self.name, unit=self.unit, label=self.label
+            axis=self.__axis__, data=np.power(other, self._data), name=self.name, unit=self.unit, label=self.label
         )
 
     # --------------------------------------------------------------------------------#
     # numpy兼容
     def __array__(self, dtype=None, copy=None) -> np.ndarray:
-        data_to_return = self.data
+        data_to_return = self._data
         if dtype is not None:
             data_to_return = data_to_return.astype(dtype)
         else:
             if copy is True:
                 data_to_return = data_to_return.copy()
             else:
-                data_to_return = self.data  # 直接返回内部数组
+                data_to_return = self._data  # 直接返回内部数组
         return data_to_return
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         # 将np函数输入中的Signal对象替换为其data-np.ndarray
-        args = [x.data if isinstance(x, type(self)) else x for x in inputs]
+        args = [x._data if isinstance(x, type(self)) else x for x in inputs]
         # 执行NumPy的ufunc操作
         result = getattr(ufunc, method)(*args, **kwargs)
 
         # 保持返回类型一致
         def package(result):
-            if isinstance(result, np.ndarray) and result.shape == self.data.shape:
+            if isinstance(result, np.ndarray) and result.shape == self._data.shape:
                 return type(self)(axis=self.__axis__, data=result, name=self.name, unit=self.unit)
             else:
                 return result
@@ -464,6 +459,8 @@ class Series:
         else:
             return package(result)
 
+    # --------------------------------------------------------------------------------#
+    # Series序列数据典型方法
     def copy(self):
         """
         返回信号序列对象的深拷贝。
@@ -493,7 +490,7 @@ class Series:
 
         plot_kwargs = {"ylabel": f"{self.name}/{self.unit}"}
         plot_kwargs.update(kwargs)
-        fig, ax = LinePlot(**plot_kwargs).spectrum(self.__axis__, self.data).show(pattern="return")
+        fig, ax = LinePlot(**plot_kwargs).spectrum(self.__axis__, self._data).show(pattern="return")
         fig.show()
         return fig, ax
 
@@ -556,54 +553,57 @@ class t_Axis(Axis):
         if (not [N, fs, dt, T].count(None) == 2) or (fs is not None and dt is not None):
             raise ValueError("采样参数输入错误")
         # ----------------------------------------------------------------#
-        # 采样参数初始化, fs为核心参数
-        if fs is not None:
-            pass
-        elif dt is not None:
-            fs = 1 / dt
-        else:  # 若fs和dt均未指定, 则T和N必定均已指定
-            fs = N / T
+        # 采样参数初始化，统一映射到基类核心参数 (N, _dx, _x0)
+        if fs is None:
+            if dt is not None:
+                fs = 1.0 / dt
+            else:  # 若fs和dt均未指定, 则T和N必定均已指定
+                fs = N / T
         N = N if N is not None else int(T * fs)
-        self.fs = fs  # .fs采样频率为核心参数
-        self.t0 = t0
-        # ----------------------------------------------------------------#
-        super().__init__(N=N, dx=1 / fs, x0=t0, unit="s", name="时间")
+        super().__init__(N=N, dx=1.0 / fs, x0=t0, unit="s", name="时间")
 
     # --------------------------------------------------------------------------------#
-    # Axis子类动态属性覆写
+    # t_Axis公开属性映射到基类核心参数，支持读写
     @property
-    def __dx__(self):
-        return 1 / self.fs
+    def fs(self) -> float:
+        """采样频率 (Hz)"""
+        return 1.0 / self._dx
 
-    @property
-    def __x0__(self):
-        return self.t0
-
-    # --------------------------------------------------------------------------------#
-    # t_Axis特有属性
-    @property
-    def dt(self):
-        """
-        返回采样时间间隔。
-
-        Returns
-        -------
-        float
-            采样时间间隔。
-        """
-        return self.__dx__  # 采样时间间隔
+    @InputCheck({"fs": {"OpenLow": 0.0}})
+    @fs.setter
+    def fs(self, value: float):
+        self._dx = 1.0 / float(value)
 
     @property
-    def T(self):
-        """
-        返回采样时长。
+    def dt(self) -> float:
+        """采样间隔 (s)"""
+        return self._dx
 
-        Returns
-        -------
-        float
-            采样时长。
-        """
-        return self.L  # 采样时长
+    @InputCheck({"dt": {"OpenLow": 0.0}})
+    @dt.setter
+    def dt(self, value: float):
+        self._dx = float(value)
+
+    @property
+    def t0(self) -> float:
+        """起始时间 (s)"""
+        return self._x0
+
+    @InputCheck({"t0": {"CloseLow": 0.0}})
+    @t0.setter
+    def t0(self, value: float):
+        self._x0 = float(value)
+
+    @property
+    def T(self) -> float:
+        """采样时长 (s), 修改以调整N"""
+        return self.N * self.dt
+
+    @InputCheck({"T": {"OpenLow": 0.0}})
+    @T.setter
+    def T(self, value: float):
+        # 固定 dt，调整 N
+        self.N = max(1, int(value / self.dt))
 
 
 class f_Axis(Axis):
@@ -637,45 +637,51 @@ class f_Axis(Axis):
         f0 : float, 可选
             频率起始点, 默认: 0.0
         """
-        self.df = df  # .df频率分辨率为核心参数
-        self.f0 = f0
         super().__init__(dx=df, N=N, x0=f0, unit="Hz", name="频率")
 
     # --------------------------------------------------------------------------------#
-    # Axis子类动态属性覆写
+    # f_Axis公开属性映射到基类核心参数，支持读写
     @property
-    def __dx__(self):
-        return self.df
+    def df(self) -> float:
+        """频率分辨率 (Hz)"""
+        return self._dx
 
-    @property
-    def __x0__(self):
-        return self.f0
-
-    # --------------------------------------------------------------------------------#
-    # f_Axis特有属性
-    @property
-    def F(self):
-        """
-        返回频率分布宽度。
-
-        Returns
-        -------
-        float
-            频率分布宽度。
-        """
-        return self.L  # 频率分布宽度
+    @df.setter
+    @InputCheck({"df": {"OpenLow": 0.0}})
+    def df(self, value: float):
+        self._dx = float(value)
 
     @property
-    def T(self):
-        """
-        返回等效时间窗长度。
+    def f0(self) -> float:
+        """频率起始点 (Hz)"""
+        return self._x0
 
-        Returns
-        -------
-        float
-            等效时间窗长度（1/df）。
-        """
-        return 1 / self.__dx__  # 等效时间窗长度
+    @InputCheck({"f0": {"CloseLow": 0.0}})
+    @f0.setter
+    def f0(self, value: float):
+        self._x0 = float(value)
+
+    @property
+    def F(self) -> float:
+        """频率分布宽度 (Hz)"""
+        return self.N * self._dx  # 频率分布宽度
+
+    @InputCheck({"F": {"OpenLow": 0.0}})
+    @F.setter
+    def F(self, value: float):
+        # 固定 df，调整 N
+        self.N = int(value / self._dx)
+
+    @property
+    def T(self) -> float:
+        """等效时间窗长度 (s), 修改以调整 df"""
+        return 1.0 / self._dx
+
+    @InputCheck({"T": {"OpenLow": 0.0}})
+    @T.setter
+    def T(self, value: float):
+        # 固定 N，调整 df
+        self._dx = 1.0 / float(value)
 
 
 class Signal(Series):
@@ -838,14 +844,14 @@ class Spectra(Series):
         Spectra
             单边频谱对象
         """
-        N = len(self.data)
+        N = len(self._data)
         if N % 2 == 0:  # 偶数点
             half_N = N // 2 + 1
-            half_data = self.data[:half_N]
+            half_data = self._data[:half_N]
             half_data[1:-1] *= 2  # 除直流和奈奎斯特频率外乘2
         else:  # 奇数点
             half_N = (N + 1) // 2
-            half_data = self.data[:half_N]
+            half_data = self._data[:half_N]
             half_data[1:] *= 2  # 除直流外乘2
 
         half_f_axis = f_Axis(df=self.f_axis.df, N=half_N)
