@@ -76,7 +76,7 @@ class LinePlot(Plot):
         # 时域波形绘制个性化设置
         if not isinstance(Sig, list):
             Sig = [Sig]
-        # 绘图任务kwargs优先级: 全局kwargs < 方法默认设置 < 用户传入kwargs
+        # 绘图任务kwargs优先级: 用户传入kwargs > 全局kwargs > 方法默认设置
         task_kwargs = {
             "xlabel": Sig[0].t_axis.label,
             "xlim": Sig[0].t_axis.lim,
@@ -122,7 +122,7 @@ class LinePlot(Plot):
 
         # ------------------------------------------------------------------------------------#
         # 频谱绘制个性化设置
-        # 绘图任务kwargs优先级: 全局kwargs < 方法默认设置 < 用户传入kwargs
+        # 绘图任务kwargs优先级: 用户传入kwargs > 全局kwargs > 方法默认设置
         task_kwargs = {
             "xlabel": Spc.f_axis.label,
             "xlim": Spc.f_axis.lim,
@@ -192,7 +192,7 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs) -> tuple:
         LinePlot()
         .spectrum(Spc, **plot_kwargs)
         .add_plugin_to_task(
-            PeakfinderPlugin(distance=max(len(Spc) // 100, 1), height=0.5 * np.max(Spc), prominence=0.1)
+            PeakfinderPlugin(distance=max(len(Spc) // 100, 1), height=0.05 * np.max(Spc), prominence=0.1)
         )
         .show(pattern="return")
     )
