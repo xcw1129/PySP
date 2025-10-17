@@ -1,8 +1,8 @@
 {
 	"folders": [
 		{
-			"name": "PySP: test",
-			"path": "../PySP.worktrees/test"
+			"name": "PySP: dev",
+			"path": "../PySP.worktrees/Dev"
 		}
 	],
 	"settings": {}
