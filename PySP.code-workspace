@@ -5,13 +5,9 @@
 			"path": "../PySP"
 		},
 		{
-			"name": "PySP: dev",
-			"path": "../PySP.worktrees/dev"
+			"name": "PySP: test",
+			"path": "../PySP.worktrees/test"
 		},
-		{
-			"name": "PySP: hotfix",
-			"path": "../PySP.worktrees/hotfix"
-		}
 	],
 	"settings": {}
 }
