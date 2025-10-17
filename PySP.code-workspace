@@ -1,16 +1,8 @@
 {
 	"folders": [
 		{
-			"name": "PySP",
-			"path": "../PySP"
-		},
-		{
-			"name": "PySP: dev",
-			"path": "../PySP.worktrees/dev"
-		},
-		{
-			"name": "PySP: hotfix",
-			"path": "../PySP.worktrees/hotfix"
+			"name": "PySP: test",
+			"path": "../PySP.worktrees/test"
 		}
 	],
 	"settings": {}
