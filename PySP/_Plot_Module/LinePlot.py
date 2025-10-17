@@ -76,16 +76,14 @@ class LinePlot(Plot):
         # 时域波形绘制个性化设置
         if not isinstance(Sig, list):
             Sig = [Sig]
-        # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
-        task_kwargs = self.kwargs
-        task_kwargs.update(
-            {
-                "xlabel": Sig[0].t_axis.label,
-                "xlim": Sig[0].t_axis.lim,
-                "ylabel": f"{Sig[0].name}/{Sig[0].unit}",
-                "title": f"{Sig[0].label}时域波形",
-            }
-        )
+        # 绘图任务kwargs优先级: 用户传入kwargs > 全局kwargs > 方法默认设置
+        task_kwargs = {
+            "xlabel": Sig[0].t_axis.label,
+            "xlim": Sig[0].t_axis.lim,
+            "ylabel": f"{Sig[0].name}/{Sig[0].unit}",
+            "title": f"{Sig[0].label}时域波形",
+        }
+        task_kwargs.update(self.kwargs)
         task_kwargs.update(kwargs)
         # ------------------------------------------------------------------------------------#
         # 注册绘图任务
@@ -121,22 +119,17 @@ class LinePlot(Plot):
         def _draw_spectrum(ax, data):
             """内部函数：在指定ax上绘制频谱"""
             ax.plot(data.__axis__(), data.data)
-            # ax.grid(
-            #     axis="y", linestyle="--", linewidth=0.8, color="grey", dashes=(5, 10)
-            # )
 
         # ------------------------------------------------------------------------------------#
         # 频谱绘制个性化设置
-        # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
-        task_kwargs = self.kwargs
-        task_kwargs.update(
-            {
-                "xlabel": Spc.f_axis.label,
-                "xlim": Spc.f_axis.lim,
-                "ylabel": f"{Spc.name}/{Spc.unit}",
-                "title": f"{Spc.label}{Spc.name}谱",
-            },
-        )
+        # 绘图任务kwargs优先级: 用户传入kwargs > 全局kwargs > 方法默认设置
+        task_kwargs = {
+            "xlabel": Spc.f_axis.label,
+            "xlim": Spc.f_axis.lim,
+            "ylabel": f"{Spc.name}/{Spc.unit}",
+            "title": f"{Spc.label}{Spc.name}谱",
+        }
+        task_kwargs.update(self.kwargs)
         task_kwargs.update(kwargs)
         # ------------------------------------------------------------------------------------#
         # 注册绘图任务
@@ -199,7 +192,7 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs) -> tuple:
         LinePlot()
         .spectrum(Spc, **plot_kwargs)
         .add_plugin_to_task(
-            PeakfinderPlugin(distance=max(len(Spc) // 100, 1), height=0.1 * np.max(Spc), prominence=0.1)
+            PeakfinderPlugin(distance=max(len(Spc) // 100, 1), height=0.05 * np.max(Spc), prominence=0.1)
         )
         .show(pattern="return")
     )
