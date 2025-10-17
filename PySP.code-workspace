@@ -3,7 +3,11 @@
 		{
 			"name": "PySP: dev",
 			"path": "../PySP.worktrees/Dev"
-		}
+		},
+		{
+			"name": "PySP",
+			"path": "../PySP"
+		},
 	],
 	"settings": {}
 }
