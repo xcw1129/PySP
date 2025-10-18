@@ -109,7 +109,7 @@ class Plot:
         """
         self.figure = None
         self.axes = None
-        self.figsize = figsize  # 只在绘图类初始化时修改，所有子图共享
+        self.figsize = figsize  # 可在初始化后修改，所有子图共享该值
         self.ncols = ncols  # 多图绘制时的子图列数
         self.isSampled = isSampled
         self._kwargs = kwargs  # 全局绘图参数，一般初始化后不再修改
