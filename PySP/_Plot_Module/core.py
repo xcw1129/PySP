@@ -422,8 +422,8 @@ class Plot:
         existing_tasks = deepcopy(self.tasks)
         self.tasks.clear()
         # 生成空白画布
-        Data = 0
-        self.plot(Data, **kwargs)
+        data = 0
+        self.plot(data, **kwargs)
         fig, ax = self.show(pattern="return")
         # 恢复之前的绘图任务
         self.tasks = existing_tasks
