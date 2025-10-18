@@ -98,7 +98,7 @@ def Impulse(fs: float, T: float, ImpParams: tuple, noiseParams: tuple) -> Signal
     idx_gap = int(fs / fe)  # 平均冲击间隔
     imp_idx = np.arange(0, len(Sig), idx_gap)
     C = -np.log(0.05) / tau**2  # 衰减常数
-    impluse = np.exp(-C * t[: int(tau * fs)] ** 2) * np.sin(2 * np.pi * fc * t[: int(tau * fs)])  # 单个冲击波形
+    impulse = np.exp(-C * t[: int(tau * fs)] ** 2) * np.sin(2 * np.pi * fc * t[: int(tau * fs)])  # 单个冲击波形
     if isinstance(A, np.ndarray) and len(A) != len(Sig):
         raise ValueError("ImpParams参数中, 冲击幅值数组长度错误")
     A_array = A if isinstance(A, np.ndarray) else np.full(len(imp_idx), A)  # 冲击幅值数组
@@ -106,8 +106,8 @@ def Impulse(fs: float, T: float, ImpParams: tuple, noiseParams: tuple) -> Signal
     for idx in imp_idx:
         idx += random.randint(-int(alpha * idx_gap), int(alpha * idx_gap))  # 冲击位置滑移
         idx = 0 if idx < 0 else idx  # 防止索引越界
-        if idx + len(impluse) < len(Sig):
-            Sig[idx : idx + len(impluse)] += impluse * A_array[idx]  # 单个冲击幅值不变
+        if idx + len(impulse) < len(Sig):
+            Sig[idx : idx + len(impulse)] += impulse * A_array[idx]  # 单个冲击幅值不变
     # 加入噪声冲击
     n, la = noiseParams
     noise_idx = random.randint(0, len(Sig), n)
