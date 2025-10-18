@@ -57,14 +57,16 @@ class Plot:
         图形对象
     axes : np.ndarray of matplotlib.axes.Axes
         坐标轴对象数组
-    kwargs : dict
-        全局绘图参数字典
-    tasks : list
-        绘图任务列表
+    figsize : tuple
+        分图统一图形大小
     ncols : int
         子图列数
     isSampled : bool
         是否在绘图前对Signal对象进行采样
+    kwargs : dict
+        全局绘图参数字典
+    tasks : list
+        绘图任务列表
 
     Methods
     -------
@@ -86,6 +88,7 @@ class Plot:
     )
     def __init__(
         self,
+        figsize: tuple = (9, 4),
         ncols: int = 1,
         isSampled: bool = False,
         **kwargs,
@@ -95,6 +98,8 @@ class Plot:
 
         Parameters
         ----------
+        figsize : tuple, optional
+            分图统一图形大小，默认(9, 4)
         ncols : int, optional
             子图的列数，默认1
         isSampled : bool, optional
@@ -104,6 +109,7 @@ class Plot:
         """
         self.figure = None
         self.axes = None
+        self.figsize = figsize  # 只在绘图类初始化时修改，所有子图共享
         self.ncols = ncols  # 多图绘制时的子图列数
         self.isSampled = isSampled
         self._kwargs = kwargs  # 全局绘图参数，一般初始化后不再修改
@@ -134,9 +140,8 @@ class Plot:
         """根据任务数量设置图形和子图"""
         ncols = self.ncols
         nrows = (num_tasks + ncols - 1) // ncols
-        # 从全局kwargs获取figsize，计算总的figsize
-        base_figsize = self._kwargs.get("figsize", (9, 4))
-        figsize = (base_figsize[0] * ncols, base_figsize[1] * nrows)
+        # 根据子图数量调整图形大小
+        figsize = (self.figsize[0] * ncols, self.figsize[1] * nrows)
         # 创建图形和子图
         self.figure, self.axes = plt.subplots(nrows, ncols, figsize=figsize)
         # 统一将 axes 转为 1 维 numpy 数组，方便迭代
@@ -310,9 +315,9 @@ class Plot:
 
         # ------------------------------------------------------------------------------------#
         # 绘图个性化设置
-        # 绘图任务kwargs首先继承全局kwargs，然后被方法默认设置覆盖，最后被用户传入kwargs覆盖
-        task_kwargs = self.kwargs
-        task_kwargs.update({})
+        # 绘图任务kwargs优先级: 用户传入kwargs > 全局kwargs > 方法默认设置
+        task_kwargs = {}
+        task_kwargs.update(self.kwargs)
         task_kwargs.update(kwargs)
         # ------------------------------------------------------------------------------------#
         # 注册绘图任务
@@ -351,15 +356,17 @@ class Plot:
         -------
         tuple or None
             如果 pattern 为 "return"，则返回 (figure, axes) 元组，否则返回 None
+            (figure, axes) 元组，分别为 matplotlib 的 Figure 和 Axes 对象
+            其中 Axes 为 1 维 numpy 数组，便于索引和迭代
         """
         num_tasks = len(self.tasks)
         if num_tasks == 0:
-            return
+            return  # 未通过子类方法添加任何绘图任务
         # 创建图形和子图
         self._setup_figure(num_tasks)
         # 依次在对应子图上执行每个绘图任务
         for i, ax in enumerate(self.axes):
-            # 如果任务数少于子图数，隐藏多余子图
+            # 隐藏多余子图
             if i >= num_tasks:
                 ax.set_visible(False)
                 continue
@@ -371,7 +378,7 @@ class Plot:
             task_function = task["function"]
             task_plugins = task["plugins"]
             try:
-                task_function(ax, task_data)
+                task_function(ax, task_data)  # 先执行数据相关绘图任务，便于后续图形元素设置
                 self._setup_title(ax, task_kwargs)
                 self._setup_x_axis(ax, task_kwargs)
                 self._setup_y_axis(ax, task_kwargs)
@@ -390,6 +397,37 @@ class Plot:
             plt.close(self.figure)
         else:
             raise ValueError(f"未知的模式: {pattern}")
+
+    # ----------------------------------------------------------------------------------------#
+    def canvas(self, **kwargs) -> tuple:
+        """
+        生成当前绘图对象的空白画布
+
+        Parameters
+        ----------
+        **kwargs :
+            传递给 plot 方法的绘图参数，如 figsize、title 等
+
+        Returns
+        -------
+        tuple
+            (figure, axes) 元组，分别为 matplotlib 的 Figure 和 Axes 对象
+            其中 Axes 为 1 维 numpy 数组，便于索引和迭代
+
+        Notes
+        -----
+        该方法会临时清空当前绘图任务队列，生成一个空白画布后恢复原有任务队列，不影响后续绘图流程。
+        """
+        # 转移当前绘图任务
+        existing_tasks = deepcopy(self.tasks)
+        self.tasks.clear()
+        # 生成空白画布
+        Data = 0
+        self.plot(Data, **kwargs)
+        fig, ax = self.show(pattern="return")
+        # 恢复之前的绘图任务
+        self.tasks = existing_tasks
+        return fig, ax
 
 
 __all__ = ["Plot", "PlotPlugin"]
