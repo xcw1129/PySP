@@ -12,7 +12,8 @@
 
 from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
-from PySP._Assist_Module.Dependencies import fft, interpolate, np, signal, stats
+from PySP._Assist_Module.Dependencies import fft, interpolate, np, signal
+from PySP._Plot_Module.LinePlot import LinePlot, TimeWaveformFunc
 from PySP._Signal_Module.core import Signal
 
 
@@ -20,414 +21,429 @@ from PySP._Signal_Module.core import Signal
 # --------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------#
 # ----------------------------------------------------------------#
-def select_mode(data: np.ndarray, method: str, num: int) -> np.ndarray:
+# ModeAnalysis模块专用绘图函数
+def SiftProcessPlotFunc(
+    max_idx: np.ndarray,
+    Sig_upper: Signal,
+    min_idx: np.ndarray,
+    Sig_lower: Signal,
+    Sig_mean: Signal,
+    Sig_imf: Signal,
+    **kwargs,
+) -> tuple:
     """
-    根据指定方法筛选IMF分量
+    绘制单次筛选过程的辅助图像
+
+    Parameters
+    ----------
+    max_idx : np.ndarray
+        局部极大值点的索引序列
+    Sig_upper : Signal
+        上包络线对应的信号对象
+    min_idx : np.ndarray
+        局部极小值点的索引序列
+    Sig_lower : Signal
+        下包络线对应的信号对象
+    Sig_mean : Signal
+        上下包络的局部均值线信号对象
+    Sig_imf : Signal
+        当前筛选得到的临时 IMF 分量信号对象
+    **kwargs : dict, 可选
+        传递给绘图函数的其他关键字参数
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        绘制的图对象
+    ax : list
+        子图坐标轴对象列表
+
+    Notes
+    -----
+    本函数作为绘图回调由 `@Analysis.Plot` 装饰器调用, 会在绘制时将极值点以散点形式叠加显示。
+    """
+    # 复原原始信号
+    Sig = Sig_imf + Sig_mean
+    Sig.label = "原始信号"
+    # 绘制原始信号、极点包络和局部均值线
+    if "IMF_temp_" in Sig_imf.label:
+        title = f"第{Sig_imf.label.split('_')[-1]}次筛选过程"
+    else:
+        title = "筛选过程"
+    kwargs["plot"] = {
+        Sig.label: {},
+        Sig_upper.label: {"color": "red", "linestyle": "--", "linewidth": 1, "alpha": 0.7},
+        Sig_lower.label: {"color": "green", "linestyle": "--", "linewidth": 1, "alpha": 0.7},
+        Sig_mean.label: {"color": "orange"},
+    }  # 设置不同曲线样式
+    fig, ax = LinePlot(title=title).timeWaveform([Sig, Sig_upper, Sig_lower, Sig_mean], **kwargs).show(pattern="return")
+    # 绘制极值点
+    ax[0].scatter(Sig.t_axis()[max_idx], Sig.data[max_idx], color="red", marker="x", s=16)
+    ax[0].scatter(Sig.t_axis()[min_idx], Sig.data[min_idx], color="green", marker="x", s=16)
+    fig.show()
+    return fig, ax
+
+
+def DecResultPlotFunc(
+    Sig_imf_list: list,
+    Sig_res: Signal,
+    **kwargs,
+) -> tuple:
+    """
+    绘制 EMD 分解结果的辅助图像
+
+    Parameters
+    ----------
+    Sig_imf_list : list
+        IMF 分量的信号对象列表, 每一项为一个 `Signal`
+    Sig_res : Signal
+        EMD 分解后的残余分量信号对象
+    **kwargs : dict, 可选
+        传递给绘图函数的其他关键字参数
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        绘制的图对象
+    ax : list
+        子图坐标轴对象列表
+
+    Notes
+    -----
+    函数以两列布局依次绘制各 IMF 的时域波形及最终残余分量, 并设置整体标题为 "EMD分解结果"。
+    """
+    plot = LinePlot(ncols=2, **kwargs)
+    for Sig_imf in Sig_imf_list:
+        plot.timeWaveform(Sig_imf, title=f"{Sig_imf.label}时域波形")
+    plot.timeWaveform(Sig_res, title=f"{Sig_res.label}时域波形")
+    fig, ax = plot.show(pattern="return")
+    fig.suptitle("EMD分解结果")
+    fig.show()
+    return fig, ax
+
+
+# --------------------------------------------------------------------------------------------#
+# ModeAnalysis模块通用函数
+def search_localExtrema(data: np.ndarray, neighbors: int = 5, threshold: float = 1e-5) -> np.ndarray:
+    """
+    搜索序列中的局部极大与极小值索引, 并基于阈值剔除弱极值点
 
     Parameters
     ----------
     data : np.ndarray
-        输入的多个IMF分量
-    method : str
-        筛选方法, 可选 "kur" (峭度), "corr" (相关系数), "enve_entropy" (包络熵)
-    num : int
-        筛选的IMF个数
+        输入的一维序列
+    neighbors : int, 可选
+        极值判断的邻域宽度参数, 实际使用为 `order = neighbors // 2`, 输入范围: >=1, 默认: 5
+    threshold : float, 可选
+        极值强度相对阈值, 取值越大剔除越多弱极值, 输入范围: >=0, 默认: 1e-5
 
     Returns
     -------
-    np.ndarray
-        筛选出的IMF分量的索引
+    max_index : np.ndarray
+        通过筛选的局部极大值点索引
+    min_index : np.ndarray
+        通过筛选的局部极小值点索引
 
-    Raises
-    ------
-    ValueError
-        无效的模态筛选方法
+    Notes
+    -----
+    先使用 `scipy.signal.argrelextrema` 依据 `order = neighbors // 2` 寻找局部极值, 再基于
+    `threshold * np.ptp(data)` 过滤低幅值极值点。
     """
-    if method == "kur":
-        kur = np.zeros(len(data))
-        for i, imf in enumerate(data):
-            kur[i] = stats.kurtosis(imf)
-        select = np.argsort(kur)[::-1][:num]
-
-    elif method == "corr":
-        signal_data = data.sum(axis=0)
-        corr = np.zeros(len(data))
-        for i, imf in enumerate(data):
-            corr[i] = np.corrcoef(signal_data, imf)[0, 1]
-        select = np.argsort(corr)[::-1][:num]
-
-    elif method == "enve_entropy":
-        entropy = np.zeros(len(data))
-        for i, imf in enumerate(data):
-            analytic = signal.hilbert(imf)
-            amplitude = np.abs(analytic)
-            amplitude /= np.sum(amplitude)
-            entropy[i] = -np.sum((amplitude * np.log(amplitude)))
-        select = np.argsort(entropy)[:num]
-
-    else:
-        raise ValueError("无效的模态筛选方法")
-    return select
+    num = neighbors // 2  # 极值判断邻域点数
+    # 查找局部极值点
+    max_index = signal.argrelextrema(data, np.greater, order=num)[0]
+    min_index = signal.argrelextrema(data, np.less, order=num)[0]
+    # 去除噪声极值点
+    L = np.ptp(data)
+    diff = np.abs(data[max_index] - data[max_index - num])  # 极值点与邻域左边界点差值
+    max_index = max_index[diff > threshold * L]  # 筛选出差值大于阈值的极值点
+    diff = np.abs(data[min_index] - data[min_index - num])
+    min_index = min_index[diff > threshold * L]
+    return max_index, min_index
 
 
 # --------------------------------------------------------------------------------------------#
+# ModeAnalysis模块各模态分解类算法实现
 class EMDAnalysis(Analysis):
     """
-    经验模态分解 (EMD) 和集合经验模态分解 (EEMD) 分析方法
+    经验模态分解(EMD)分析器
+
+    对输入的一维信号执行 EMD 分解, 提供 IMF 提取、筛选过程可视化与结果绘制等功能。
 
     Attributes
     ----------
     Sig : Signal
         输入信号对象
-    isPlot : bool
-        是否绘制分析结果图
-    plot_kwargs : dict
-        绘图参数
-    Dec_stopcriteria : str
-        EMD分解终止准则, 可选 "c1", "c2", "c3"，默认为 "c1"
-    asy_toler : float
-        IMF判定的不对称容忍度, 默认为 0.01
-    sifting_times : int
-        单次sifting提取IMF的最大迭代次数, 默认为 8
-    neighbors : int
-        Sifting查找零极点的邻域点数, 默认为 5
-    zerothreshold : float
-        Sifting查找零点时的变化阈值, 默认为 1e-6
-    extremum_threshold : float
-        Sifting查找极值点的变化阈值, 默认为 1e-7
-    End_envelop : bool
-        Sifting上下包络是否使用首尾点, 默认为 False
+    sifting_rounds : int
+        单个 IMF 的最大筛选轮数
+    sifting_itpMethod : str
+        包络插值方法, 取值范围: ["spline", "pchip"]
+    stopSift_times : int
+        连续无效筛选次数上限, 达到后终止当前 IMF 的筛选
+    extrema_neighbors : int
+        局部极值搜索的邻域宽度参数
+    extrema_threshold : float
+        极值强度相对阈值
 
     Methods
     -------
-    __init__(Sig: Signal, plot: bool = False, **kwargs)
-        初始化EMD分析对象
-    emd(max_Dectimes: int = 5) -> tuple
-        对输入信号进行EMD分解
-    eemd(ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5) -> tuple
-        对输入信号进行EEMD分解
+    emd(decNum, weakness)
+        执行 EMD 分解, 返回 IMF 列表与残余分量
+    extract_imf(Sig, rounds, times)
+        从给定信号中提取一个 IMF 分量
+    sifting(Sig, interpolation)
+        执行一次筛选操作并返回包络、均值与新的临时 IMF
     """
 
-    # ----------------------------------------------------------------------------------------#
-    @InputCheck({"Sig": {}})
-    def __init__(self, Sig: Signal, plot: bool = False, **kwargs):
+    @InputCheck(
+        {"sifting_rounds": {"Low": 1}},
+        {"sifting_itpMethod": {}},
+        {"stopSift_times": {"Low": 1}},
+        {"extrema_neighbors": {"Low": 1}},
+        {"extremum_threshold": {"OpenLow": 0}},
+        {"stopDec_weakness": {"OpenLow": 0}},
+    )
+    def __init__(
+        self,
+        Sig: Signal,
+        isPlot: bool = False,
+        sifting_rounds: int = 10,
+        sifting_itpMethod: str = "spline",
+        stopSift_times: int = 4,
+        extrema_neighbors: int = 5,
+        extremum_threshold: float = 1e-5,
+        **kwargs,
+    ):
         """
-        初始化EMD分析对象
+        初始化 EMDAnalysis 对象
 
         Parameters
         ----------
         Sig : Signal
             输入信号对象
-        plot : bool, optional
-            是否绘制分析结果图, 默认为 False
-        **kwargs : dict
-            其他参数，用于配置EMD分解的细节
+        isPlot : bool, 可选
+            是否启用绘图流程联动, 默认: False
+        sifting_rounds : int, 可选
+            单个 IMF 的最大筛选轮数, 输入范围: >=1, 默认: 10
+        sifting_itpMethod : str, 可选
+            包络插值方法, 输入范围: ["spline", "pchip"], 默认: "spline"
+        stopSift_times : int, 可选
+            连续无效筛选次数上限, 输入范围: >=1, 默认: 4
+        extrema_neighbors : int, 可选
+            局部极值搜索的邻域宽度参数, 输入范围: >=1, 默认: 5
+        extremum_threshold : float, 可选
+            极值强度相对阈值, 输入范围: >=0, 默认: 1e-5
+        **kwargs : dict, 可选
+            传递给绘图模块的其他关键字参数, 若未提供 `ylim`, 将根据输入信号自动设置合理范围。
+
+        Notes
+        -----
+        若未显式设置 `ylim`, 将依据输入信号峰峰值在上下各扩展 10% 作为默认显示范围。
         """
-        super().__init__(Sig=Sig, isPlot=plot, **kwargs)
-        self.Dec_stopcriteria = kwargs.get("Dec_stopcriteria", "c1")
-        self.asy_toler = kwargs.get("asy_toler", 0.01)
-        self.sifting_times = kwargs.get("sifting_times", 8)
-        self.neighbors = kwargs.get("neighbors", 5)
-        self.zerothreshold = kwargs.get("zerothreshold", 1e-6)
-        self.extremum_threshold = kwargs.get("extremum_threshold", 1e-7)
-        self.End_envelop = kwargs.get("End_envelop", False)
+        # 默认配置ylim使所有绘图幅值范围与输入信号一致
+        if "ylim" not in kwargs:
+            # 计算data极差
+            L = max(Sig.data) - min(Sig.data)
+            kwargs.update(
+                {"ylim": (min(Sig.data) - 0.1 * L, max(Sig.data) + 0.1 * L)}
+            )  # 遵循Plot模块默认扩大10%的显示范围
+        # Analysis类初始化
+        super().__init__(Sig=Sig, isPlot=isPlot, **kwargs)
+        # EMDAnalysis子类特有属性
+        self.sifting_rounds = sifting_rounds
+        self.sifting_itpMethod = sifting_itpMethod
+        self.stopSift_times = stopSift_times
+        self.extrema_neighbors = extrema_neighbors
+        self.extrema_threshold = extremum_threshold
 
     # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _hilbert(data: np.ndarray) -> np.ndarray:
-        fft_x = fft.fft(data)
-        positive = fft_x[: len(fft_x) // 2] * 2
-        negative = fft_x[len(fft_x) // 2 :] * 0
-        fft_s = np.concatenate((positive, negative))
-        fft_s[0] = fft_x[0]
-        hat_x = np.imag(fft.ifft(fft_s))
-        return hat_x
-
-    # ----------------------------------------------------------------------------------------#
-    def _HTinsvector(self, data: np.array) -> tuple:
-        fs = self.Sig.t_axis.fs
-        Vector = data + 1j * signal.hilbert(data)
-        Amp = np.abs(Vector)
-        Phase = np.angle(Vector)
-        Phase = np.unwrap(Phase)
-        Fre = np.gradient(Phase, 1 / fs) / (2 * np.pi)
-        return Amp, Fre
-
-    # ----------------------------------------------------------------------------------------#
-    def emd(self, max_Dectimes: int = 5) -> tuple:
+    # 类主接口
+    @InputCheck({"decNum": {"Low": 1}, "weakness": {"OpenLow": 0}})
+    @Analysis.Plot(DecResultPlotFunc)
+    def emd(self, decNum: int = 5, weakness: float = 1e-2) -> tuple:
         """
-        对输入信号进行EMD分解
+        执行 EMD 分解, 逐步提取 IMF 并更新残余分量
 
         Parameters
         ----------
-        max_Dectimes : int, optional
-            最大分解次数, 默认为 5
+        decNum : int, 可选
+            期望分解出的 IMF 数量上限, 输入范围: >=1, 默认: 5
+        weakness : float, 可选
+            残余分量的终止判据系数, 当 `np.ptp(residual) <= weakness * np.ptp(original)` 时终止,
+            输入范围: >=0, 默认: 1e-2
 
         Returns
         -------
-        tuple
-            (np.ndarray) EMD分解出的IMF分量, (np.ndarray) 分解后的残余分量
-        """
-        data = self.Sig.data
-        fs = self.Sig.t_axis.fs
-        datatoDec = np.array(data)
-        IMFs = []
-        Residue = datatoDec.copy()
+        Sig_imf_list : list of Signal
+            提取得到的 IMF 分量序列
+        Sig_res : Signal
+            最终残余分量
 
-        for i in range(max_Dectimes):
-            imf = self._extractIMF(Residue, fs, self.sifting_times)
-            if imf is None:
+        Raises
+        ------
+        ValueError
+            当 `sum(IMF) + Residual` 与原始信号逐点不一致(阈值 1e-6)时抛出。
+
+        Notes
+        -----
+        若在某次提取中未能得到有效 IMF, 分解会提前终止。该方法受 `@Analysis.Plot` 装饰器影响,
+        在 `isPlot=True` 时会联动绘制分解结果。
+        """
+        Sig_imf_list = []
+        Sig_res = self.Sig.copy()
+        Sig_res.label = "Residual_0"
+        # 对残差进行循环筛选
+        for i in range(decNum):
+            # 提取IMF分量
+            Sig_imf = self.extract_imf(Sig_res, self.sifting_rounds, self.stopSift_times)
+            if Sig_imf is None:
                 break
             else:
-                IMFs.append(imf)
-                Residue = Residue - imf
-
-            if self._Dec_stopcriteria(datatoDec, Residue, self.Dec_stopcriteria):
-                break
-        IMFs = np.array(IMFs)
-
-        if np.any(np.abs(np.sum(IMFs, axis=0) + Residue - datatoDec) >= 1e-6):
-            raise ValueError("EMD分解结果与原始信号不一致")
-
-        return IMFs, Residue
-
-    # ----------------------------------------------------------------------------------------#
-    def eemd(self, ensemble_times: int = 100, noise: float = 0.2, max_Dectimes: int = 5) -> tuple:
-        """
-        对输入信号进行EEMD分解
-
-        Parameters
-        ----------
-        ensemble_times : int, optional
-            集成次数, 默认为 100
-        noise : float, optional
-            随机噪声强度，即正态分布标准差大小, 默认为 0.2
-        max_Dectimes : int, optional
-            单次EMD最大分解次数, 默认为 5
-
-        Returns
-        -------
-        tuple
-            (np.ndarray) EEMD分解出的IMF分量, (np.ndarray) 分解后的残余分量
-        """
-        data = self.Sig.data
-        fs = self.Sig.t_axis.fs
-        datatoDec = np.array(data)
-        N = len(datatoDec)
-        enIMFs = np.zeros((max_Dectimes, N))
-        for j in range(ensemble_times):
-            IMFs = []
-            Residue = datatoDec.copy() + noise * np.random.randn(N)
-            for i in range(max_Dectimes):
-                imf = self._extractIMF(Residue, fs, self.sifting_times)
-                if imf is None:
-                    break
-                else:
-                    IMFs.append(imf)
-                    Residue = Residue - imf
-                if self._Dec_stopcriteria(datatoDec, Residue, self.Dec_stopcriteria):
-                    break
-            IMFs = np.array(IMFs)
-            if len(IMFs) < max_Dectimes:
-                IMFs = np.concatenate((IMFs, np.zeros((max_Dectimes - len(IMFs), N))), axis=0)
-            enIMFs += IMFs
-
-        enIMFs /= ensemble_times
-        Residue = datatoDec - np.sum(enIMFs, axis=0)
-
-        return enIMFs, Residue
+                Sig_imf_list.append(Sig_imf)
+                Sig_res = Sig_res - Sig_imf
+                # 更新残余分量标签
+                Sig_res.label = f"Residual_{i + 1}"
+            # 判断分解终止条件：.extract_imf已判断是否为趋势，此处仅判断幅值衰减情况
+            if np.ptp(Sig_res) <= weakness * np.ptp(self.Sig):  # 峰峰值衰减到一定程度
+                Sig_res.label = "Residual"
+                break  # 如果Sig_res标签不含数字，则表示EMD分解正常终止
+        # 逐点收敛判断分解有效性
+        if np.any(np.abs(np.sum(Sig_imf_list, axis=0) + Sig_res - self.Sig) >= 1e-6):
+            raise ValueError("EMD分解结果与原始信号不一致，请重试")
+        return Sig_imf_list, Sig_res
 
     # ----------------------------------------------------------------------------------------#
-    def _extractIMF(
+    # 类辅助接口
+    @InputCheck({"Sig": {}, "rounds": {"Low": 1}}, {"times": {"Low": 1}})
+    @Analysis.Plot(TimeWaveformFunc)
+    def extract_imf(
         self,
-        data: np.ndarray,
-        fs: float,
-        max_iterations: int = 10,
-    ) -> np.ndarray:
-        DatatoSift = data.copy()
-        for n in range(max_iterations):
-            res = self._isIMF(DatatoSift)
-            if res[0]:
-                return DatatoSift
-            else:
-                if res[2] == "极值点不足，无法提取IMF分量":
-                    return None
-                else:
-                    DatatoSift = DatatoSift - res[1][2]
-        return DatatoSift
+        Sig: Signal,
+        rounds: int = 10,
+        times: int = 4,
+    ) -> Signal:
+        """
+        从输入信号中提取一个 IMF 分量
 
-    # ----------------------------------------------------------------------------------------#
-    def _isIMF(self, data: np.ndarray) -> tuple:
-        N = len(data)
-        max_index, min_index = self._search_localextrum(
-            data, neighbors=self.neighbors, threshold=self.extremum_threshold
+        Parameters
+        ----------
+        Sig : Signal
+            待筛选的输入信号(通常为当前残余分量)
+        rounds : int, 可选
+            最大筛选轮数, 输入范围: >=1, 默认: 10
+        times : int, 可选
+            连续无效筛选次数上限, 输入范围: >=1, 默认: 4
+
+        Returns
+        -------
+        Sig_imf : Signal
+            提取到的 IMF 分量信号对象
+
+        Notes
+        -----
+        无效筛选定义为相邻两次筛选的极值点数均未发生变化; 达到上限后终止筛选并返回当前 IMF。
+        该方法受 `@Analysis.Plot` 装饰器影响, 在 `isPlot=True` 时会联动绘制当前临时 IMF 的波形。
+        """
+        Sig_imf = Sig.copy()
+        Sig_imf.label = "IMF_temp_0"
+        maxNum_old = 0
+        minNum_old = 0
+        S = 0  # 记录无效筛选次数
+        for i in range(rounds):
+            res = self.sifting(Sig_imf, self.sifting_itpMethod)
+            if res is None:
+                break
+            max_idx, Sig_upper, min_idx, Sig_lower, Sig_mean, Sig_imf = res
+            # 判断筛选终止条件
+            if maxNum_old == len(max_idx) and minNum_old == len(min_idx):
+                S += 1
+            else:
+                S = 0
+            if S >= times:
+                break
+        # 更新IMF分量标签
+        if "Residual_" in Sig.label:
+            Sig_imf.label = "IMF_" + str(int(Sig.label.split("_")[-1]) + 1)
+        else:
+            Sig_imf.label = "IMF"
+        return Sig_imf
+
+    @InputCheck({"Sig": {}, "interpolation": {}})
+    @Analysis.Plot(SiftProcessPlotFunc)
+    def sifting(self, Sig: Signal, interpolation: str = "spline") -> tuple:
+        """
+        执行一次筛选以生成上下包络、局部均值线与新的临时 IMF
+
+        Parameters
+        ----------
+        Sig : Signal
+            输入信号对象, 将在其上执行一次筛选
+        interpolation : str, 可选
+            包络插值方法, 输入范围: ["spline", "pchip"], 默认: "spline"
+
+        Returns
+        -------
+        max_index : np.ndarray
+            局部极大值点索引
+        Sig_upper : Signal
+            上包络线信号对象
+        min_index : np.ndarray
+            局部极小值点索引
+        Sig_lower : Signal
+            下包络线信号对象
+        Sig_mean : Signal
+            局部均值线信号对象
+        Sig_imf_temp : Signal
+            本次筛选后得到的临时 IMF 信号对象
+
+        Raises
+        ------
+        ValueError
+            当 `interpolation` 不是 "spline" 或 "pchip" 时抛出。
+
+        Notes
+        -----
+        当极值点数量不足以进行三次样条插值(各 <4)时, 返回 None 表示本次筛选无效。
+        函数返回的 `Sig_imf_temp` 会携带筛选轮次信息(标签以 "IMF_temp_#" 形式递增)。
+        """
+        # 查找局部极值点，准备构建包络
+        max_index, min_index = search_localExtrema(
+            Sig.data, neighbors=self.extrema_neighbors, threshold=self.extrema_threshold
         )
-
-        if len(max_index) < 4 or len(min_index) < 4:
-            if len(max_index) + len(min_index) < 2:
-                return (False, data, "极值点不足，无法提取IMF分量")
-            else:
-                return (True, data, "提取出的IMF为最大周期，无法进一步Sifting")
-
-        if self.End_envelop:
-            if max_index[0] != 0:
-                max_index = np.concatenate(([0], max_index))
-            if max_index[-1] != N - 1:
-                max_index = np.append(max_index, N - 1)
-            if min_index[0] != 0:
-                min_index = np.concatenate(([0], min_index))
-            if min_index[-1] != N - 1:
-                min_index = np.append(min_index, N - 1)
-
-        max_spline = interpolate.UnivariateSpline(max_index, data[max_index], k=3, s=0)
-        upper_envelop = max_spline(np.arange(N))
-        min_spline = interpolate.UnivariateSpline(min_index, data[min_index], k=3, s=0)
-        lower_envelop = min_spline(np.arange(N))
-        mean = (upper_envelop + lower_envelop) / 2
-
-        envelop = (upper_envelop, lower_envelop, mean)
-        unsatisfied = self._Sift_stopcriteria(data, mean, max_index, min_index)
-        if unsatisfied == "None":
-            return (True, envelop, unsatisfied)
+        # 检查是否满足包络构建条件
+        if len(max_index) < 4 or len(min_index) < 4:  # 3次样条插值至少需要4个点
+            return None
+        # 构建上下包络线
+        if interpolation == "spline":
+            # 使用三次样条插值
+            def interpolation_func(x, y):
+                return interpolate.CubicSpline(x, y, bc_type="natural")
+        elif interpolation == "pchip":
+            # 使用分段三次埃尔米特插值
+            def interpolation_func(x, y):
+                return interpolate.PchipInterpolator(x, y)
         else:
-            return (False, envelop, unsatisfied)
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _search_zerocrossing(data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6) -> int:
-        _data = np.array(data)
-        num = neighbors // 2
-        _data[1:-1] = np.where(_data[1:-1] == 0, 1e-10, _data[1:-1])
-        zero_index = np.diff(np.sign(_data)) != 0
-        zero_index = np.append(zero_index, False)
-        zero_index = np.where(zero_index)[0]
-
-        diff = np.abs(data[zero_index] - data[zero_index - num])
-        zero_index = zero_index[diff > threshold]
-        return zero_index
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _search_localextrum(data: np.ndarray, neighbors: int = 5, threshold: float = 1e-6) -> np.ndarray:
-        num = neighbors // 2
-        max_index = signal.argrelextrema(data, np.greater, order=num)[0]
-        min_index = signal.argrelextrema(data, np.less, order=num)[0]
-
-        diff = np.abs(data[max_index] - data[max_index - num])
-        max_index = max_index[diff > threshold]
-        diff = np.abs(data[min_index] - data[min_index - num])
-        min_index = min_index[diff > threshold]
-
-        return max_index, min_index
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _Dec_stopcriteria(raw: np.ndarray, residue: np.ndarray, criteria: str = "c1") -> bool:
-        if criteria == "c1":
-            if np.max(np.abs(residue)) < np.max(np.abs(raw)) * 0.01:
-                return True
-            else:
-                return False
-        elif criteria == "c2":
-            if np.std(residue) < 0.01 * np.std(raw):
-                return True
-            else:
-                return False
-        elif criteria == "c3":
-            if np.std(residue) < 1e-6:
-                return True
-            else:
-                return False
+            raise ValueError(f"{interpolation}: 无效的插值方法")
+        upper = interpolation_func(max_index, Sig[max_index])(np.arange(len(Sig)))
+        lower = interpolation_func(min_index, Sig[min_index])(np.arange(len(Sig)))
+        # 计算局部均值和IMF分量
+        mean = (upper + lower) / 2
+        Sig_upper = Signal(Sig.t_axis.copy(), upper, name=Sig.name, unit=Sig.unit, label="上包络")
+        Sig_lower = Signal(Sig.t_axis.copy(), lower, name=Sig.name, unit=Sig.unit, label="下包络")
+        Sig_mean = Signal(Sig.t_axis.copy(), mean, name=Sig.name, unit=Sig.unit, label="局部均值")
+        Sig_imf_temp = Sig - Sig_mean
+        # 更新筛选轮数标签
+        if "IMF_temp_" in Sig.label:
+            Sig_imf_temp.label = "IMF_temp_" + str(int(Sig.label.split("_")[-1]) + 1)
         else:
-            raise ValueError("Invalid criteria")
-
-    # ----------------------------------------------------------------------------------------#
-    def _Sift_stopcriteria(
-        self,
-        data: np.ndarray,
-        mean: np.ndarray,
-        max_index: np.ndarray,
-        min_index: np.ndarray,
-    ) -> bool:
-        condition1, condition2, condition3 = False, False, False
-        fault = ""
-        if condition1 is False:
-            SD = np.std(mean) / np.std(data)
-            if SD < self.asy_toler:
-                condition1 = True
-
-        if condition2 is False:
-            extrumNO = len(max_index) + len(min_index)
-            zeroNO = len(self._search_zerocrossing(data, neighbors=self.neighbors, threshold=self.zerothreshold))
-            if np.abs(extrumNO - zeroNO) <= 1:
-                condition2 = True
-
-        if condition3 is False:
-            if self.End_envelop:
-                if np.all(data[max_index[1:-1]] >= 0) and np.all(data[min_index[1:-1]] <= 0):
-                    condition3 = True
-            else:
-                if np.all(data[max_index] >= 0) and np.all(data[min_index] <= 0):
-                    condition3 = True
-
-        if condition1 and condition2 and condition3:
-            fault = "None"
-        else:
-            if condition1 is False:
-                fault += "局部不对称度过高;"
-            if condition2 is False:
-                fault += "零极点个数相差大于1;"
-            if condition3 is False:
-                fault += "存在骑波现象;"
-        return fault
+            Sig_imf_temp.label = "IMF_temp"
+        return max_index, Sig_upper, min_index, Sig_lower, Sig_mean, Sig_imf_temp
 
 
-# --------------------------------------------------------------------------------------------#
 class VMDAnalysis(Analysis):
-    """
-    变分模态分解 (VMD) 分析方法
-
-    Attributes
-    ----------
-    Sig : Signal
-        输入信号对象
-    isPlot : bool
-        是否绘制分析结果图
-    plot_kwargs : dict
-        绘图参数
-    vmd_tol : float
-        VMD分解迭代停止阈值, 默认为 1e-6
-    wc_initmethod : str
-        VMD分解初始化中心频率的方法, 可选 "uniform", "log", "octave", "linearrandom", "lograndom", "zero"，默认为 "log"
-    vmd_DCmethod : str
-        VMD分解直流分量的方法, 可选 "Sift_mean", "emd_resdiue", "moving_average"，默认为 "Sift_mean"
-    vmd_extend : bool
-        VMD分解前是否进行双边半延拓, 默认为 True
-
-    Methods
-    -------
-    __init__(Sig: Signal, plot: bool = False, **kwargs)
-        初始化VMD分析对象
-    vmd(k_num: int, iterations: int = 100, bw: float = 200, tau: float = 0.5, DC: bool = False) -> tuple
-        对输入信号进行VMD分解
-    """
-
-    # ----------------------------------------------------------------------------------------#
     @InputCheck({"Sig": {}})
-    def __init__(self, Sig: Signal, plot: bool = False, **kwargs):
-        """
-        初始化VMD分析对象
-
-        Parameters
-        ----------
-        Sig : Signal
-            输入信号对象
-        plot : bool, optional
-            是否绘制分析结果图, 默认为 False
-        **kwargs : dict
-            其他参数，用于配置VMD分解的细节
-        """
-        super().__init__(Sig=Sig, isPlot=plot, **kwargs)
+    def __init__(self, Sig: Signal, isPlot: bool = False, **kwargs):
+        super().__init__(Sig=Sig, isPlot=isPlot, **kwargs)
         self.vmd_tol = kwargs.get("vmd_tol", 1e-6)
         self.wc_initmethod = kwargs.get("wc_initmethod", "log")
         self.vmd_DCmethod = kwargs.get("vmd_DCmethod", "Sift_mean")
@@ -539,9 +555,9 @@ class VMDAnalysis(Analysis):
         temp_sig = Signal(axis=self.Sig.axis, data=data)
         emd_analyzer = EMDAnalysis(temp_sig)
         if method == "Sift_mean":
-            DC = emd_analyzer._isIMF(data)[1][2]
+            DC = emd_analyzer.sifting(data)[1][2]
         elif method == "emd_resdiue":
-            DC = emd_analyzer.emd(max_Dectimes=1000)[1]
+            DC = emd_analyzer.emd(decNum=1000)[1]
         elif method == "moving_average":
             DC = np.convolve(data, np.ones(windowsize) / windowsize, mode="same")
         else:
@@ -588,7 +604,7 @@ class VMDAnalysis(Analysis):
 
 
 __all__ = [
+    "search_localExtrema",
     "EMDAnalysis",
     "VMDAnalysis",
-    "select_mode",
 ]
