@@ -7,7 +7,6 @@
         1. Resample: 对信号序列 Sig 进行任意时间段的重采样，支持下采样与上采样多种方式。
 """
 
-from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import Optional, np
 from PySP._Signal_Module.core import Signal, t_Axis
 
@@ -16,7 +15,6 @@ from PySP._Signal_Module.core import Signal, t_Axis
 # --------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------#
 # ----------------------------------------------------------------#
-@InputCheck({"Sig": {}, "type": {"Content": ["spacing", "fft", "extreme"]}, "dt": {}, "t0": {}, "T": {}})
 def Resample(
     Sig: Signal,
     type: str = "spacing",
@@ -126,4 +124,25 @@ def Resample(
     return Signal(axis=t_Axis(len(data2rs), dt=dt, t0=t0), data=data2rs, name=Sig.name, unit=Sig.unit)
 
 
-__all__ = ["Resample"]
+def Padding(Sig: Signal, length: int, method: str = "mirror") -> Signal:
+    data = Sig.data
+    if method == "mirror":
+        extend_data = np.pad(data, length, mode="reflect")
+    elif method == "zero":
+        extend_data = np.pad(data, length, mode="constant")
+    else:
+        raise ValueError(f"{method}: 无效的数据延拓方式")
+    t_axis_extend = Sig.t_axis.copy()
+    t_axis_extend.N = len(extend_data)
+    t_axis_extend.t0 = Sig.t_axis.t0 - length * Sig.t_axis.dt
+    Sig_extend = Signal(
+        axis=t_axis_extend,
+        data=extend_data,
+        name=Sig.name,
+        unit=Sig.unit,
+        label=Sig.label,
+    )
+    return Sig_extend
+
+
+__all__ = ["Resample", "Padding"]

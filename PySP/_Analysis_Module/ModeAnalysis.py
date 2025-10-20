@@ -14,7 +14,8 @@ from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import fft, interpolate, np, signal
 from PySP._Plot_Module.LinePlot import LinePlot, TimeWaveformFunc
-from PySP._Signal_Module.core import Signal
+from PySP._Signal_Module.core import Signal, Spectra, f_Axis, t_Axis
+from PySP._Signal_Module.SignalSampling import Padding
 
 
 # --------------------------------------------------------------------------------------------#
@@ -122,9 +123,36 @@ def DecResultPlotFunc(
     return fig, ax
 
 
+def VMDResultPlotFunc(
+    Spc_mode_list: list,
+    fc_list: np.ndarray,
+    **kwargs,
+) -> tuple:
+    plot = LinePlot(ncols=2, **kwargs)
+    for k, Spc_mode in enumerate(Spc_mode_list, start=1):
+        Spc = Spectra(
+            Spc_mode.f_axis(), np.abs(Spc_mode.data), name=Spc_mode.name, unit=Spc_mode.unit, label=Spc_mode.label
+        ).halfCut()
+        plot.spectrum(Spc)
+        mode = fft.irfft(Spc_mode.data)
+        t_axis = t_Axis(len(mode), T=Spc_mode.f_axis.T)
+        Sig_mode = Signal(axis=t_axis, data=mode, name=Spc_mode.name, unit=Spc_mode.unit, label=Spc_mode.label)
+        plot.timeWaveform(Sig_mode)
+    fig, ax = plot.show(pattern="return")
+    for k, axis in enumerate(ax):
+        if k // 2 == 0:
+            continue
+        # 绘制中心频率线
+        axis.axvline(fc_list[k], color="red", linestyle="--", linewidth=1, alpha=0.7, label=f"fc={fc_list[k]:.2f}Hz")
+        axis.legend()
+    fig.suptitle("VMD分解结果")
+    fig.show()
+    return fig, ax
+
+
 # --------------------------------------------------------------------------------------------#
 # ModeAnalysis模块通用函数
-def search_localExtrema(data: np.ndarray, neighbors: int = 5, threshold: float = 1e-5) -> np.ndarray:
+def Search_localExtrema(data: np.ndarray, neighbors: int = 5, threshold: float = 1e-5) -> np.ndarray:
     """
     搜索序列中的局部极大与极小值索引, 并基于阈值剔除弱极值点
 
@@ -162,8 +190,62 @@ def search_localExtrema(data: np.ndarray, neighbors: int = 5, threshold: float =
     return max_index, min_index
 
 
+def Get_spectraCenter(Spc: Spectra) -> float:
+    weighted_power = np.dot(Spc.f_axis(), np.abs(Spc) ** 2)
+    total_power = np.sum(np.abs(Spc) ** 2)
+    fc = weighted_power / total_power
+    return fc
+
+
+def get_Trend(
+    data: np.ndarray,
+    axis,
+    name: str,
+    unit: str,
+    method: str,
+    windowsize: int = 100,
+) -> np.ndarray:
+    """
+    趋势分量估计（模块函数）
+
+    Parameters
+    ----------
+    data : np.ndarray
+        输入数据
+    axis : t_Axis
+        时间轴对象
+    name : str
+        信号名称
+    unit : str
+        信号单位
+    method : str
+        方法选择, ["Sift_mean", "emd_residual", "moving_average", "zero"]
+    windowsize : int, optional
+        移动平均窗口, 默认: 100
+
+    Returns
+    -------
+    np.ndarray
+        趋势分量序列
+    """
+    temp_sig = Signal(axis=axis.copy(), data=data, name=name, unit=unit, label="Trend_tmp")
+    emd_analyzer = EMDAnalysis(temp_sig, isPlot=False)
+    if method == "Sift_mean":
+        res = emd_analyzer.sifting(temp_sig, interpolation="spline")
+        if res is None:
+            return np.convolve(data, np.ones(max(3, windowsize)) / max(3, windowsize), mode="same")
+        _, _, _, _, Sig_mean, _ = res
+        return Sig_mean.data
+    if method in ("emd_residual", "emd_resdiue"):
+        Sig_res = emd_analyzer.emd(decNum=1000)[1]
+        return Sig_res.data
+    if method == "moving_average":
+        return np.convolve(data, np.ones(max(3, windowsize)) / max(3, windowsize), mode="same")
+    return np.zeros_like(data)
+
+
 # --------------------------------------------------------------------------------------------#
-# ModeAnalysis模块各模态分解类算法实现
+# 经验模态分解
 class EMDAnalysis(Analysis):
     """
     经验模态分解(EMD)分析器
@@ -407,7 +489,7 @@ class EMDAnalysis(Analysis):
         函数返回的 `Sig_imf_temp` 会携带筛选轮次信息(标签以 "IMF_temp_#" 形式递增)。
         """
         # 查找局部极值点，准备构建包络
-        max_index, min_index = search_localExtrema(
+        max_index, min_index = Search_localExtrema(
             Sig.data, neighbors=self.extrema_neighbors, threshold=self.extrema_threshold
         )
         # 检查是否满足包络构建条件
@@ -440,152 +522,153 @@ class EMDAnalysis(Analysis):
         return max_index, Sig_upper, min_index, Sig_lower, Sig_mean, Sig_imf_temp
 
 
+# --------------------------------------------------------------------------------------------#
+# 变分模态分解
 class VMDAnalysis(Analysis):
-    @InputCheck({"Sig": {}})
-    def __init__(self, Sig: Signal, isPlot: bool = False, **kwargs):
+    """
+    变分模态分解(VMD)分析器
+
+    在输入信号上执行 VMD 分解, 支持趋势分量处理、中心频率初始化方式选择, 并提供与 Plot 模块联动的结果可视化。
+
+    Attributes
+    ----------
+    Sig : Signal
+        输入信号对象
+    isPlot : bool
+        是否启用绘图流程联动
+    plot_kwargs : dict
+        传递给绘图函数的关键字参数
+    vmd_tol : float
+        迭代终止阈值, 越小越严格
+    wc_initMethod : str
+        模态中心频率初始化方法, ["uniform", "log", "octave", "linearrandom", "lograndom", "zero"]
+    vmd_Trendmethod : str
+        趋势分量估计方法, ["Sift_mean", "emd_residual", "moving_average", "zero"]
+    vmd_extend : bool
+        是否进行端点镜像扩展以减小边界效应
+
+    Notes
+    -----
+    若未显式设置 `ylim`, 将依据输入信号峰峰值在上下各扩展 10% 作为默认显示范围, 与 EMDAnalysis 保持一致。
+    """
+
+    @InputCheck(
+        {"Sig": {}},
+        {"isPlot": {}},
+        {"vmd_tol": {"OpenLow": 0}},
+        {"wc_initMethod": {}},
+        {"vmd_Trendmethod": {}},
+        {"vmd_extend": {}},
+    )
+    def __init__(
+        self,
+        Sig: Signal,
+        isPlot: bool = False,
+        vmd_tol: float = 1e-6,
+        wc_initMethod: str = "log",
+        vmd_Trendmethod: str = "Sift_mean",
+        vmd_extend: bool = True,
+        **kwargs,
+    ):
+        # 默认配置ylim使所有绘图幅值范围与输入信号一致
+        if "ylim" not in kwargs:
+            L = max(Sig.data) - min(Sig.data)
+            kwargs.update({"ylim": (min(Sig.data) - 0.1 * L, max(Sig.data) + 0.1 * L)})
+        # Analysis类初始化
         super().__init__(Sig=Sig, isPlot=isPlot, **kwargs)
-        self.vmd_tol = kwargs.get("vmd_tol", 1e-6)
-        self.wc_initmethod = kwargs.get("wc_initmethod", "log")
-        self.vmd_DCmethod = kwargs.get("vmd_DCmethod", "Sift_mean")
-        self.vmd_extend = kwargs.get("vmd_extend", True)
+        # VMDAnalysis子类特有属性
+        self.vmd_tol = vmd_tol
+        self.initFc_method = wc_initMethod
+        self.getTrend_method = vmd_Trendmethod
+        self.vmd_extend = vmd_extend
 
     # ----------------------------------------------------------------------------------------#
+    # 主接口
+    @InputCheck(
+        {"decNum": {"Low": 1}},
+        {"iterations": {"Low": 1}},
+        {"bw": {"OpenLow": 0.0}},
+        {"tau": {"OpenLow": 0.0}},
+        {"Trend": {}},
+    )
     def vmd(
         self,
-        k_num: int,
+        decNum: int,
         iterations: int = 100,
-        bw: float = 200,
+        bw: float = 200.0,
         tau: float = 0.5,
-        DC: bool = False,
+        getTrend: bool = False,
+        isExtend: bool = True,
     ) -> tuple:
-        """
-        对输入信号进行VMD分解
-
-        Parameters
-        ----------
-        k_num : int
-            指定分解的模态数
-        iterations : int, optional
-            VMD迭代次数, 默认为 100
-        bw : float, optional
-            模态的限制带宽, 默认为 200
-        tau : float, optional
-            拉格朗日乘子的更新步长, 默认为 0.5
-        DC : bool, optional
-            是否将分解的第一个模态固定为直流分量, 默认为 False
-
-        Returns
-        -------
-        tuple
-            (np.ndarray) VMD分解出的IMF分量, (np.ndarray) 分解后的中心频率
-
-        Raises
-        ------
-        ValueError
-            VMD迭代得到的u_hat存在负频率项
-        """
-        data = self.Sig.data
-        fs = self.Sig.t_axis.fs
-        N = len(data)
-        extend_data = np.concatenate((data[N // 2 : 1 : -1], data, data[-1 : N // 2 : -1]))
-        _N = len(extend_data)
-        if self.vmd_extend is False:
-            extend_data = data
-            _N = N
-
-        w_Axis = np.arange(0, _N) * fs / _N * (2 * np.pi)
-
-        u_hat = np.zeros((k_num, _N), dtype=complex)
-        w = self._vmd_wcinit(extend_data, fs, k_num, method=self.wc_initmethod)
-
-        if DC:
-            DC_mode = self._get_DC(extend_data, self.vmd_DCmethod, windowsize=_N // 10)
-            u_hat_DC = fft.fft(DC_mode) * 2
-            u_hat_DC[_N // 2 :] = 0
-
-        lambda_hat = np.zeros(_N, dtype=complex)
-
-        alpha = (10 ** (3 / 20) - 1) / (2 * (np.pi * bw) ** 2)
-        alpha = alpha * np.ones(k_num)
-
-        f_hat = fft.fft(extend_data) * 2
-        f_hat[_N // 2 :] = 0
-
-        Resdiue = np.zeros(_N, dtype=complex)
+        # ------------------------------------------------------------------------#
+        # VMD 预处理
+        # 数据双边延拓缓解边界效应
+        if isExtend:
+            Sig_extend = Padding(Sig=self.Sig, length=len(self.Sig) // 2, method="mirror")
+        else:
+            Sig_extend = self.Sig.copy()
+        analytic = signal.hilbert(Sig_extend)
+        X_k = fft.fft(analytic)  # 延拓信号解析频谱
+        Spc_extend = Spectra(
+            Sig_extend.f_axis,
+            X_k,
+            name=self.Sig.name,
+            unit=self.Sig.unit,
+            label=self.Sig.label,
+        )
+        # 初始化优化变量和超参数
+        Spc_mode_list = [
+            Spectra(Sig_extend.f_axis, name=self.Sig.name, unit=self.Sig.unit, label=f"Mode_{i + 1}")
+            for i in range(decNum)
+        ]
+        Spc_lambda = Spectra(Sig_extend.f_axis, name=self.Sig.name, unit=self.Sig.unit, label="拉格朗日乘子")
+        omega_list = (
+            self.init_modeFc(Spc_extend.f_axis.copy(), decNum, method=self.initFc_method) * 2 * np.pi
+        )  # 模态中心角频率
+        alpha = (10 ** (3 / 20) - 1) / (2 * (np.pi * bw) ** 2)  # 变分约束惩罚因子
+        alpha_list = alpha * np.ones(decNum)
+        # 趋势分量提取
+        if getTrend:
+            Sig_trend = get_Trend(Sig_extend, method=self.getTrend_method)
+            X_k_trend = fft.fft(signal.hilbert(Sig_trend))
+            Spc_trend = Spectra(Sig_extend.f_axis, X_k_trend, name=self.Sig.name, unit=self.Sig.unit, label="Trend")
+            Spc_mode_list[0] = Spc_trend
+        # ------------------------------------------------------------------------#
+        # 变分优化迭代过程
         for i in range(iterations):
-            u_hat_old = u_hat.copy()
-            for k in range(k_num):
-                if DC and k == 1:
-                    u_hat[0] = u_hat_DC
-                    w[0] = 0
-
-                Resdiue = Resdiue + u_hat[k - 1] - u_hat[k]
-                Res = f_hat - Resdiue + lambda_hat / 2
-
-                u_hat[k] = self._WiennerFilter(Res, w_Axis - w[k], alpha[k])
-
-                w[k] = self._fre_centerG(u_hat[k], w_Axis)
-
-            lambda_hat = lambda_hat + tau * (f_hat - (Resdiue + u_hat[-1]))
-
-            if self._vmd_stoppage(u_hat_old, u_hat, self.vmd_tol):
+            # 交替更新各模态分量与中心频率
+            Spc_mode_list, omega_list = self.update_mode(
+                Spc_extend,
+                Spc_mode_list,
+                omega_list,
+                Spc_lambda,
+                alpha_list,
+                Trend=getTrend,
+            )
+            Spc_lambda += tau * (Spc_extend - (np.sum(Spc_mode_list, axis=0)))  # 更新拉格朗日乘子
+            # 检查优化收敛条件
+            if True:
                 break
-
-        if np.any(np.abs(u_hat[:, _N // 2 :]) != 0):
-            raise ValueError("u_hat存在负频率项")
-
-        u = np.zeros((k_num, _N), dtype=float)
-        for k in range(k_num):
-            u[k] = np.real(fft.ifft(u_hat[k]))
-        if self.vmd_extend:
-            u = u[:, N // 2 : N // 2 + N]
-        fc = w / (2 * np.pi)
-        u = u[np.argsort(fc)[::-1]]
-        fc = np.sort(fc)[::-1]
-
-        return u, fc
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _fre_centerG(data: np.ndarray, f: np.ndarray) -> np.ndarray:
-        return np.dot(f, np.abs(data) ** 2) / np.sum(np.abs(data) ** 2)
+        # 检查优化结果有效性
+        # for spc in Spc_mode_list:
+        #     if np.any(np.abs(spc.data[len(Sig_extend) // 2 :]) != 0):  # 负频率项应保持为0
+        #         raise ValueError("VMD分解结果包含负频率成分，请调整参数重试")
+        # ------------------------------------------------------------------------#
+        # 频谱优化复原为时域信号
+        Sig_mode_list = []
+        for k in range(decNum):
+            mode = np.real(fft.ifft(Spc_mode_list[k]))
+            if isExtend:
+                mode = mode[len(self.Sig) // 2 : -len(self.Sig) // 2]
+            Sig_mode_list.append(
+                Signal(self.Sig.t_axis.copy(), mode, name=self.Sig.name, unit=self.Sig.unit, label=f"Mode_{k + 1}")
+            )
+        return Sig_mode_list
 
     # ----------------------------------------------------------------------------------------#
-    def _get_DC(self, data: np.ndarray, method: str, windowsize: int = 100) -> np.ndarray:
-        temp_sig = Signal(axis=self.Sig.axis, data=data)
-        emd_analyzer = EMDAnalysis(temp_sig)
-        if method == "Sift_mean":
-            DC = emd_analyzer.sifting(data)[1][2]
-        elif method == "emd_resdiue":
-            DC = emd_analyzer.emd(decNum=1000)[1]
-        elif method == "moving_average":
-            DC = np.convolve(data, np.ones(windowsize) / windowsize, mode="same")
-        else:
-            DC = np.zeros_like(data)
-        return DC
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _WiennerFilter(data: np.ndarray, w_Axis: np.ndarray, alpha: float):
-        if len(data) != len(w_Axis):
-            raise ValueError("数据长度与频率轴长度不一致")
-        filtered_data = data / (1 + alpha * w_Axis**2)
-        return filtered_data
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _vmd_stoppage(old, new, threshold):
-        down = np.sum(np.square(np.abs(old)), axis=1)
-        if np.any(down == 0):
-            return False
-        else:
-            cov = np.sum(np.square(np.abs(new - old)), axis=1) / down
-        cov_sum = np.sum(cov)
-        return cov_sum < threshold
-
-    # ----------------------------------------------------------------------------------------#
-    @staticmethod
-    def _vmd_wcinit(data: np.ndarray, fs: float, K: int, method: str = "zero") -> np.ndarray:
+    # 辅助接口
+    def init_modeFc(self, f_axis: f_Axis, K: int, method: str = "zero") -> np.ndarray:
+        fs = f_axis.lim[1]
         if method == "uniform":
             wc = np.linspace(0, fs / 2, K)
         elif method == "log":
@@ -602,9 +685,33 @@ class VMDAnalysis(Analysis):
             wc = np.zeros(K)
         return wc
 
+    @Analysis.Plot(VMDResultPlotFunc)
+    def update_mode(
+        self,
+        Spc: Spectra,
+        Spc_mode_list: list[Spectra],
+        omega_list: np.ndarray,
+        Spc_lambda: Spectra,
+        alpha_list: np.ndarray,
+        Trend: bool = False,
+    ) -> tuple[list[Spectra], np.ndarray]:
+        omega_axis = Spc.f_axis() * 2 * np.pi
+        Spc_res = -1 * (Spc_mode_list[0] - np.sum(Spc_mode_list, axis=0))  # 初始残差分量
+        for k in range(len(Spc_mode_list)):
+            if Trend and k == 0:
+                continue  # 趋势分量不参与迭代更新
+            # 更新残差分量为除当前模态外的其他模态之和
+            Spc_res += Spc_mode_list[k - 1] - Spc_mode_list[k]
+            Spc_mode_target = Spc - Spc_res + Spc_lambda / 2  # 当前分量的目标频谱
+            # 更新当前分量：对目标频谱进行维纳滤波
+            Spc_mode_list[k] = Spc_mode_target / (1 + 2 * alpha_list[k] * (omega_axis - omega_list[k]) ** 2)
+            # 更新中心频率：计算滤波后频谱中心
+            omega_list[k] = Get_spectraCenter(Spc_mode_list[k]) * 2 * np.pi
+        return Spc_mode_list, omega_list
+
 
 __all__ = [
-    "search_localExtrema",
+    "Search_localExtrema",
     "EMDAnalysis",
     "VMDAnalysis",
 ]
