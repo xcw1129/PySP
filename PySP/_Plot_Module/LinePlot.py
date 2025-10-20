@@ -60,15 +60,16 @@ class LinePlot(Plot):
 
         # ------------------------------------------------------------------------------------#
         # 时域波形绘制函数: 通过任务队列传递到绘图引擎
-        def _draw_timewaveform(ax, data):
+        def _draw_timewaveform(ax, data, kwargs):
             """内部函数：在指定ax上绘制时域波形"""
-            for S in data:
-                if not isinstance(S, Signal):
+            for Sig in data:
+                if not isinstance(Sig, Signal):
                     raise ValueError("输入数据必须为Signal对象或Signal对象列表")
                 if self.isSampled:
-                    dt = S.t_axis.T / 2000 if len(S) > 2000 else S.t_axis.dt
-                    S = Resample(S, type="extreme", dt=dt, t0=S.t_axis.t0)
-                ax.plot(S.t_axis(), S.data, label=S.label)
+                    dt = Sig.t_axis.T / 2000 if len(Sig) > 2000 else Sig.t_axis.dt
+                    Sig = Resample(Sig, type="extreme", dt=dt, t0=Sig.t_axis.t0)
+                kwargs_plot = kwargs.get("plot", {})
+                ax.plot(Sig.t_axis(), Sig.data, label=Sig.label, **kwargs_plot.get(Sig.label, {}))
             if len(data) > 1:
                 ax.legend(loc="best")
 
@@ -81,7 +82,7 @@ class LinePlot(Plot):
             "xlabel": Sig[0].t_axis.label,
             "xlim": Sig[0].t_axis.lim,
             "ylabel": f"{Sig[0].name}/{Sig[0].unit}",
-            "title": f"{Sig[0].label}时域波形",
+            "title": "时域波形",
         }
         task_kwargs.update(self.kwargs)
         task_kwargs.update(kwargs)
@@ -91,7 +92,7 @@ class LinePlot(Plot):
             "data": Sig,
             "kwargs": task_kwargs,
             "function": _draw_timewaveform,
-            "plugins": [],  # 初始化任务专属插件列表
+            "plugins": [],
         }
         self.tasks.append(task)
         return self
@@ -116,9 +117,13 @@ class LinePlot(Plot):
 
         # ------------------------------------------------------------------------------------#
         # 频谱绘制函数: 通过任务队列传递到绘图引擎
-        def _draw_spectrum(ax, data):
+        def _draw_spectrum(ax, data, kwargs):
             """内部函数：在指定ax上绘制频谱"""
-            ax.plot(data.__axis__(), data.data)
+            Spc = data
+            if not isinstance(Spc, Spectra):
+                raise ValueError("输入数据必须为Spectra对象")
+            kwargs_plot = kwargs.get("plot", {})
+            ax.plot(Spc.f_axis(), Spc.data, label=Spc.label, **kwargs_plot.get(Spc.label, {}))
 
         # ------------------------------------------------------------------------------------#
         # 频谱绘制个性化设置
@@ -137,7 +142,7 @@ class LinePlot(Plot):
             "data": Spc,
             "kwargs": task_kwargs,
             "function": _draw_spectrum,
-            "plugins": [],  # 初始化任务专属插件列表
+            "plugins": [],
         }
         self.tasks.append(task)
         return self
@@ -163,6 +168,8 @@ def TimeWaveformFunc(Sig: Signal, **kwargs) -> tuple:
     ax : matplotlib.axes.Axes
         坐标轴对象
     """
+    if "title" not in kwargs:
+        kwargs.update({"title": f"{Sig.label}时域波形"})
     fig, ax = LinePlot(isSampled=True).timeWaveform(Sig, **kwargs).show(pattern="return")
     fig.show()
     return fig, ax
@@ -186,11 +193,11 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs) -> tuple:
     ax : matplotlib.axes.Axes
         坐标轴对象
     """
-    plot_kwargs = {"yscale": "log"}
-    plot_kwargs.update(kwargs)
+    if "yscale" not in kwargs:
+        kwargs.update({"yscale": "log"})
     fig, ax = (
         LinePlot()
-        .spectrum(Spc, **plot_kwargs)
+        .spectrum(Spc, **kwargs)
         .add_plugin_to_task(
             PeakfinderPlugin(distance=max(len(Spc) // 100, 1), height=0.05 * np.max(Spc), prominence=0.1)
         )
