@@ -4,17 +4,23 @@
 
 ## 内容
     - class:
-        1. EMDAnalysis: 经验模态分解(EMD)与集合经验模态分解(EEMD)方法
-        2. VMDAnalysis: 变分模态分解(VMD)方法
+        1. EMDAnalysis: 经验模态分解(EMD)方法, 提供单模态筛选、分解控制与过程可视化
+        2. VMDAnalysis: 变分模态分解(VMD)方法, 提供频域交替优化与趋势模态可选提取
+
     - function:
-        1. select_mode: 筛选模态分量
+        1. SiftProcessPlotFunc: EMD 单次筛选过程绘图回调
+        2. DecResultPlotFunc: 分解结果绘图回调
+        3. UpdateProcessPlotFunc: VMD 迭代更新过程绘图回调
+        4. Search_localExtrema: 序列局部极值搜索与弱极值剔除
+        5. Get_spectraCenter: 计算频谱功率加权中心频率
+        6. Get_Trend: 趋势模态提取
 """
 
 from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import fft, interpolate, np, signal
 from PySP._Plot_Module.LinePlot import LinePlot, TimeWaveformFunc
-from PySP._Signal_Module.core import Signal, Spectra, f_Axis, t_Axis
+from PySP._Signal_Module.core import Signal, Spectra, f_Axis
 from PySP._Signal_Module.SignalSampling import Padding
 
 
@@ -38,19 +44,19 @@ def SiftProcessPlotFunc(
     Parameters
     ----------
     max_idx : np.ndarray
-        局部极大值点的索引序列
+        局部极大值点的索引序列, 输入范围: 一维整型数组, 长度 >=4
     Sig_upper : Signal
         上包络线对应的信号对象
     min_idx : np.ndarray
-        局部极小值点的索引序列
+        局部极小值点的索引序列, 输入范围: 一维整型数组, 长度 >=4
     Sig_lower : Signal
         下包络线对应的信号对象
     Sig_mean : Signal
         上下包络的局部均值线信号对象
     Sig_imf : Signal
-        当前筛选得到的临时 IMF 分量信号对象
+        当前筛选得到的临时 IMF 模态信号对象
     **kwargs : dict, 可选
-        传递给绘图函数的其他关键字参数
+        传递给绘图函数的其他关键字参数, 优先级高于默认样式
 
     Returns
     -------
@@ -61,14 +67,16 @@ def SiftProcessPlotFunc(
 
     Notes
     -----
-    本函数作为绘图回调由 `@Analysis.Plot` 装饰器调用, 会在绘制时将极值点以散点形式叠加显示。
+    本函数作为绘图回调由 `@Analysis.Plot` 装饰器调用, 会在主曲线上叠加极值散点标记以辅助观察筛选过程。
     """
+    if Sig_imf is None:
+        return None, None  # 当前输入为趋势模态，无法继续筛选
     # 复原原始信号
     Sig = Sig_imf + Sig_mean
     Sig.label = "原始信号"
     # 绘制原始信号、极点包络和局部均值线
-    if "IMF_temp_" in Sig_imf.label:
-        title = f"第{Sig_imf.label.split('_')[-1]}次筛选过程"
+    if "近似模态-" in Sig_imf.label and ": " in Sig_imf.label:
+        title = f"{Sig_imf.label.split(': ')[0]}第{Sig_imf.label.split(': ')[-1]}次筛选过程"
     else:
         title = "筛选过程"
     kwargs["plot"] = {
@@ -87,18 +95,15 @@ def SiftProcessPlotFunc(
 
 def DecResultPlotFunc(
     Sig_imf_list: list,
-    Sig_res: Signal,
     **kwargs,
 ) -> tuple:
     """
-    绘制 EMD 分解结果的辅助图像
+    绘制 EMD/VMD 分解结果的辅助图像
 
     Parameters
     ----------
-    Sig_imf_list : list
-        IMF 分量的信号对象列表, 每一项为一个 `Signal`
-    Sig_res : Signal
-        EMD 分解后的残余分量信号对象
+    Sig_imf_list : list[Signal]
+        模态信号对象列表, 每一项为一个 `Signal`; 对于 EMD, 列表最后一项通常为残余模态
     **kwargs : dict, 可选
         传递给绘图函数的其他关键字参数
 
@@ -111,41 +116,73 @@ def DecResultPlotFunc(
 
     Notes
     -----
-    函数以两列布局依次绘制各 IMF 的时域波形及最终残余分量, 并设置整体标题为 "EMD分解结果"。
+    函数以两列布局依次绘制各模态的时域波形, 并设置整体标题为 "分解结果"。
     """
     plot = LinePlot(ncols=2, **kwargs)
     for Sig_imf in Sig_imf_list:
         plot.timeWaveform(Sig_imf, title=f"{Sig_imf.label}时域波形")
-    plot.timeWaveform(Sig_res, title=f"{Sig_res.label}时域波形")
     fig, ax = plot.show(pattern="return")
-    fig.suptitle("EMD分解结果")
+    fig.suptitle("分解结果")
     fig.show()
     return fig, ax
 
 
-def VMDResultPlotFunc(
+def UpdateProcessPlotFunc(
     Spc_mode_list: list,
-    fc_list: np.ndarray,
+    omega_list: np.ndarray,
     **kwargs,
 ) -> tuple:
+    """
+    绘制 VMD 迭代更新过程的辅助图像
+
+    Parameters
+    ----------
+    Spc_mode_list : list[Spectra]
+        当前迭代得到的各模态频谱对象列表
+    omega_list : np.ndarray
+        各模态对应的中心角频率数组, 单位: rad/s
+    **kwargs : dict, 可选
+        传递给绘图函数的其他关键字参数
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        绘制的图对象
+    ax : list
+        子图坐标轴对象列表, 每个子图叠加一条红色虚线表示中心频率
+
+    Notes
+    -----
+    各模态频谱将转换为单边幅值谱后绘制; y 轴范围会自动根据总谱幅值设置为 110%。
+    """
+    Spc = np.sum(Spc_mode_list, axis=0)
+    maxAmp = max(np.abs(Spc))
+    kwargs.update({"ylim": (0, maxAmp * 1.1)})
     plot = LinePlot(ncols=2, **kwargs)
-    for k, Spc_mode in enumerate(Spc_mode_list, start=1):
-        Spc = Spectra(
-            Spc_mode.f_axis(), np.abs(Spc_mode.data), name=Spc_mode.name, unit=Spc_mode.unit, label=Spc_mode.label
-        ).halfCut()
-        plot.spectrum(Spc)
-        mode = fft.irfft(Spc_mode.data)
-        t_axis = t_Axis(len(mode), T=Spc_mode.f_axis.T)
-        Sig_mode = Signal(axis=t_axis, data=mode, name=Spc_mode.name, unit=Spc_mode.unit, label=Spc_mode.label)
-        plot.timeWaveform(Sig_mode)
+    for i, Spc_mode in enumerate(Spc_mode_list):
+        Spc_mode = np.abs(Spc_mode).halfCut()  # 转为单边幅值谱
+        Spc_mode.name = "幅值"
+        if "模态-" in Spc_mode.label and ": " in Spc_mode.label:
+            Spc_mode.label = Spc_mode.label.split(": ")[0]
+        plot.spectrum(Spc_mode)
     fig, ax = plot.show(pattern="return")
-    for k, axis in enumerate(ax):
-        if k // 2 == 0:
-            continue
-        # 绘制中心频率线
-        axis.axvline(fc_list[k], color="red", linestyle="--", linewidth=1, alpha=0.7, label=f"fc={fc_list[k]:.2f}Hz")
-        axis.legend()
-    fig.suptitle("VMD分解结果")
+    # 绘制中心频率线
+    for i in range(len(Spc_mode_list)):
+        fc = omega_list[i] / (2 * np.pi)
+        ax[i].axvline(
+            fc,
+            color="red",
+            linestyle="--",
+            linewidth=1,
+            alpha=0.7,
+            label=f"中心频率: {fc:.2f}Hz",
+        )
+        ax[i].legend()
+    if "模态-" in Spc_mode_list[-1].label and ": " in Spc_mode_list[-1].label:
+        title = f"第{Spc_mode_list[-1].label.split(': ')[1]}次更新结果"
+    else:
+        title = "更新结果"
+    fig.suptitle(title)
     fig.show()
     return fig, ax
 
@@ -191,75 +228,81 @@ def Search_localExtrema(data: np.ndarray, neighbors: int = 5, threshold: float =
 
 
 def Get_spectraCenter(Spc: Spectra) -> float:
+    r"""
+    计算频谱的功率加权中心频率
+
+    Parameters
+    ----------
+    Spc : Spectra
+        输入频谱对象
+
+    Returns
+    -------
+    fc : float
+        功率加权中心频率, 单位与 `Spc.f_axis()` 一致 (Hz)
+
+    Notes
+    -----
+    基于 $f_c = \frac{\sum f |X(f)|^2}{\sum |X(f)|^2}$ 计算得到。
+    """
     weighted_power = np.dot(Spc.f_axis(), np.abs(Spc) ** 2)
     total_power = np.sum(np.abs(Spc) ** 2)
     fc = weighted_power / total_power
     return fc
 
 
-def get_Trend(
-    data: np.ndarray,
-    axis,
-    name: str,
-    unit: str,
+def Get_Trend(
+    Sig: Signal,
     method: str,
-    windowsize: int = 100,
-) -> np.ndarray:
+) -> Signal:
     """
-    趋势分量估计（模块函数）
+    提取信号的趋势模态
 
     Parameters
     ----------
-    data : np.ndarray
-        输入数据
-    axis : t_Axis
-        时间轴对象
-    name : str
-        信号名称
-    unit : str
-        信号单位
+    Sig : Signal
+        输入信号对象
     method : str
-        方法选择, ["Sift_mean", "emd_residual", "moving_average", "zero"]
-    windowsize : int, optional
-        移动平均窗口, 默认: 100
+        趋势提取方法, 输入范围: ["滑动平均"], 默认: 无
 
     Returns
     -------
-    np.ndarray
-        趋势分量序列
+    Sig_trend : Signal
+        提取到的趋势模态信号对象
+
+    Raises
+    ------
+    ValueError
+        当 `method` 不被支持时抛出
     """
-    temp_sig = Signal(axis=axis.copy(), data=data, name=name, unit=unit, label="Trend_tmp")
-    emd_analyzer = EMDAnalysis(temp_sig, isPlot=False)
-    if method == "Sift_mean":
-        res = emd_analyzer.sifting(temp_sig, interpolation="spline")
-        if res is None:
-            return np.convolve(data, np.ones(max(3, windowsize)) / max(3, windowsize), mode="same")
-        _, _, _, _, Sig_mean, _ = res
-        return Sig_mean.data
-    if method in ("emd_residual", "emd_resdiue"):
-        Sig_res = emd_analyzer.emd(decNum=1000)[1]
-        return Sig_res.data
-    if method == "moving_average":
-        return np.convolve(data, np.ones(max(3, windowsize)) / max(3, windowsize), mode="same")
-    return np.zeros_like(data)
+    if method == "滑动平均":
+        length = int(len(Sig) * 0.1)
+        w = np.ones(length) / length
+        trend = np.convolve(Sig.data, w, mode="same")
+        Sig_trend = Signal(
+            axis=Sig.t_axis.copy(), data=trend, name=Sig.name, unit=Sig.unit, label=Sig.label + "趋势模态"
+        )
+        return Sig_trend
+    else:
+        raise ValueError(f"{method}: 不支持的趋势提取方法")
 
 
 # --------------------------------------------------------------------------------------------#
 # 经验模态分解
 class EMDAnalysis(Analysis):
     """
-    经验模态分解(EMD)分析器
-
-    对输入的一维信号执行 EMD 分解, 提供 IMF 提取、筛选过程可视化与结果绘制等功能。
+    经验模态分解(EMD), 对输入的一维信号执行分解, 提供 IMF 提取、筛选过程可视化与结果绘制等功能。
 
     Attributes
     ----------
     Sig : Signal
         输入信号对象
+    isPlot : bool
+        是否启用绘图流程联动
     sifting_rounds : int
         单个 IMF 的最大筛选轮数
     sifting_itpMethod : str
-        包络插值方法, 取值范围: ["spline", "pchip"]
+        包络插值方法, 输入范围: ["spline", "pchip"]
     stopSift_times : int
         连续无效筛选次数上限, 达到后终止当前 IMF 的筛选
     extrema_neighbors : int
@@ -270,9 +313,9 @@ class EMDAnalysis(Analysis):
     Methods
     -------
     emd(decNum, weakness)
-        执行 EMD 分解, 返回 IMF 列表与残余分量
+        执行 EMD 分解, 返回模态列表(最后一项为残余)
     extract_imf(Sig, rounds, times)
-        从给定信号中提取一个 IMF 分量
+        从给定信号中提取一个 IMF 模态
     sifting(Sig, interpolation)
         执行一次筛选操作并返回包络、均值与新的临时 IMF
     """
@@ -314,7 +357,7 @@ class EMDAnalysis(Analysis):
         extrema_neighbors : int, 可选
             局部极值搜索的邻域宽度参数, 输入范围: >=1, 默认: 5
         extremum_threshold : float, 可选
-            极值强度相对阈值, 输入范围: >=0, 默认: 1e-5
+            极值强度相对阈值, 输入范围: >0, 默认: 1e-5
         **kwargs : dict, 可选
             传递给绘图模块的其他关键字参数, 若未提供 `ylim`, 将根据输入信号自动设置合理范围。
 
@@ -344,55 +387,38 @@ class EMDAnalysis(Analysis):
     @Analysis.Plot(DecResultPlotFunc)
     def emd(self, decNum: int = 5, weakness: float = 1e-2) -> tuple:
         """
-        执行 EMD 分解, 逐步提取 IMF 并更新残余分量
+        执行 EMD 分解, 逐步提取 IMF 并更新残余模态
 
         Parameters
         ----------
         decNum : int, 可选
             期望分解出的 IMF 数量上限, 输入范围: >=1, 默认: 5
         weakness : float, 可选
-            残余分量的终止判据系数, 当 `np.ptp(residual) <= weakness * np.ptp(original)` 时终止,
+            残余模态的终止判据系数, 当 `np.ptp(residual) <= weakness * np.ptp(original)` 时终止,
             输入范围: >=0, 默认: 1e-2
 
         Returns
         -------
-        Sig_imf_list : list of Signal
-            提取得到的 IMF 分量序列
-        Sig_res : Signal
-            最终残余分量
-
-        Raises
-        ------
-        ValueError
-            当 `sum(IMF) + Residual` 与原始信号逐点不一致(阈值 1e-6)时抛出。
-
-        Notes
-        -----
-        若在某次提取中未能得到有效 IMF, 分解会提前终止。该方法受 `@Analysis.Plot` 装饰器影响,
-        在 `isPlot=True` 时会联动绘制分解结果。
+        Sig_list : list[Signal]
+            模态信号序列; 列表最后一项为残余模态
         """
         Sig_imf_list = []
         Sig_res = self.Sig.copy()
-        Sig_res.label = "Residual_0"
+        Sig_res.label = "残差-0"
         # 对残差进行循环筛选
         for i in range(decNum):
-            # 提取IMF分量
+            # 提取IMF模态
             Sig_imf = self.extract_imf(Sig_res, self.sifting_rounds, self.stopSift_times)
-            if Sig_imf is None:
-                break
-            else:
-                Sig_imf_list.append(Sig_imf)
-                Sig_res = Sig_res - Sig_imf
-                # 更新残余分量标签
-                Sig_res.label = f"Residual_{i + 1}"
-            # 判断分解终止条件：.extract_imf已判断是否为趋势，此处仅判断幅值衰减情况
-            if np.ptp(Sig_res) <= weakness * np.ptp(self.Sig):  # 峰峰值衰减到一定程度
-                Sig_res.label = "Residual"
-                break  # 如果Sig_res标签不含数字，则表示EMD分解正常终止
-        # 逐点收敛判断分解有效性
-        if np.any(np.abs(np.sum(Sig_imf_list, axis=0) + Sig_res - self.Sig) >= 1e-6):
-            raise ValueError("EMD分解结果与原始信号不一致，请重试")
-        return Sig_imf_list, Sig_res
+            Sig_imf_list.append(Sig_imf)
+            Sig_res = Sig_res - Sig_imf
+            # 更新残余模态标签
+            Sig_res.label = f"残差-{i + 1}"
+            # 判断分解终止条件
+            if np.ptp(Sig_res) <= weakness * np.ptp(self.Sig) or Sig_imf.label == "趋势模态":
+                Sig_res.label = "残差"
+                break  # 如果Sig_res标签不含数字，则表示分解有效终止
+        Sig_imf_list.append(Sig_res)  # 将残差也加入返回列表，便于绘图
+        return Sig_imf_list
 
     # ----------------------------------------------------------------------------------------#
     # 类辅助接口
@@ -405,12 +431,12 @@ class EMDAnalysis(Analysis):
         times: int = 4,
     ) -> Signal:
         """
-        从输入信号中提取一个 IMF 分量
+        从输入信号中提取一个 IMF 模态
 
         Parameters
         ----------
         Sig : Signal
-            待筛选的输入信号(通常为当前残余分量)
+            待筛选的输入信号(通常为当前残余模态)
         rounds : int, 可选
             最大筛选轮数, 输入范围: >=1, 默认: 10
         times : int, 可选
@@ -419,7 +445,7 @@ class EMDAnalysis(Analysis):
         Returns
         -------
         Sig_imf : Signal
-            提取到的 IMF 分量信号对象
+            提取到的 IMF 模态信号对象
 
         Notes
         -----
@@ -427,27 +453,32 @@ class EMDAnalysis(Analysis):
         该方法受 `@Analysis.Plot` 装饰器影响, 在 `isPlot=True` 时会联动绘制当前临时 IMF 的波形。
         """
         Sig_imf = Sig.copy()
-        Sig_imf.label = "IMF_temp_0"
+        if "残差-" in Sig.label:
+            Sig_imf.label = "近似模态-" + str(int(Sig.label.split("-")[-1]) + 1) + ": 0"
+        else:
+            Sig_imf.label = "近似模态: 0"
         maxNum_old = 0
         minNum_old = 0
-        S = 0  # 记录无效筛选次数
+        S = 1  # 记录无效筛选次数
         for i in range(rounds):
             res = self.sifting(Sig_imf, self.sifting_itpMethod)
-            if res is None:
+            if res[0] is None:
+                Sig_imf = Sig
+                Sig_imf.label = "趋势模态"
                 break
             max_idx, Sig_upper, min_idx, Sig_lower, Sig_mean, Sig_imf = res
             # 判断筛选终止条件
             if maxNum_old == len(max_idx) and minNum_old == len(min_idx):
                 S += 1
             else:
-                S = 0
-            if S >= times:
+                S = 1
+            maxNum_old, minNum_old = len(max_idx), len(min_idx)
+            if S >= times:  # 成功提取到IMF模态
+                if "残差-" in Sig.label:
+                    Sig_imf.label = "模态-" + str(int(Sig.label.split("-")[-1]) + 1)
+                else:
+                    Sig_imf.label = "模态"
                 break
-        # 更新IMF分量标签
-        if "Residual_" in Sig.label:
-            Sig_imf.label = "IMF_" + str(int(Sig.label.split("_")[-1]) + 1)
-        else:
-            Sig_imf.label = "IMF"
         return Sig_imf
 
     @InputCheck({"Sig": {}, "interpolation": {}})
@@ -481,12 +512,12 @@ class EMDAnalysis(Analysis):
         Raises
         ------
         ValueError
-            当 `interpolation` 不是 "spline" 或 "pchip" 时抛出。
+            当 `interpolation` 不是 "spline" 或 "pchip" 时抛出
 
         Notes
         -----
         当极值点数量不足以进行三次样条插值(各 <4)时, 返回 None 表示本次筛选无效。
-        函数返回的 `Sig_imf_temp` 会携带筛选轮次信息(标签以 "IMF_temp_#" 形式递增)。
+        函数返回的 `Sig_imf_temp` 会携带筛选轮次信息(标签以 "近似模态-#: #" 形式递增)。
         """
         # 查找局部极值点，准备构建包络
         max_index, min_index = Search_localExtrema(
@@ -494,7 +525,7 @@ class EMDAnalysis(Analysis):
         )
         # 检查是否满足包络构建条件
         if len(max_index) < 4 or len(min_index) < 4:  # 3次样条插值至少需要4个点
-            return None
+            return None, None, None, None, None, None  # 当前输入为趋势模态，无法继续筛选
         # 构建上下包络线
         if interpolation == "spline":
             # 使用三次样条插值
@@ -508,17 +539,17 @@ class EMDAnalysis(Analysis):
             raise ValueError(f"{interpolation}: 无效的插值方法")
         upper = interpolation_func(max_index, Sig[max_index])(np.arange(len(Sig)))
         lower = interpolation_func(min_index, Sig[min_index])(np.arange(len(Sig)))
-        # 计算局部均值和IMF分量
+        # 计算局部均值和IMF模态
         mean = (upper + lower) / 2
         Sig_upper = Signal(Sig.t_axis.copy(), upper, name=Sig.name, unit=Sig.unit, label="上包络")
         Sig_lower = Signal(Sig.t_axis.copy(), lower, name=Sig.name, unit=Sig.unit, label="下包络")
         Sig_mean = Signal(Sig.t_axis.copy(), mean, name=Sig.name, unit=Sig.unit, label="局部均值")
         Sig_imf_temp = Sig - Sig_mean
         # 更新筛选轮数标签
-        if "IMF_temp_" in Sig.label:
-            Sig_imf_temp.label = "IMF_temp_" + str(int(Sig.label.split("_")[-1]) + 1)
+        if "近似模态" in Sig.label and ": " in Sig.label:
+            Sig_imf_temp.label = Sig.label.split(": ")[0] + f": {int(Sig.label.split(': ')[-1]) + 1}"
         else:
-            Sig_imf_temp.label = "IMF_temp"
+            Sig_imf_temp.label = "近似模态"
         return max_index, Sig_upper, min_index, Sig_lower, Sig_mean, Sig_imf_temp
 
 
@@ -526,9 +557,7 @@ class EMDAnalysis(Analysis):
 # 变分模态分解
 class VMDAnalysis(Analysis):
     """
-    变分模态分解(VMD)分析器
-
-    在输入信号上执行 VMD 分解, 支持趋势分量处理、中心频率初始化方式选择, 并提供与 Plot 模块联动的结果可视化。
+    变分模态分解(VMD), 通过频域交替优化将信号分解为若干具有有限带宽的本征模态。
 
     Attributes
     ----------
@@ -536,79 +565,122 @@ class VMDAnalysis(Analysis):
         输入信号对象
     isPlot : bool
         是否启用绘图流程联动
-    plot_kwargs : dict
-        传递给绘图函数的关键字参数
-    vmd_tol : float
-        迭代终止阈值, 越小越严格
-    wc_initMethod : str
-        模态中心频率初始化方法, ["uniform", "log", "octave", "linearrandom", "lograndom", "zero"]
-    vmd_Trendmethod : str
-        趋势分量估计方法, ["Sift_mean", "emd_residual", "moving_average", "zero"]
-    vmd_extend : bool
-        是否进行端点镜像扩展以减小边界效应
+    initFc_method : str
+        模态初始中心频率的初始化策略, 输入范围: ["uniform", "log", "octave", "linearrandom", "lograndom"]
+    getTrend_method : str
+        趋势模态提取方法, 输入范围: ["滑动平均"]
 
-    Notes
-    -----
-    若未显式设置 `ylim`, 将依据输入信号峰峰值在上下各扩展 10% 作为默认显示范围, 与 EMDAnalysis 保持一致。
+    Methods
+    -------
+    vmd(decNum, iterations, bw, tau, threshold, isExtend, getTrend)
+        执行 VMD 分解并返回各模态的时域信号列表
+    init_modeFc(f_axis, K, method)
+        生成 K 个初始中心频率
+    update_mode(Spc, Spc_mode_list, Spc_lambda, omega_list, alpha_list, Trend)
+        VMD 交替方向更新一次各模态与对应中心频率
     """
 
-    @InputCheck(
-        {"Sig": {}},
-        {"isPlot": {}},
-        {"vmd_tol": {"OpenLow": 0}},
-        {"wc_initMethod": {}},
-        {"vmd_Trendmethod": {}},
-        {"vmd_extend": {}},
-    )
     def __init__(
         self,
         Sig: Signal,
         isPlot: bool = False,
-        vmd_tol: float = 1e-6,
-        wc_initMethod: str = "log",
-        vmd_Trendmethod: str = "Sift_mean",
-        vmd_extend: bool = True,
+        initFc_method: str = "log",
+        getTrend_method: str = "滑动平均",
         **kwargs,
     ):
+        """
+        初始化 VMDAnalysis 对象
+
+        Parameters
+        ----------
+        Sig : Signal
+            输入信号对象
+        isPlot : bool, 可选
+            是否启用绘图流程联动, 默认: False
+        initFc_method : str, 可选
+            模态初始中心频率的初始化策略, 输入范围:
+            ["uniform", "log", "octave", "linearrandom", "lograndom"],
+            默认: "log"
+        getTrend_method : str, 可选
+            趋势模态提取方法, 输入范围: ["滑动平均"], 默认: "滑动平均"
+        **kwargs : dict, 可选
+            传递给绘图模块的其他关键字参数, 若未提供 `ylim`, 将根据输入信号自动设置合理范围。
+
+        Notes
+        -----
+        若未显式设置 `ylim`, 将依据输入信号峰峰值在上下各扩展 10% 作为默认显示范围。
+        """
         # 默认配置ylim使所有绘图幅值范围与输入信号一致
         if "ylim" not in kwargs:
             L = max(Sig.data) - min(Sig.data)
-            kwargs.update({"ylim": (min(Sig.data) - 0.1 * L, max(Sig.data) + 0.1 * L)})
+            kwargs["ylim"] = (min(Sig.data) - 0.1 * L, max(Sig.data) + 0.1 * L)
         # Analysis类初始化
         super().__init__(Sig=Sig, isPlot=isPlot, **kwargs)
         # VMDAnalysis子类特有属性
-        self.vmd_tol = vmd_tol
-        self.initFc_method = wc_initMethod
-        self.getTrend_method = vmd_Trendmethod
-        self.vmd_extend = vmd_extend
+        self.initFc_method = initFc_method
+        self.getTrend_method = getTrend_method
 
     # ----------------------------------------------------------------------------------------#
     # 主接口
     @InputCheck(
         {"decNum": {"Low": 1}},
         {"iterations": {"Low": 1}},
-        {"bw": {"OpenLow": 0.0}},
-        {"tau": {"OpenLow": 0.0}},
-        {"Trend": {}},
+        {"bw": {"OpenLow": 0}},
+        {"tau": {"OpenLow": 0}},
+        {"threshold": {"OpenLow": 0}},
+        {"isExtend": {}},
+        {"getTrend": {}},
     )
+    @Analysis.Plot(DecResultPlotFunc)
     def vmd(
         self,
         decNum: int,
         iterations: int = 100,
         bw: float = 200.0,
         tau: float = 0.5,
-        getTrend: bool = False,
+        threshold: float = 1e-6,
         isExtend: bool = True,
+        getTrend: bool = False,
     ) -> tuple:
+        """
+        执行 VMD 分解
+
+        Parameters
+        ----------
+        decNum : int
+            期望分解出的模态数, 输入范围: >=1
+        iterations : int, 可选
+            最大迭代次数, 输入范围: >=1, 默认: 100
+        bw : float, 可选
+            限制模态的-3dB带宽(Hz), 用于计算惩罚因子, 输入范围: >=0, 默认: 200.0
+        tau : float, 可选
+            拉格朗日乘子更新步长, 输入范围: >=0, 默认: 0.5
+        threshold : float, 可选
+            收敛判据阈值, 当相邻迭代模态变化的相对范数之和低于该值时终止, 输入范围: >=0, 默认: 1e-6
+        isExtend : bool, 可选
+            是否进行镜像延拓以缓解边界效应, 默认: True
+        getTrend : bool, 可选
+            是否提取趋势模态并固定为首个模态, 默认: False
+
+        Returns
+        -------
+        Sig_mode_list : list[Signal]
+            分解得到的各模态时域信号, 长度为 `decNum`
+
+        Notes
+        -----
+        当 `getTrend=True` 时, 首个模态由趋势提取得到并在迭代中保持不变。
+        """
         # ------------------------------------------------------------------------#
-        # VMD 预处理
         # 数据双边延拓缓解边界效应
         if isExtend:
             Sig_extend = Padding(Sig=self.Sig, length=len(self.Sig) // 2, method="mirror")
         else:
             Sig_extend = self.Sig.copy()
+        # ------------------------------------------------------------------------#
+        # 准备频域优化输入
         analytic = signal.hilbert(Sig_extend)
-        X_k = fft.fft(analytic)  # 延拓信号解析频谱
+        X_k = fft.fft(analytic) / len(Sig_extend)  # 延拓信号解析频谱
         Spc_extend = Spectra(
             Sig_extend.f_axis,
             X_k,
@@ -616,102 +688,186 @@ class VMDAnalysis(Analysis):
             unit=self.Sig.unit,
             label=self.Sig.label,
         )
-        # 初始化优化变量和超参数
+        # 初始化优化变量
         Spc_mode_list = [
-            Spectra(Sig_extend.f_axis, name=self.Sig.name, unit=self.Sig.unit, label=f"Mode_{i + 1}")
+            Spectra(Sig_extend.f_axis, name=self.Sig.name, unit=self.Sig.unit, label=f"模态-{i + 1}: 0")
             for i in range(decNum)
         ]
-        Spc_lambda = Spectra(Sig_extend.f_axis, name=self.Sig.name, unit=self.Sig.unit, label="拉格朗日乘子")
-        omega_list = (
-            self.init_modeFc(Spc_extend.f_axis.copy(), decNum, method=self.initFc_method) * 2 * np.pi
-        )  # 模态中心角频率
-        alpha = (10 ** (3 / 20) - 1) / (2 * (np.pi * bw) ** 2)  # 变分约束惩罚因子
-        alpha_list = alpha * np.ones(decNum)
-        # 趋势分量提取
+        Spc_lambda = Spectra(
+            Sig_extend.f_axis,
+            name=self.Sig.name,
+            unit=self.Sig.unit,
+            label="拉格朗日乘子",
+        )
+        # ------------------------------------------------------------------------#
+        # 优化超参数初始化
+        # 各分类中心角频率初始化
+        omega_list = self.init_modeFc(Sig_extend.f_axis, decNum, method=self.initFc_method) * 2 * np.pi
+        # 变分约束惩罚因子，由等效带宽bw计算得到
+        alpha = (10 ** (3 / 20) - 1) / (2 * (np.pi * bw) ** 2)
+        alpha_list = alpha * np.ones(decNum)  # 初始各模态惩罚因子相等
+        # 趋势模态提取
         if getTrend:
-            Sig_trend = get_Trend(Sig_extend, method=self.getTrend_method)
-            X_k_trend = fft.fft(signal.hilbert(Sig_trend))
-            Spc_trend = Spectra(Sig_extend.f_axis, X_k_trend, name=self.Sig.name, unit=self.Sig.unit, label="Trend")
+            Sig_trend = Get_Trend(Sig_extend, method=self.getTrend_method)
+            # 转为频谱形式并固定为第一个模态
+            X_k_trend = fft.fft(Sig_trend) / len(Sig_trend)
+            X_k_trend[0:] = X_k_trend[0:] * 2
+            X_k_trend[len(Sig_extend) // 2 :] = 0
+            Spc_trend = Spectra(Sig_extend.f_axis, X_k_trend, name=self.Sig.name, unit=self.Sig.unit, label="趋势模态")
             Spc_mode_list[0] = Spc_trend
+            omega_list[0] = 0.0  # 趋势模态中心频率固定为0
         # ------------------------------------------------------------------------#
         # 变分优化迭代过程
-        for i in range(iterations):
-            # 交替更新各模态分量与中心频率
-            Spc_mode_list, omega_list = self.update_mode(
+        diff = 1
+        for i in range(1, iterations + 1):
+            # 交替更新各模态模态与中心频率
+            new_Spc_mode_list, omega_list = self.update_mode(
                 Spc_extend,
                 Spc_mode_list,
-                omega_list,
                 Spc_lambda,
+                omega_list,
                 alpha_list,
                 Trend=getTrend,
             )
-            Spc_lambda += tau * (Spc_extend - (np.sum(Spc_mode_list, axis=0)))  # 更新拉格朗日乘子
-            # 检查优化收敛条件
-            if True:
+            Spc_lambda += tau * (Spc_extend - (np.sum(new_Spc_mode_list, axis=0)))  # 更新拉格朗日乘子
+            # 检查优化收敛条件: 所有模态的变化量总和小于阈值
+            if i % 10 == 0:  # 每10次迭代检查一次
+                diff = np.sum(
+                    [np.linalg.norm(new - old) for new, old in zip(new_Spc_mode_list, Spc_mode_list)]
+                ) / np.sum([np.linalg.norm(mode) for mode in Spc_mode_list])
+            Spc_mode_list = new_Spc_mode_list
+            if diff <= threshold:
+                # 优化有效收敛，更新模态标签，终止迭代
+                for Spc_mode in Spc_mode_list:
+                    if "模态-" in Spc_mode.label:
+                        Spc_mode.label = Spc_mode.label.split(": ")[0]
                 break
-        # 检查优化结果有效性
-        # for spc in Spc_mode_list:
-        #     if np.any(np.abs(spc.data[len(Sig_extend) // 2 :]) != 0):  # 负频率项应保持为0
-        #         raise ValueError("VMD分解结果包含负频率成分，请调整参数重试")
         # ------------------------------------------------------------------------#
-        # 频谱优化复原为时域信号
+        # 频域优化复原为时域
         Sig_mode_list = []
         for k in range(decNum):
-            mode = np.real(fft.ifft(Spc_mode_list[k]))
+            mode = np.real(fft.ifft(Spc_mode_list[k])) * len(Sig_extend)  # 反归一化
             if isExtend:
                 mode = mode[len(self.Sig) // 2 : -len(self.Sig) // 2]
             Sig_mode_list.append(
-                Signal(self.Sig.t_axis.copy(), mode, name=self.Sig.name, unit=self.Sig.unit, label=f"Mode_{k + 1}")
+                Signal(
+                    self.Sig.t_axis.copy(), mode, name=self.Sig.name, unit=self.Sig.unit, label=Spc_mode_list[k].label
+                )
             )
         return Sig_mode_list
 
     # ----------------------------------------------------------------------------------------#
     # 辅助接口
-    def init_modeFc(self, f_axis: f_Axis, K: int, method: str = "zero") -> np.ndarray:
+    def init_modeFc(self, f_axis: f_Axis, K: int, method: str) -> np.ndarray:
+        """
+        生成 K 个初始中心频率
+
+        Parameters
+        ----------
+        f_axis : f_Axis
+            频率轴对象
+        K : int
+            模态数量, 输入范围: >=1
+        method : str
+            初始化策略, 输入范围: ["uniform", "log", "octave", "linearrandom", "lograndom"]
+
+        Returns
+        -------
+        fc_list : np.ndarray
+            初始中心频率数组(Hz), 长度为 K
+
+        Raises
+        ------
+        ValueError
+            当 `method` 不被支持时抛出
+        """
         fs = f_axis.lim[1]
         if method == "uniform":
-            wc = np.linspace(0, fs / 2, K)
+            fc_list = np.linspace(0, fs / 2, K)
         elif method == "log":
-            wc = np.logspace(np.log10(1), np.log10(fs / 2), K)
+            fc_list = np.logspace(np.log10(1), np.log10(fs / 2), K)
         elif method == "octave":
-            wc = np.logspace(np.log2(1), np.log2(fs / 2), K, base=2)
+            fc_list = np.logspace(np.log2(1), np.log2(fs / 2), K, base=2)
         elif method == "linearrandom":
-            wc = np.random.rand(K) * fs / 2
-            wc = np.sort(wc)
+            fc_list = np.random.rand(K) * fs / 2
+            fc_list = np.sort(fc_list)
         elif method == "lograndom":
-            wc = np.exp(np.log(fs / 2) + (np.log(0.5) - np.log(fs / 2)) * np.random.rand(K))
-            wc = np.sort(wc)
+            fc_list = np.exp(np.log(fs / 2) + (np.log(0.5) - np.log(fs / 2)) * np.random.rand(K))
+            fc_list = np.sort(fc_list)
         else:
-            wc = np.zeros(K)
-        return wc
+            raise ValueError(f"{method}: 不支持的中心频率初始化方法")
+        return fc_list
 
-    @Analysis.Plot(VMDResultPlotFunc)
+    @Analysis.Plot(UpdateProcessPlotFunc)
     def update_mode(
         self,
         Spc: Spectra,
         Spc_mode_list: list[Spectra],
-        omega_list: np.ndarray,
         Spc_lambda: Spectra,
+        omega_list: np.ndarray,
         alpha_list: np.ndarray,
         Trend: bool = False,
     ) -> tuple[list[Spectra], np.ndarray]:
+        """
+        VMD 交替方向更新一次各模态与对应中心频率
+
+        Parameters
+        ----------
+        Spc : Spectra
+            输入信号的解析频谱
+        Spc_mode_list : list[Spectra]
+            当前迭代的各模态频谱列表
+        Spc_lambda : Spectra
+            拉格朗日乘子频谱
+        omega_list : np.ndarray
+            当前各模态的中心角频率数组, 单位: rad/s
+        alpha_list : np.ndarray
+            各模态惩罚因子数组
+        Trend : bool, 可选
+            是否包含并固定趋势模态(位于下标 0), 默认: False
+
+        Returns
+        -------
+        new_Spc_mode_list : list[Spectra]
+            更新后的各模态频谱列表
+        new_omega_list : np.ndarray
+            更新后的各模态中心角频率数组, 单位: rad/s
+        """
         omega_axis = Spc.f_axis() * 2 * np.pi
-        Spc_res = -1 * (Spc_mode_list[0] - np.sum(Spc_mode_list, axis=0))  # 初始残差分量
+        # 更新模态频谱
+        new_Spc_mode_list = [Spc_mode.copy() for Spc_mode in Spc_mode_list]
         for k in range(len(Spc_mode_list)):
             if Trend and k == 0:
-                continue  # 趋势分量不参与迭代更新
-            # 更新残差分量为除当前模态外的其他模态之和
-            Spc_res += Spc_mode_list[k - 1] - Spc_mode_list[k]
-            Spc_mode_target = Spc - Spc_res + Spc_lambda / 2  # 当前分量的目标频谱
-            # 更新当前分量：对目标频谱进行维纳滤波
-            Spc_mode_list[k] = Spc_mode_target / (1 + 2 * alpha_list[k] * (omega_axis - omega_list[k]) ** 2)
-            # 更新中心频率：计算滤波后频谱中心
-            omega_list[k] = Get_spectraCenter(Spc_mode_list[k]) * 2 * np.pi
-        return Spc_mode_list, omega_list
+                continue  # 趋势模态不参与迭代更新
+            # 更新残差模态为除当前模态外的其他模态之和
+            Spc_res = np.sum(new_Spc_mode_list, axis=0) - new_Spc_mode_list[k]
+            Spc_mode_target = Spc - Spc_res + Spc_lambda / 2  # 当前模态的目标频谱
+            # 更新当前模态：对目标频谱进行维纳滤波
+            new_Spc_mode = Spc_mode_target / (1 + 2 * alpha_list[k] * (omega_axis - omega_list[k]) ** 2)
+            # 更新模态标签
+            if "模态-" in Spc_mode_list[k].label and ": " in Spc_mode_list[k].label:
+                new_Spc_mode.label = (
+                    Spc_mode_list[k].label.split(": ")[0] + f": {int(Spc_mode_list[k].label.split(': ')[-1]) + 1}"
+                )
+            else:
+                new_Spc_mode.label = new_Spc_mode_list[k].label
+            new_Spc_mode_list[k] = new_Spc_mode
+        # 更新中心频率：计算滤波后频谱中心
+        new_omega_list = omega_list.copy()
+        for k in range(len(omega_list)):
+            if Trend and k == 0:
+                continue  # 趋势模态不参与迭代更新
+            new_omega_list[k] = Get_spectraCenter(new_Spc_mode) * 2 * np.pi
+        return new_Spc_mode_list, new_omega_list
 
 
 __all__ = [
+    "SiftProcessPlotFunc",
+    "DecResultPlotFunc",
+    "UpdateProcessPlotFunc",
     "Search_localExtrema",
+    "Get_spectraCenter",
+    "Get_Trend",
     "EMDAnalysis",
     "VMDAnalysis",
 ]
