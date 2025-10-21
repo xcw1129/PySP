@@ -169,7 +169,7 @@ def TimeWaveformFunc(Sig: Signal, **kwargs) -> tuple:
         坐标轴对象
     """
     if "title" not in kwargs:
-        kwargs.update({"title": f"{Sig.label}时域波形"})
+        kwargs["title"] = f"{Sig.label}时域波形"
     fig, ax = LinePlot(isSampled=True).timeWaveform(Sig, **kwargs).show(pattern="return")
     fig.show()
     return fig, ax
@@ -194,7 +194,7 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs) -> tuple:
         坐标轴对象
     """
     if "yscale" not in kwargs:
-        kwargs.update({"yscale": "log"})
+        kwargs["yscale"] = "log"
     fig, ax = (
         LinePlot()
         .spectrum(Spc, **kwargs)
