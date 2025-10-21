@@ -103,11 +103,12 @@ def Impulse(fs: float, T: float, ImpParams: tuple, noiseParams: tuple) -> Signal
         raise ValueError("ImpParams参数中, 冲击幅值数组长度错误")
     A_array = A if isinstance(A, np.ndarray) else np.full(len(imp_idx), A)  # 冲击幅值数组
     # 生成冲击信号
-    for idx in imp_idx:
+    for i, idx in enumerate(imp_idx):
         idx += random.randint(-int(alpha * idx_gap), int(alpha * idx_gap))  # 冲击位置滑移
-        idx = 0 if idx < 0 else idx  # 防止索引越界
-        if idx + len(impulse) < len(Sig):
-            Sig[idx : idx + len(impulse)] += impulse * A_array[idx]  # 单个冲击幅值不变
+        idx1 = max(0, idx)  # 防止冲击位置越界
+        idx2 = min(len(Sig), idx1 + len(impulse))
+        if idx2 > idx1:
+            Sig[idx1:idx2] += impulse[: idx2 - idx1] * A_array[i]  # 单个冲击幅值不变
     # 加入噪声冲击
     n, la = noiseParams
     noise_idx = random.randint(0, len(Sig), n)
