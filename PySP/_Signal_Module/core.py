@@ -426,7 +426,8 @@ class Series:
         return self.__mul__(other)
 
     def __rtruediv__(self, other):
-        if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__truediv__方法
+        # array对象优先调用.__array_ufunc，Series对象优先调用.__truediv__
+        if not isinstance(other, (int, float, complex)):
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(axis=self.__axis__, data=other / self._data, name=self.name, unit=self.unit, label=self.label)
 
@@ -440,7 +441,8 @@ class Series:
         )
 
     def __rpow__(self, other):
-        if not isinstance(other, (int, float, complex)):  # array和Series对象默认调用other.__pow__方法
+        # array对象优先调用.__array_ufunc，Series对象优先调用.__pow__
+        if not isinstance(other, (int, float, complex)):
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__, data=np.power(other, self._data), name=self.name, unit=self.unit, label=self.label
@@ -448,17 +450,6 @@ class Series:
 
     # --------------------------------------------------------------------------------#
     # numpy兼容
-    def __array__(self, dtype=None, copy=None) -> np.ndarray:
-        data_to_return = self._data
-        if dtype is not None:
-            data_to_return = data_to_return.astype(dtype)
-        else:
-            if copy is True:
-                data_to_return = data_to_return.copy()
-            else:
-                data_to_return = self._data  # 直接返回内部数组
-        return data_to_return
-
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         # 将np函数输入中的Signal对象替换为其data-np.ndarray
         args = [x._data if isinstance(x, type(self)) else x for x in inputs]
@@ -468,7 +459,7 @@ class Series:
         # 保持返回类型一致
         def package(result):
             if isinstance(result, np.ndarray) and result.shape == self._data.shape:
-                return type(self)(axis=self.__axis__, data=result, name=self.name, unit=self.unit)
+                return type(self)(axis=self.__axis__, data=result, name=self.name, unit=self.unit, label=self.label)
             else:
                 return result
 
@@ -477,6 +468,18 @@ class Series:
             return tuple((package(r)) for r in result)
         else:
             return package(result)
+
+    def __array__(self, dtype=None, copy=None) -> np.ndarray:
+        # __array_ufunc__优先级更高，仅在某些np函数调用时触发
+        data_to_return = self._data
+        if dtype is not None:
+            data_to_return = data_to_return.astype(dtype)
+        else:
+            if copy is True:
+                data_to_return = data_to_return.copy()
+            else:
+                data_to_return = self._data  # 直接返回内部数组
+        return data_to_return
 
     # --------------------------------------------------------------------------------#
     # Series序列数据典型方法
