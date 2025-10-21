@@ -125,6 +125,30 @@ def Resample(
 
 
 def Padding(Sig: Signal, length: int, method: str = "mirror") -> Signal:
+    """
+    对信号对象进行边界延拓处理，支持镜像延拓和零填充方式
+
+    Parameters
+    ----------
+    Sig : Signal
+        输入信号对象
+    length : int
+        延拓长度，输入范围: >=1
+    method : str, default: "mirror"
+        延拓方式，支持:
+        - "mirror": 镜像延拓（反射填充）
+        - "zero": 零填充
+
+    Returns
+    -------
+    Signal
+        延拓后的信号对象
+
+    Raises
+    ------
+    ValueError
+        输入参数`method`不在指定范围内
+    """
     data = Sig.data
     if method == "mirror":
         extend_data = np.pad(data, length, mode="reflect")
