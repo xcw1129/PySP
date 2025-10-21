@@ -863,14 +863,16 @@ class Spectra(Series):
         Spectra
             单边频谱对象
         """
+        if self.f_axis.f0 != 0.0:
+            raise TypeError("当前谱频率轴不完整，无法进行单边谱截取")
         N = len(self._data)
-        if N % 2 == 0:  # 偶数点
-            half_N = N // 2 + 1
-            half_data = self._data[:half_N]
-            half_data[1:-1] *= 2  # 除直流和奈奎斯特频率外乘2
-        else:  # 奇数点
+        if N % 2 == 0:  # 偶数点，非对称
+            half_N = N // 2
+            half_data = self._data[:half_N]  # 不包含奈奎斯特频率点（一般为零）
+            half_data[1:] *= 2  # 除直流外乘2
+        else:  # 奇数点，对称
             half_N = (N + 1) // 2
-            half_data = self._data[:half_N]
+            half_data = self._data[:half_N]  # 奈奎斯特频率点不在离散点上，故也不包含
             half_data[1:] *= 2  # 除直流外乘2
 
         half_f_axis = f_Axis(df=self.f_axis.df, N=half_N)
