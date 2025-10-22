@@ -6,8 +6,8 @@
     - class:
         1. LinePlot: 波形图, 谱图等线条图绘制方法, 可绘制多线条图
     - function:
-        1. TimeWaveformFunc: 单信号时域波形图绘制函数
-        2. FreqSpectrumFunc: 单谱图绘制函数
+        1. timeWaveform_PlotFunc: 单信号时域波形图绘制函数
+        2. freqSpectrum_PlotFunc: 单谱图绘制函数
 """
 
 from PySP._Assist_Module.Decorators import InputCheck

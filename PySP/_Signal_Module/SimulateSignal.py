@@ -5,6 +5,8 @@
 ## 内容
     - function:
         1. Periodic: 生成仿真含噪准周期信号
+        2. Impulse: 生成仿真冲击序列和噪声冲击复合信号
+        3. Modulation: 生成仿真含噪调制信号
 """
 
 from PySP._Assist_Module.Decorators import InputCheck

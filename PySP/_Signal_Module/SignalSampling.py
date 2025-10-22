@@ -4,7 +4,8 @@
 
 ## 内容
     - function:
-        1. Resample: 对信号序列 Sig 进行任意时间段的重采样，支持下采样与上采样多种方式。
+        1. Resample: 对信号序列 Sig 进行任意时间段的重采样，支持下采样与上采样多种方式
+        2. Padding: 对信号对象进行边界延拓处理，支持镜像延拓和零填充方式
 """
 
 from PySP._Assist_Module.Dependencies import Optional, np
