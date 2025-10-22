@@ -857,7 +857,7 @@ class VMDAnalysis(Analysis):
         for k in range(len(omega_list)):
             if Trend and k == 0:
                 continue  # 趋势模态不参与迭代更新
-            new_omega_list[k] = Get_spectraCenter(new_Spc_mode) * 2 * np.pi
+            new_omega_list[k] = Get_spectraCenter(new_Spc_mode_list[k]) * 2 * np.pi
         return new_Spc_mode_list, new_omega_list
 
 
