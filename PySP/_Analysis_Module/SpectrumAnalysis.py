@@ -21,7 +21,7 @@ from PySP._Signal_Module.core import Spectra
 # ------------------------------------------------------------------------#
 # ----------------------------------------------------------------#
 @InputCheck({"num": {"Low": 1}, "padding": {"Low": 1}})
-def Window(
+def window(
     num: int,
     type: str = "汉宁窗",
     func: Optional[Callable] = None,
@@ -152,7 +152,7 @@ class SpectrumAnalysis(Analysis):
         X_f : np.ndarray
             变换结果
         """
-        w = Window(num=len(data), type=WinType)
+        w = window(num=len(data), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
         dt = 1 / fs
         # 由DFT近似计算傅里叶变换
@@ -176,7 +176,7 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边系数幅值谱
         """
-        w = Window(num=len(self.Sig), type=WinType)
+        w = window(num=len(self.Sig), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
         # 由DFT计算傅里叶级数系数
         X_k = SpectrumAnalysis.dft(self.Sig.data * w) / len(self.Sig)  # DFT/N
@@ -227,7 +227,7 @@ class SpectrumAnalysis(Analysis):
         Spectra : Spectra
             单边功率谱密度
         """
-        w = Window(num=len(self.Sig), type=WinType)
+        w = window(num=len(self.Sig), type=WinType)
         scale = 1 / np.mean(w)  # 幅值补偿因子
         # 由DFT计算功率谱密度
         X_k = SpectrumAnalysis.dft(self.Sig.data * w) / len(self.Sig)  # DFT/N
@@ -266,5 +266,5 @@ class SpectrumAnalysis(Analysis):
 
 __all__ = [
     "SpectrumAnalysis",
-    "Window",
+    "window",
 ]
