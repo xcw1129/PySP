@@ -785,9 +785,9 @@ class Signal(Series):
         -------
         None
         """
-        from PySP.Plot import TimeWaveformFunc
+        from PySP.Plot import timeWaveform_PlotFunc
 
-        fig, ax = TimeWaveformFunc(self, **kwargs)
+        fig, ax = timeWaveform_PlotFunc(self, **kwargs)
         try:
             from IPython import display
 
@@ -900,9 +900,9 @@ class Spectra(Series):
         -------
         None
         """
-        from PySP.Plot import FreqSpectrumFunc
+        from PySP.Plot import freqSpectrum_PlotFunc
 
-        fig, ax = FreqSpectrumFunc(self, **kwargs)
+        fig, ax = freqSpectrum_PlotFunc(self, **kwargs)
         try:
             from IPython import display
 

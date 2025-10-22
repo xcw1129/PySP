@@ -12,7 +12,7 @@
 from PySP._Analysis_Module.core import Analysis
 from PySP._Assist_Module.Decorators import InputCheck
 from PySP._Assist_Module.Dependencies import Callable, Optional, fft, np, signal
-from PySP._Plot_Module.LinePlot import FreqSpectrumFunc
+from PySP._Plot_Module.LinePlot import freqSpectrum_PlotFunc
 from PySP._Signal_Module.core import Spectra
 
 
@@ -161,7 +161,7 @@ class SpectrumAnalysis(Analysis):
         return X_f
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(FreqSpectrumFunc)
+    @Analysis.Plot(freqSpectrum_PlotFunc)
     def cft(self, WinType: str = "汉宁窗") -> Spectra:
         """
         计算有限长信号在0~N/2*Δf范围傅里叶级数系数幅值的数值近似
@@ -187,7 +187,7 @@ class SpectrumAnalysis(Analysis):
         return Spc.halfCut()
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(FreqSpectrumFunc)
+    @Analysis.Plot(freqSpectrum_PlotFunc)
     def esd(self, WinType: str = "汉宁窗") -> Spectra:
         """
         计算时域窄带信号在0~N/2*Δf范围能量谱密度的数值近似
@@ -212,7 +212,7 @@ class SpectrumAnalysis(Analysis):
         return Spc.halfCut()
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(FreqSpectrumFunc)
+    @Analysis.Plot(freqSpectrum_PlotFunc)
     def psd(self, WinType: str = "汉宁窗") -> Spectra:
         """
         计算有限长信号在0~N/2*Δf范围功率谱密度的数值近似
@@ -240,7 +240,7 @@ class SpectrumAnalysis(Analysis):
         return Spc.halfCut()
 
     # ----------------------------------------------------------------------------------------#
-    @Analysis.Plot(FreqSpectrumFunc)
+    @Analysis.Plot(freqSpectrum_PlotFunc)
     def enve_spectra(self, WinType: str = "汉宁窗") -> Spectra:
         """
         计算信号的包络谱

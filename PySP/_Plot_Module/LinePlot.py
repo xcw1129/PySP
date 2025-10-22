@@ -150,7 +150,7 @@ class LinePlot(Plot):
 
 # --------------------------------------------------------------------------------------------#
 # LinePlot类绘图方法函数形式调用接口
-def TimeWaveformFunc(Sig: Signal, **kwargs) -> tuple:
+def timeWaveform_PlotFunc(Sig: Signal, **kwargs) -> tuple:
     """
     单信号时域波形图绘制函数
 
@@ -175,7 +175,7 @@ def TimeWaveformFunc(Sig: Signal, **kwargs) -> tuple:
     return fig, ax
 
 
-def FreqSpectrumFunc(Spc: Spectra, **kwargs) -> tuple:
+def freqSpectrum_PlotFunc(Spc: Spectra, **kwargs) -> tuple:
     """
     单频谱绘制函数
 
@@ -207,4 +207,4 @@ def FreqSpectrumFunc(Spc: Spectra, **kwargs) -> tuple:
     return fig, ax
 
 
-__all__ = ["LinePlot", "TimeWaveformFunc", "FreqSpectrumFunc"]
+__all__ = ["LinePlot", "timeWaveform_PlotFunc", "freqSpectrum_PlotFunc"]
