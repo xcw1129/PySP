@@ -319,8 +319,8 @@ class Series:
         if isinstance(other, type(self)):
             if self.__axis__ == other.__axis__:
                 return np.array_equal(self._data, other._data)
-        elif isinstance(other, np.ndarray):
-            return np.array_equal(self._data, other)
+        elif isinstance(other, (np.ndarray, list, tuple)):
+            return np.array_equal(self._data, np.asarray(other))
         elif isinstance(other, (int, float, complex)):
             return np.all(self._data == other)
         else:
@@ -330,33 +330,33 @@ class Series:
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self._data > (other._data if isinstance(other, type(self)) else other)
+        return self._data > (other._data if isinstance(other, type(self)) else np.asarray(other))
 
     def __lt__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self._data < (other._data if isinstance(other, type(self)) else other)
+        return self._data < (other._data if isinstance(other, type(self)) else np.asarray(other))
 
     def __ge__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self._data >= (other._data if isinstance(other, type(self)) else other)
+        return self._data >= (other._data if isinstance(other, type(self)) else np.asarray(other))
 
     def __le__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法比较")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行比较操作")
-        return self._data <= (other._data if isinstance(other, type(self)) else other)
+        return self._data <= (other._data if isinstance(other, type(self)) else np.asarray(other))
 
     # --------------------------------------------------------------------------------#
     # 支持算术运算
@@ -364,11 +364,11 @@ class Series:
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法运算")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self._data + (other._data if isinstance(other, type(self)) else other),
+            data=self._data + (other._data if isinstance(other, type(self)) else np.asarray(other)),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -378,11 +378,11 @@ class Series:
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError(f"{type(self).__name__}对象的坐标轴参数不一致, 无法运算")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self._data - (other._data if isinstance(other, type(self)) else other),
+            data=self._data - (other._data if isinstance(other, type(self)) else np.asarray(other)),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -392,17 +392,25 @@ class Series:
         return self.__add__(other)
 
     def __rsub__(self, other):
-        return self.__sub__(other) * (-1)
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex)):
+            raise TypeError(f"不支持{type(self).__name__}对象与{type(other).__name__}类型进行运算操作")
+        return type(self)(
+            axis=self.__axis__,
+            data=(np.asarray(other) - self._data),
+            name=self.name,
+            unit=self.unit,
+            label=self.label,
+        )
 
     def __mul__(self, other):
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self._data * (other._data if isinstance(other, type(self)) else other),
+            data=self._data * (other._data if isinstance(other, type(self)) else np.asarray(other)),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -412,11 +420,11 @@ class Series:
         if isinstance(other, type(self)):
             if self.__axis__ != other.__axis__:
                 raise ValueError("两个信号的采样参数不一致, 无法运算")
-        if not isinstance(other, (np.ndarray, int, float, complex, type(self))):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
             axis=self.__axis__,
-            data=self._data / (other._data if isinstance(other, type(self)) else other),
+            data=self._data / (other._data if isinstance(other, type(self)) else np.asarray(other)),
             name=self.name,
             unit=self.unit,
             label=self.label,
@@ -426,59 +434,91 @@ class Series:
         return self.__mul__(other)
 
     def __rtruediv__(self, other):
-        # array对象优先调用.__array_ufunc，Series对象优先调用.__truediv__
-        if not isinstance(other, (int, float, complex)):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex)):
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
-        return type(self)(axis=self.__axis__, data=other / self._data, name=self.name, unit=self.unit, label=self.label)
-
-    def __pow__(self, other):
         return type(self)(
             axis=self.__axis__,
-            data=np.power(self._data, other._data if isinstance(other, type(self)) else other),
+            data=(np.asarray(other) / self._data),
+            name=self.name,
+            unit=self.unit,
+            label=self.label,
+        )
+
+    def __pow__(self, other):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex, type(self))):
+            raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
+        return type(self)(
+            axis=self.__axis__,
+            data=np.power(self._data, other._data if isinstance(other, type(self)) else np.asarray(other)),
             name=self.name,
             unit=self.unit,
             label=self.label,
         )
 
     def __rpow__(self, other):
-        # array对象优先调用.__array_ufunc，Series对象优先调用.__pow__
-        if not isinstance(other, (int, float, complex)):
+        if not isinstance(other, (np.ndarray, list, tuple, int, float, complex)):
             raise TypeError(f"不支持{type(self).__name__}与{type(other).__name__}类型进行运算操作")
         return type(self)(
-            axis=self.__axis__, data=np.power(other, self._data), name=self.name, unit=self.unit, label=self.label
+            axis=self.__axis__,
+            data=np.power(np.asarray(other), self._data),
+            name=self.name,
+            unit=self.unit,
+            label=self.label,
         )
 
     # --------------------------------------------------------------------------------#
     # numpy兼容
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        # 将np函数输入中的Signal对象替换为其data-np.ndarray
-        args = [x._data if isinstance(x, type(self)) else x for x in inputs]
-        # 执行NumPy的ufunc操作
-        result = getattr(ufunc, method)(*args, **kwargs)
+    # 普通接口函数兼容
+    def __array_function__(self, func, types, args, kwargs):
+        # 将输入中的Series实例解包
+        args = [x._data.copy() if isinstance(x, type(self)) else x for x in args]
+        # 执行NumPy的函数操作
+        result = func(*args, **kwargs)
+        # 检查结果，保持返回类型一致
+        UNPACKED_FUNCTION = [np.angle, np.sort, np.argsort, np.fft.fft, np.fft.ifft, np.fft.fftshift, np.fft.ifftshift]
+        if (
+            isinstance(result, np.ndarray)
+            and result.shape == self._data.shape
+            and result.dtype in (np.float_, np.int_, np.complex_)  # 非数值数据不封装
+            and func not in UNPACKED_FUNCTION  # 特例普通函数不封装
+        ):
+            return type(self)(axis=self.__axis__, data=result, name=self.name, unit=self.unit, label=self.label)
+        else:
+            return result
 
-        # 保持返回类型一致
-        def package(result):
-            if isinstance(result, np.ndarray) and result.shape == self._data.shape:
+    # 底层运算函数兼容
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        # 处理非逐元素操作（如add.reduce等，极少使用）
+        if method == "reduce" or method == "reduceat" or method == "outer":
+            # 将输入中的Series实例解包
+            args = [x._data.copy() if isinstance(x, type(self)) else x for x in inputs]
+            result = getattr(ufunc, method)(*args, **kwargs)
+            return result
+
+        # 处理逐元素运算（如abs等，常用）
+        elif method == "__call__" or method == "accumulate":
+            # 将输入中的Series实例解包
+            args = [x._data.copy() if isinstance(x, type(self)) else x for x in inputs]
+            # 执行ufunc
+            result = getattr(ufunc, method)(*args, **kwargs)
+            # 检查结果，保持返回类型一致
+            if (
+                isinstance(result, np.ndarray)
+                and result.shape == self._data.shape
+                and result.dtype in (np.float_, np.int_, np.complex_)  # 非数值数据不封装
+            ):
                 return type(self)(axis=self.__axis__, data=result, name=self.name, unit=self.unit, label=self.label)
             else:
                 return result
 
-        if isinstance(result, tuple):
-            # 例如np.divmod等返回元组
-            return tuple((package(r)) for r in result)
         else:
-            return package(result)
+            return NotImplemented
 
-    def __array__(self, dtype=None, copy=None) -> np.ndarray:
-        # __array_ufunc__优先级更高，仅在某些np函数调用时触发
-        data_to_return = self._data
+    # 底层数组接口兼容
+    def __array__(self, dtype=None) -> np.ndarray:
+        data_to_return = self._data.copy()  # 返回数据的副本，防止被修改
         if dtype is not None:
             data_to_return = data_to_return.astype(dtype)
-        else:
-            if copy is True:
-                data_to_return = data_to_return.copy()
-            else:
-                data_to_return = self._data  # 直接返回内部数组
         return data_to_return
 
     # --------------------------------------------------------------------------------#
