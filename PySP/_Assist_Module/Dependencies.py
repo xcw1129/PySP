@@ -15,7 +15,7 @@ from numpy import random  # 随机数包
 
 # 高级数学分析库
 from scipy import signal  # 信号处理包
-from scipy import fft  # 快速傅里叶变换包
+from scipy import fftpack as fft  # 快速傅里叶变换包
 from scipy import stats  # 统计分析包
 from scipy import interpolate  # 插值分析包
 

@@ -193,10 +193,10 @@ class Plot:
         yscale = task_kwargs.get("yscale", "linear")
         ax.set_yscale(yscale)
         # 设置Y轴范围
+        ax.margins(y=0.1)  # 设置Y轴出血边边距为10%
         cur_ylim = ax.get_ylim()
         if yscale == "log":
             cur_ylim = (max(cur_ylim[0], 1e-8), max(cur_ylim[1], 1e-8))
-        ax.margins(y=0.15)
         ylim = task_kwargs.get("ylim", cur_ylim)
         ax.set_ylim(ylim[0], ylim[1])
         # 设置Y轴刻度
@@ -217,8 +217,8 @@ class Plot:
                 # 设置指定数量的均匀分布刻度（范围缩小以提供出血边）
                 ax.set_yticks(
                     np.linspace(
-                        ylim[0] + 0.1 * (ylim[1] - ylim[0]),
-                        ylim[1] - 0.1 * (ylim[1] - ylim[0]),
+                        ylim[0] + (1 / 12) * (ylim[1] - ylim[0]),
+                        ylim[1] - (1 / 12) * (ylim[1] - ylim[0]),
                         ynbins,
                     )
                 )
@@ -309,7 +309,7 @@ class Plot:
 
         # ------------------------------------------------------------------------------------#
         # 绘图函数: 通过任务队列传递到绘图引擎
-        def _draw_plot(ax, data):
+        def _draw_plot(ax, data, kwargs):
             """在指定ax上根据绘图数据data绘图，通过任务队列传递"""
             pass
 
@@ -378,7 +378,7 @@ class Plot:
             task_function = task["function"]
             task_plugins = task["plugins"]
             try:
-                task_function(ax, task_data)  # 先执行数据相关绘图任务，便于后续图形元素设置
+                task_function(ax, task_data, task_kwargs)  # 先执行数据相关绘图任务，便于后续图形元素设置
                 self._setup_title(ax, task_kwargs)
                 self._setup_x_axis(ax, task_kwargs)
                 self._setup_y_axis(ax, task_kwargs)
@@ -399,14 +399,9 @@ class Plot:
             raise ValueError(f"未知的模式: {pattern}")
 
     # ----------------------------------------------------------------------------------------#
-    def canvas(self, **kwargs) -> tuple:
+    def canvas(self) -> tuple:
         """
         生成当前绘图对象的空白画布
-
-        Parameters
-        ----------
-        **kwargs :
-            传递给 plot 方法的绘图参数，如 figsize、title 等
 
         Returns
         -------
@@ -423,7 +418,7 @@ class Plot:
         self.tasks.clear()
         # 生成空白画布
         data = 0
-        self.plot(data, **kwargs)
+        self.plot(data)
         fig, ax = self.show(pattern="return")
         # 恢复之前的绘图任务
         self.tasks = existing_tasks
