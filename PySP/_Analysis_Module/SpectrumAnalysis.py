@@ -7,6 +7,7 @@
         1. SpectrumAnalysis: 平稳信号频谱分析方法
     - function:
         1. window: 生成各类窗函数整周期采样序列
+        2. find_spectralines: 谱线类峰值自动检测（基于邻域稀疏度判据）
 """
 
 from PySP._Analysis_Module.core import Analysis
@@ -60,7 +61,9 @@ def window(
         np.less_equal(n, (num - 1) / 2), 2 * n / (num - 1), 2 - 2 * n / (num - 1)
     )
     window_func["布莱克曼窗"] = (
-        lambda n: 0.42 - 0.5 * np.cos(2 * np.pi * n / (num - 1)) + 0.08 * np.cos(4 * np.pi * n / (num - 1))
+        lambda n: 0.42
+        - 0.5 * np.cos(2 * np.pi * n / (num - 1))
+        + 0.08 * np.cos(4 * np.pi * n / (num - 1))
     )
     window_func["自定义窗"] = func
     # ----------------------------------------------------------------------------------------#
@@ -79,8 +82,60 @@ def window(
     w = window_func[type](n)
     # 进行零填充（如果指定了填充长度）
     if padding is not None:
-        w = np.pad(w, padding, mode="constant")  # 双边各填充padding点, 共延长2*padding点
+        w = np.pad(
+            w, padding, mode="constant"
+        )  # 双边各填充padding点, 共延长2*padding点
     return w
+
+
+def find_spectralines(
+    data: np.ndarray, distance: int = 10, threshold: float = 0.8
+) -> np.ndarray:
+    """
+    谱线类峰值自动检测（基于邻域稀疏度判据）
+
+    根据谱线峰值的局部稀疏结构特性，结合 find_peaks 粗筛与邻域稀疏度判据，自动提取频谱数据中的高窄孤立谱线。
+
+    Parameters
+    ----------
+    data : np.ndarray
+        输入一维频谱数据, 要求为非负实数数组。
+    distance : int, 可选
+        峰值最小间隔点数, 默认: 10。用于初步筛选孤立峰值, 防止重复检测。
+    threshold : float, 可选
+        邻域稀疏度阈值, 默认: 0.8, 输入范围: (0, 1)。稀疏度低于该阈值的峰被判定为谱线, 该参数对检测结果不敏感。
+
+    Returns
+    -------
+    valid_lines_idx : np.ndarray
+        满足谱线特征的峰值索引数组。
+
+    Notes
+    -----
+    - 稀疏度定义为 L1范数 / (sqrt(N) * L2范数), 反映邻域能量集中性。
+    - 该方法可有效区分高窄谱线与宽峰、噪声等非稀疏结构, 鲁棒性强。
+    - 适用于自动谱线检测、谱线计数、谱线特征提取等场景。
+    """
+
+    def sparsity(x: np.ndarray) -> float:
+        return np.linalg.norm(x, 1) / (np.sqrt(len(x)) * np.linalg.norm(x, 2) + 1e-10)
+
+    # 针对谱线特征参数的默认值设定
+    lines_idx, lines_params = signal.find_peaks(data, distance=distance)
+    valid_lines_idx = []
+    for idx in lines_idx:
+        # 取出谱线邻域数据段
+        seg = data[max(0, idx - distance + 1) : min(len(data), idx + distance)]
+        if max(seg) != data[idx]:
+            continue  # 非峰值点跳过
+        # 计算稀疏度指标: L1范数 / (sqrt(N) * L2范数)
+        # : 1. 尺度不变; 2. 长度相关; 3. 范围[1/sqrt(N), 1]
+        seg_s = sparsity(seg)
+        # 邻域稀疏的峰值判定为谱线
+        if seg_s < threshold:
+            valid_lines_idx.append(idx)
+    valid_lines_idx = np.array(valid_lines_idx)
+    return valid_lines_idx
 
 
 # --------------------------------------------------------------------------------------------#
@@ -183,7 +238,13 @@ class SpectrumAnalysis(Analysis):
         X_k = X_k * scale  # 幅值补偿
         Amp = np.abs(X_k)
         # 裁剪为单边余弦谱
-        Spc = Spectra(axis=self.Sig.f_axis, data=Amp, name="幅值", unit=self.Sig.unit, label=self.Sig.label)
+        Spc = Spectra(
+            axis=self.Sig.f_axis,
+            data=Amp,
+            name="幅值",
+            unit=self.Sig.unit,
+            label=self.Sig.label,
+        )
         return Spc.halfCut()
 
     # ----------------------------------------------------------------------------------------#
@@ -207,7 +268,11 @@ class SpectrumAnalysis(Analysis):
         ESD = Amp**2  # 能量谱密度，单位U^2*t/Hz
         # 裁剪为单边能量谱密度
         Spc = Spectra(
-            axis=self.Sig.f_axis, data=ESD, name="能量密度", unit=self.Sig.unit + "^2*t/Hz", label=self.Sig.label
+            axis=self.Sig.f_axis,
+            data=ESD,
+            name="能量密度",
+            unit=self.Sig.unit + "^2*t/Hz",
+            label=self.Sig.label,
         )
         return Spc.halfCut()
 
@@ -235,13 +300,17 @@ class SpectrumAnalysis(Analysis):
         PSD = (np.abs(X_k) ** 2) / self.Sig.f_axis.df  # 功率谱密度
         # 裁剪为单边功率谱密度
         Spc = Spectra(
-            axis=self.Sig.f_axis, data=PSD, name="功率密度", unit=self.Sig.unit + "^2/Hz", label=self.Sig.label
+            axis=self.Sig.f_axis,
+            data=PSD,
+            name="功率密度",
+            unit=self.Sig.unit + "^2/Hz",
+            label=self.Sig.label,
         )
         return Spc.halfCut()
 
     # ----------------------------------------------------------------------------------------#
     @Analysis.Plot(freqSpectrum_PlotFunc)
-    def enve_spectra(self, WinType: str = "汉宁窗") -> Spectra:
+    def enveSpectra(self, WinType: str = "汉宁窗") -> Spectra:
         """
         计算信号的包络谱
 
@@ -258,13 +327,23 @@ class SpectrumAnalysis(Analysis):
         # 计算包络幅值
         analytic = signal.hilbert(self.Sig)
         envelope = np.abs(analytic)
-        X_f = SpectrumAnalysis.ft(envelope, self.Sig.t_axis.fs, WinType=WinType) * self.Sig.f_axis.df
+        X_f = (
+            SpectrumAnalysis.ft(envelope, self.Sig.t_axis.fs, WinType=WinType)
+            * self.Sig.f_axis.df
+        )
         Amp = np.abs(X_f)
-        Spc = Spectra(axis=self.Sig.f_axis, data=Amp, name="包络幅值", unit=self.Sig.unit, label=self.Sig.label)
+        Spc = Spectra(
+            axis=self.Sig.f_axis,
+            data=Amp,
+            name="包络幅值",
+            unit=self.Sig.unit,
+            label=self.Sig.label,
+        )
         return Spc.halfCut()
 
 
 __all__ = [
     "SpectrumAnalysis",
     "window",
+    "find_spectralines",
 ]
