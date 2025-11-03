@@ -27,7 +27,7 @@ class PlotPlugin:
         将插件应用于指定分图
     """
 
-    def _apply(self, ax: plt.Axes, data):
+    def _apply(self, ax: plt.Axes, Data):
         """
         将插件应用于指定分图。
 
@@ -61,8 +61,6 @@ class Plot:
         分图统一图形大小
     ncols : int
         子图列数
-    isSampled : bool
-        是否在绘图前对Signal对象进行采样
     kwargs : dict
         全局绘图参数字典
     tasks : list
@@ -70,7 +68,7 @@ class Plot:
 
     Methods
     -------
-    __init__(ncols: int = 1, isSampled: bool = False, **kwargs)
+    __init__(ncols: int = 1, **kwargs)
         初始化绘图对象
     set_params_to_task(**kwargs) -> "Plot"
         为最新添加的绘图任务设置专属参数
@@ -80,17 +78,11 @@ class Plot:
         执行所有已注册的绘图任务并显示/返回/保存最终图形
     """
 
-    @InputCheck(
-        {
-            "ncols": {"Low": 1},
-            "isSampled": {},
-        }
-    )
+    @InputCheck({"ncols": {"Low": 1}})
     def __init__(
         self,
         figsize: tuple = (9, 4),
         ncols: int = 1,
-        isSampled: bool = False,
         **kwargs,
     ):
         """
@@ -102,8 +94,6 @@ class Plot:
             分图统一图形大小，默认(9, 4)
         ncols : int, optional
             子图的列数，默认1
-        isSampled : bool, optional
-            是否在绘图前对Signal对象进行采样，默认False
         **kwargs :
             其他全局绘图参数，如 figsize, title, xlabel 等
         """
@@ -111,7 +101,6 @@ class Plot:
         self.axes = None
         self.figsize = figsize  # 可在初始化后修改，所有子图共享该值
         self.ncols = ncols  # 多图绘制时的子图列数
-        self.isSampled = isSampled
         self._kwargs = kwargs  # 全局绘图参数，一般初始化后不再修改
         self.tasks = deque()  # 绘图任务队列，存储所有待绘制的任务
 
@@ -131,7 +120,9 @@ class Plot:
     def last_task(self) -> dict:
         """返回最新添加的绘图任务接口"""
         if not self.tasks:
-            raise RuntimeError("请先添加一个绘图任务 (例如调用 TimeWaveform)，再访问其参数。")
+            raise RuntimeError(
+                "请先添加一个绘图任务 (例如调用 TimeWaveform)，再访问其参数。"
+            )
         return self.tasks[-1]
 
     # --------------------------------------------------------------------------------#
@@ -180,7 +171,9 @@ class Plot:
             # 设置11个均匀分布的刻度
             ax.set_xticks(np.linspace(xlim[0], xlim[1], 11, endpoint=True))
         # 设置X轴刻度格式
-        sf = ticker.ScalarFormatter(useMathText=True)  # 设置科学计数法显示，指数放到坐标轴右部
+        sf = ticker.ScalarFormatter(
+            useMathText=True
+        )  # 设置科学计数法显示，指数放到坐标轴右部
         sf.set_powerlimits((-3, 3))
         ax.xaxis.set_major_formatter(sf)
 
@@ -205,7 +198,9 @@ class Plot:
             # 主刻度：每10倍一个主刻度
             ax.yaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=12))
             # 次刻度：每10倍区间内插9个小刻度（2~9倍）
-            ax.yaxis.set_minor_locator(ticker.LogLocator(base=10.0, subs=np.arange(2, 10), numticks=100))
+            ax.yaxis.set_minor_locator(
+                ticker.LogLocator(base=10.0, subs=np.arange(2, 10), numticks=100)
+            )
             # 主刻度格式：科学计数法
             ax.yaxis.set_major_formatter(ticker.LogFormatterSciNotation())
             # 注释：主刻度为10的整数次幂，小刻度为2~9倍
@@ -336,10 +331,14 @@ class Plot:
         {
             "pattern": {"Content": ("plot", "return", "save")},
             "filename": {},
-            "save_format": {"Content": ("png", "jpg", "jpeg", "tiff", "bmp", "pdf", "svg")},
+            "save_format": {
+                "Content": ("png", "jpg", "jpeg", "tiff", "bmp", "pdf", "svg")
+            },
         }
     )
-    def show(self, pattern: str = "plot", filename="Plot.png", save_format="png") -> tuple:
+    def show(
+        self, pattern: str = "plot", filename="Plot.png", save_format="png"
+    ) -> tuple:
         """
         执行所有已注册的绘图任务并显示/返回/保存最终图形
 
@@ -378,7 +377,9 @@ class Plot:
             task_function = task["function"]
             task_plugins = task["plugins"]
             try:
-                task_function(ax, task_data, task_kwargs)  # 先执行数据相关绘图任务，便于后续图形元素设置
+                task_function(
+                    ax, task_data, task_kwargs
+                )  # 先执行数据相关绘图任务，便于后续图形元素设置
                 self._setup_title(ax, task_kwargs)
                 self._setup_x_axis(ax, task_kwargs)
                 self._setup_y_axis(ax, task_kwargs)
