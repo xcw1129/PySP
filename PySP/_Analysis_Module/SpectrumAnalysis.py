@@ -118,7 +118,9 @@ def find_spectralines(
     """
 
     def sparsity(x: np.ndarray) -> float:
-        return np.linalg.norm(x, 1) / (np.sqrt(len(x)) * np.linalg.norm(x, 2) + 1e-10)
+        return (np.linalg.norm(x, 1) + 1e-10) / (
+            np.sqrt(len(x)) * np.linalg.norm(x, 2) + 1e-10
+        )
 
     # 针对谱线特征参数的默认值设定
     lines_idx, lines_params = signal.find_peaks(data, distance=distance)
