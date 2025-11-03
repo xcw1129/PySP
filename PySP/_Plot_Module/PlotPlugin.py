@@ -7,8 +7,7 @@
         1. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
 
-from PySP._Analysis_Module.SpectrumAnalysis import find_spectralines
-from PySP._Assist_Module.Dependencies import plt
+from PySP._Assist_Module.Dependencies import np, plt
 from PySP._Plot_Module.core import PlotPlugin
 from PySP._Signal_Module.core import Series
 
@@ -35,17 +34,19 @@ class PeakfinderPlugin(PlotPlugin):
         self.distance = distance
         self.threshold = threshold
 
-    def _apply(self, ax: plt.Axes, Data):
+    def _apply(self, ax: plt.Axes, Data: dict):
         """在指定的子图上查找并标注峰值"""
         # 插件作用于单个ax
-        if isinstance(Data, Series):
-            axis = Data.__axis__()
-            data = Data.data
-        else:
-            # 不兼容插件, 跳过
-            return
+        Spc = Data.get("Spc")
+        if Spc is None:
+            return  # 插件仅适用于谱图
+        axis, data = Spc.axis(), Spc.data
         # 寻找峰值
-        peak_idx = find_spectralines(data, self.distance, self.threshold)
+        from PySP._Analysis_Module.SpectrumAnalysis import find_spectralines
+
+        peak_idx = find_spectralines(
+            data, distance=self.distance, threshold=self.threshold
+        )
         if peak_idx.size > 0:
             peak_idx = peak_idx.astype(int)
             peak_height = data[peak_idx]

@@ -695,7 +695,10 @@ class Series:
         tuple
             (fig, ax) matplotlib图形和坐标轴对象。
         """
-        return None  # 待实现
+        from PySP._Plot_Module.LinePlot import waveform_PlotFunc
+
+        fig, ax = waveform_PlotFunc(self, **kwargs)
+        return fig, ax
 
 
 class t_Axis(Axis):
@@ -974,7 +977,6 @@ class Signal(Series):
         from PySP.Plot import timeWaveform_PlotFunc
 
         fig, ax = timeWaveform_PlotFunc(self, **kwargs)
-        fig.show()
         return fig, ax
 
 
@@ -1081,7 +1083,6 @@ class Spectra(Series):
         from PySP.Plot import freqSpectrum_PlotFunc
 
         fig, ax = freqSpectrum_PlotFunc(self, **kwargs)
-        fig.show()
         return fig, ax
 
 
