@@ -7,9 +7,8 @@
         1. PeakfinderPlugin: 峰值查找插件, 用于查找并标注峰值对应的坐标。
 """
 
-from PySP._Assist_Module.Dependencies import np, plt
+from PySP._Assist_Module.Dependencies import plt
 from PySP._Plot_Module.core import PlotPlugin
-from PySP._Signal_Module.core import Series
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#
