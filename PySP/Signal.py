@@ -19,5 +19,6 @@
 """
 
 from ._Signal_Module.core import *
+from ._Signal_Module.SignalRead import *
 from ._Signal_Module.SignalSampling import *
 from ._Signal_Module.SimulateSignal import *
