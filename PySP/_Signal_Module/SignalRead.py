@@ -7,7 +7,7 @@
 import os
 import pandas as pd
 from pathlib import Path
-from typing import Dict, Set, Optional
+from typing import Dict, Set, Optional, List
 from concurrent.futures import ThreadPoolExecutor
 from numpy import random
 from IPython.display import display
@@ -21,58 +21,66 @@ from copy import deepcopy
 # 数据文件管理类
 class Files:
 
-    def __init__(self, names: list[str], root: str, type: str):
+    def __init__(self, names: List[str], root: str, type: str):
         self.filepaths = []  # 使用列表管理保留文件顺序
         typeList = list(Files.show_read_params().keys())
         if type not in typeList:
             raise ValueError(f"不支持的文件类型: {type}，仅支持: {typeList}")
         else:
             self.filetype = type
-        self.rootpath = root
+        self.rootpath = Path(root)
+        if not self.rootpath.exists() or not self.rootpath.is_dir():
+            raise ValueError(f"指定的root路径: {root} 不存在或不是文件夹")
         # 路径生成与扩展名检查合并
-        for name in names:
-            fp = root + "/" + name
-            if Path(fp).suffix.lower() != self.filetype:
-                print(f"文件: {name} 的类型与指定的filetype: {self.filetype} 不一致")
+        for filename in names:
+            fp = self.rootpath / filename
+            if fp.suffix.lower() != self.filetype:
+                print(
+                    f"文件: {filename} 的类型与指定的filetype: {self.filetype} 不一致"
+                )
+                continue
+            if not fp.exists() or not fp.is_file():
+                print(f"文件: {filename} 不存在于路径: {self.rootpath} 下")
                 continue
             self.filepaths.append(fp)
 
     # --------------------------------------------------------------------------------#
     # Files类Python特性支持
+    def __len__(self):
+        return len(self.filepaths)
+
+    def __iter__(self):
+        for fp in self.filepaths:
+            yield fp
+
+    @property
+    def names(self) -> List[str]:
+        return [fp.name for fp in self.filepaths]
+
     def __getitem__(self, item) -> "Files":
+        existing_filenames = [fp.name for fp in self.filepaths]
+        rootpath_str = str(self.rootpath)
         # 支持整数/切片索引
-        if isinstance(item, int) or isinstance(item, slice):
-            select_filenames = [Path(fp).name for fp in self.filepaths][item]
+        if isinstance(item, (int, slice)):
+            select_filenames = existing_filenames[item]
             if isinstance(select_filenames, str):
                 select_filenames = [select_filenames]
-            return Files(select_filenames, self.rootpath, self.filetype)
-        # 支持文件名字符串
-        elif isinstance(item, str):
+            return Files(select_filenames, rootpath_str, self.filetype)
+        # 支持文件名字符串/字符串列表
+        elif isinstance(item, (str, list)):
             # 检查文件是否存在
-            if item not in [Path(fp).name for fp in self.filepaths]:
-                return Files([], self.rootpath, self.filetype)
-            return Files([item], self.rootpath, self.filetype)
-        # 支持文件名或索引列表
-        elif isinstance(item, list):
-            if all(isinstance(i, int) for i in item):
-                select_filenames = [Path(self.filepaths[i]).name for i in item]
-            elif all(isinstance(i, str) for i in item):
-                select_filenames = []
-                existing_filenames = [Path(fp).name for fp in self.filepaths]
-                for name in item:
-                    if name not in existing_filenames:
-                        print(f"文件: {name} 不存在于Files对象中")
-                        continue
-                    select_filenames.append(name)
-            else:
-                raise TypeError("Files索引列表元素必须全为int或全为str")
-            # 根据选择的文件名生成新的Files对象
-            return Files(select_filenames, self.rootpath, self.filetype)
+            select_filenames = []
+            item = [item] if isinstance(item, str) else item
+            for filename in item:
+                if filename not in existing_filenames:
+                    raise IndexError(f"文件: {filename} 不存在于Files对象中")
+                select_filenames.append(filename)
+            return Files(select_filenames, rootpath_str, self.filetype)
         else:
-            raise TypeError("Files仅支持整数、整数列表、切片、文件名和文件名列表索引")
+            raise TypeError("Files仅支持整数、切片、字符串和字符串列表索引")
 
-    def __repr__(self):
-        return f"Files(x{len(self.filepaths)} {self.filetype} [{self.rootpath}])"
+    def __repr__(self) -> str:
+        return f"Files(x{len(self.filepaths)} {self.filetype} [{str(self.rootpath)}])"
 
     # --------------------------------------------------------------------------------#
     # 数据加载等外部常用接口
@@ -83,7 +91,7 @@ class Files:
         parallelCores: Optional[int] = None,
     ):
         if self.filetype == ".csv":
-            dfs = self._read_csv_pitch(self.filepaths, isParallel, parallelCores)
+            dfs = Files._read_csv_batch(self.filepaths, isParallel, parallelCores)
         else:
             raise NotImplementedError(f"暂不支持 {self.filetype} 文件读取")
         if not dfs:
@@ -91,11 +99,15 @@ class Files:
         if merge:  # 并排合并为单个DataFrame返回
             all_df = pd.concat(dfs, axis=1)
         else:  # 转为字典返回
-            all_df = {}
-            for df in dfs:
-                name = df.columns[0].split("/")[0] + self.filetype
-                df.columns = [col.split("/", 1)[1] for col in df.columns]  # 去掉前缀
-                all_df[name] = df
+            all_df: Dict[str, pd.DataFrame] = {}
+            for fp, df in zip(self.filepaths, dfs):
+                prefix = fp.name
+                if len(df.columns) > 0:
+                    df.columns = [
+                        col.split("/", 1)[1] if "/" in col else col
+                        for col in df.columns
+                    ]
+                all_df[prefix] = df
         return all_df
 
     def example(self, num: int = 1, **kwargs) -> None:
@@ -104,8 +116,8 @@ class Files:
             return
         n = min(num, len(self.filepaths))
         # 随机n抽样预览
-        sample_files = random.choice(self.filepaths, n, replace=False)
-        for fp in sample_files:
+        sample_filepaths = random.choice(self.filepaths, n, replace=False)
+        for fp in sample_filepaths:
             print(f"\n---\n预览文件: {fp}\n---")
             if self.filetype == ".csv":
                 df = Files._read_csv_once(fp, **kwargs)
@@ -113,6 +125,11 @@ class Files:
                     display(df)
                 finally:
                     pass
+
+    def save(self):
+        all_df = self.load(merge=True, isParallel=True)
+        # 保持为excel格式, 便于软件打开查看
+        all_df.to_excel(self.rootpath / "merged_result.csv", index=False)
 
     # --------------------------------------------------------------------------------#
     # 数据文件读取内部方法
@@ -142,26 +159,29 @@ class Files:
         Files._read_params[filetype] = {}
 
     @staticmethod
-    def _read_csv_once(fp, **kwargs):
+    def _read_csv_once(fp: Path, **kwargs) -> pd.DataFrame:
         csv_read_params = Files._read_params[".csv"].copy()
         csv_read_params.update(kwargs)
         # drop_cols_idx: 按列索引删除指定列
         drop_cols_idx = csv_read_params.pop("drop_cols_idx", None)
         # 执行读取操作
-        df = pd.read_csv(fp, **csv_read_params)
+        try:
+            df = pd.read_csv(fp, **csv_read_params)
+        except Exception as e:
+            print(f"读取CSV文件: {fp} 失败，错误信息: {e}")
+            return pd.DataFrame()
         # 读取结果后处理
         if drop_cols_idx:
-            if not all(isinstance(i, int) for i in drop_cols_idx):
-                raise ValueError("drop_cols_idx 参数必须为整数列表")
-            else:
-                cols_to_drop = [
-                    df.columns[i] for i in drop_cols_idx if i < len(df.columns)
-                ]
-                df = df.drop(columns=cols_to_drop, errors="ignore")
+            cols_to_drop = [df.columns[i] for i in drop_cols_idx if i < len(df.columns)]
+            df = df.drop(columns=cols_to_drop, errors="ignore")
         return df
 
     @staticmethod
-    def _read_csv_pitch(filepaths, isParallel=False, parallelCores=None):
+    def _read_csv_batch(
+        filepaths: List[Path],
+        isParallel: bool = False,
+        parallelCores: Optional[int] = None,
+    ) -> List[pd.DataFrame]:
         if isParallel:  # 多线程读取
             max_workers = (
                 parallelCores
@@ -174,7 +194,7 @@ class Files:
             dfs = [Files._read_csv_once(fp) for fp in filepaths]
         # 为避免列名冲突，添加文件名前缀
         for i, df in enumerate(dfs):
-            prefix = Path(filepaths[i]).stem
+            prefix = filepaths[i].stem
             df.columns = [f"{prefix}/{col}" for col in df.columns]
         return dfs
 
@@ -183,30 +203,34 @@ class Files:
 # 数据集结构管理类
 class Dataset:
 
-    def __init__(self, path: str, type: str = "csv", label: str = ""):
-        self.rootpath = path
+    def __init__(self, root: str, type: str = "csv", label: str = "") -> None:
+        self.rootpath = Path(root)
+        if not self.rootpath.exists() or not self.rootpath.is_dir():
+            raise ValueError(f"指定的root路径: {root} 不存在或不是文件夹")
         self.filetype = Dataset._standardize_filetype(type)
         self.label = label
-        self.content = Dataset._get_dataset_structure(self.rootpath, self.filetype)
+        self.content = Dataset._get_dataset_structure(str(self.rootpath), self.filetype)
         if self.content == {}:
             raise ValueError(
                 f"[{self.label}] {self.rootpath} 下未找到格式为 {self.filetype} 的文件。"
             )
         self.content = Dataset._convert_Files(
-            self.content, self.rootpath, self.filetype
+            self.content, str(self.rootpath), self.filetype
         )
 
     # --------------------------------------------------------------------------------#
     # Dataset类Python特性支持
-    def __getitem__(self, key: str):
+    def __getitem__(self, key: str) -> Dict:
         # 允许多级索引
         return self.content[key]
 
     # --------------------------------------------------------------------------------#
     # 数据集读写转换等外部常用接口
     def refresh(self) -> None:
-        structure = Dataset._get_dataset_structure(self.rootpath, self.filetype)
-        self.content = Dataset._convert_Files(structure, self.rootpath, self.filetype)
+        structure = Dataset._get_dataset_structure(str(self.rootpath), self.filetype)
+        self.content = Dataset._convert_Files(
+            structure, str(self.rootpath), self.filetype
+        )
 
     def info(self) -> None:
         print(f"[{self.label}] rootpath: {self.rootpath}")
