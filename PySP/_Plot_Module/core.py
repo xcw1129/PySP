@@ -9,7 +9,16 @@
 """
 
 from PySP._Assist_Module.Decorators import InputCheck
-from PySP._Assist_Module.Dependencies import deepcopy, deque, np, plt, ticker
+from PySP._Assist_Module.Dependencies import (
+    cycler,
+    deepcopy,
+    deque,
+    font_manager,
+    np,
+    plt,
+    resources,
+    ticker,
+)
 
 # --------------------------------------------------------------------------------------------#
 # --------------------------------------------------------------------------------#
@@ -103,6 +112,7 @@ class Plot:
         self.ncols = ncols  # 多图绘制时的子图列数
         self._kwargs = kwargs  # 全局绘图参数，一般初始化后不再修改
         self.tasks = deque()  # 绘图任务队列，存储所有待绘制的任务
+        self._saved_rcParams = None  # 保存用户的原始 matplotlib 配置
 
     @property
     def kwargs(self) -> dict:
@@ -124,6 +134,73 @@ class Plot:
                 "请先添加一个绘图任务 (例如调用 TimeWaveform)，再访问其参数。"
             )
         return self.tasks[-1]
+
+    # --------------------------------------------------------------------------------#
+    # matplotlib 配置管理方法
+    def _init_plot_config(self):
+        """初始化 PySP 绘图配置，保存用户原始配置"""
+        # 保存用户的原始 matplotlib 配置
+        self._saved_rcParams = deepcopy(plt.rcParams)
+
+        # 加载自定义字体
+        font_name = None
+        try:
+            with resources.path("PySP._Assist_Module", "times+simsun.ttf") as font_path:
+                font_manager.fontManager.addfont(str(font_path))
+                prop = font_manager.FontProperties(fname=str(font_path))
+                font_name = prop.get_name()
+        except Exception:
+            pass
+
+        font_sans_serif = [font_name] if font_name else []
+        font_sans_serif += ["SimSun", "Microsoft YaHei", "Arial"]
+
+        # 应用 PySP 专用配置
+        plt.rcParams.update(
+            {
+                "font.family": "sans-serif",  # 设置全局字体
+                "font.sans-serif": font_sans_serif,  # 优先自定义字体
+                "axes.unicode_minus": False,  # 负号正常显示
+                "font.size": 18,  # 设置全局字体大小
+                "axes.titlesize": 20,  # 标题字体大小
+                "axes.labelsize": 18,  # 轴标签字体大小
+                "xtick.labelsize": 16,  # x轴刻度标签字体大小
+                "ytick.labelsize": 16,  # y轴刻度标签字体大小
+                "legend.fontsize": 16,  # 图例字体大小
+                "figure.figsize": (12, 5),  # 默认图形大小，12cm x 5cm
+                "figure.dpi": 100,  # 显示分辨率
+                "savefig.dpi": 600,  # 保存分辨率
+                "axes.prop_cycle": cycler(
+                    color=[
+                        "#1f77b4",  # 蓝
+                        "#ff7f0e",  # 橙
+                        "#2ca02c",  # 绿
+                        "#d62728",  # 红
+                        "#a77ece",  # 紫
+                        "#8c564b",  # 棕
+                        "#520e8e",  # 粉
+                        "#7f7f7f",  # 灰
+                        "#bcbd22",  # 橄榄
+                        "#17becf",  # 青
+                    ]
+                ),  # 设置颜色循环
+                "axes.grid": True,  # 显示网格
+                "axes.grid.axis": "y",  # 只显示y轴网格
+                "grid.linestyle": (0, (8, 6)),  # 网格线为虚线
+                "xtick.direction": "in",  # x轴刻度线朝内
+                "ytick.direction": "in",  # y轴刻度线朝内
+                "mathtext.fontset": "custom",  # 公式字体设置
+                "mathtext.rm": "Times New Roman",  # 数学公式字体 - 正常
+                "mathtext.it": "Times New Roman:italic",  # 数学公式字体 - 斜体
+                "mathtext.bf": "Times New Roman:bold",  # 数学公式字体 - 粗体
+            }
+        )
+
+    def _restore_plot_config(self):
+        """恢复用户的原始 matplotlib 配置"""
+        if self._saved_rcParams is not None:
+            plt.rcParams.update(self._saved_rcParams)
+            self._saved_rcParams = None
 
     # --------------------------------------------------------------------------------#
     # 内部绘图基本框架方法
@@ -361,43 +438,51 @@ class Plot:
         num_tasks = len(self.tasks)
         if num_tasks == 0:
             return  # 未通过子类方法添加任何绘图任务
-        # 创建图形和子图
-        self._setup_figure(num_tasks)
-        # 依次在对应子图上执行每个绘图任务
-        for i, ax in enumerate(self.axes):
-            # 隐藏多余子图
-            if i >= num_tasks:
-                ax.set_visible(False)
-                continue
-            # 获取当前任务的信息
-            # 按 FIFO 原则从队列左端弹出任务
-            task = self.tasks.popleft()
-            task_data = task["data"]
-            task_kwargs = task["kwargs"]
-            task_function = task["function"]
-            task_plugins = task["plugins"]
-            try:
-                task_function(
-                    ax, task_data, task_kwargs
-                )  # 先执行数据相关绘图任务，便于后续图形元素设置
-                self._setup_title(ax, task_kwargs)
-                self._setup_x_axis(ax, task_kwargs)
-                self._setup_y_axis(ax, task_kwargs)
-                for plugin in task_plugins:
-                    plugin._apply(ax, task_data)
-            except Exception as e:
-                print(f"绘制第{i + 1}个子图时出错: {e}")
-        # 总图调整设置
-        self.figure.tight_layout()
-        if pattern == "plot":
-            self.figure.show()
-        elif pattern == "return":
-            return self.figure, self.axes
-        elif pattern == "save":
-            self._save_figure(filename, save_format)
-            plt.close(self.figure)
-        else:
-            raise ValueError(f"未知的模式: {pattern}")
+
+        # 初始化 PySP 绘图配置并保存用户原始配置
+        self._init_plot_config()
+
+        try:
+            # 创建图形和子图
+            self._setup_figure(num_tasks)
+            # 依次在对应子图上执行每个绘图任务
+            for i, ax in enumerate(self.axes):
+                # 隐藏多余子图
+                if i >= num_tasks:
+                    ax.set_visible(False)
+                    continue
+                # 获取当前任务的信息
+                # 按 FIFO 原则从队列左端弹出任务
+                task = self.tasks.popleft()
+                task_data = task["data"]
+                task_kwargs = task["kwargs"]
+                task_function = task["function"]
+                task_plugins = task["plugins"]
+                try:
+                    task_function(
+                        ax, task_data, task_kwargs
+                    )  # 先执行数据相关绘图任务，便于后续图形元素设置
+                    self._setup_title(ax, task_kwargs)
+                    self._setup_x_axis(ax, task_kwargs)
+                    self._setup_y_axis(ax, task_kwargs)
+                    for plugin in task_plugins:
+                        plugin._apply(ax, task_data)
+                except Exception as e:
+                    print(f"绘制第{i + 1}个子图时出错: {e}")
+            # 总图调整设置
+            self.figure.tight_layout()
+            if pattern == "plot":
+                self.figure.show()
+            elif pattern == "return":
+                return self.figure, self.axes
+            elif pattern == "save":
+                self._save_figure(filename, save_format)
+                plt.close(self.figure)
+            else:
+                raise ValueError(f"未知的模式: {pattern}")
+        finally:
+            # 恢复用户的原始 matplotlib 配置
+            self._restore_plot_config()
 
     # ----------------------------------------------------------------------------------------#
     def canvas(self) -> tuple:

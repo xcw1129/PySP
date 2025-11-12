@@ -9,6 +9,6 @@
 
 __version__ = "7.5.4"
 
-from . import Analysis, Plot, Signal, _plot_init  # noqa: F401
+from . import Analysis, Plot, Signal  # noqa: F401
 
 __all__ = ["Signal", "Plot", "Analysis"]
